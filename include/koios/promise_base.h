@@ -11,7 +11,7 @@ class promise_base
 public:
     constexpr ::std::suspend_always initial_suspend() const noexcept
         { return {}; }
-    constexpr ::std::suspend_never final_suspend() const noexcept
+    constexpr ::std::suspend_always final_suspend() const noexcept
         { return {}; }
 };
 

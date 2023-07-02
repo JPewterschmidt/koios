@@ -12,6 +12,12 @@
 KOIOS_NAMESPACE_BEG
 
 template<typename T>
+struct _task
+{
+    struct [[nodiscard]] _type;
+};
+
+template<typename T, typename Task>
 class get_result_aw
 {
 public:
@@ -27,6 +33,9 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
+        auto* taskp = static_cast<Task*>(this);
+        task_scheduler_concept auto& schr = get_task_scheduler();
+        schr.enqueue(taskp->move_out_coro_handle());
     }
 
     auto await_resume() noexcept { return m_future.get(); }
@@ -38,8 +47,8 @@ protected:
     promise_wrapper<value_type> m_promise;
 };
 
-template<>
-class get_result_aw<void>
+template<typename Task>
+class get_result_aw<void, Task>
 {
 public:
     get_result_aw(promise_wrapper<void> promise)
@@ -52,6 +61,9 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
+        auto* taskp = static_cast<Task*>(this);
+        task_scheduler_concept auto& schr = get_task_scheduler();
+        schr.enqueue(taskp->move_out_coro_handle());
     }
 
     constexpr void await_resume() const noexcept {}
@@ -64,13 +76,7 @@ protected:
 };
 
 template<typename T>
-struct _task
-{
-    struct [[nodiscard]] _type;
-};
-
-template<typename T>
-class _task<T>::_type : public get_result_aw<T>
+class _task<T>::_type : public get_result_aw<T, _task<T>::_type>
 {
 public:
     using value_type = T;
@@ -84,6 +90,7 @@ public:
         }
 
         auto get_future() { return m_promise.get_future(); }
+        void set_caller(auto h) { m_caller = h; }
         
         void unhandled_exception() const { throw; }
 
@@ -105,7 +112,7 @@ public:
 
 public:
     _type(promise_type& p)
-        : get_result_aw<T>(p),
+        : get_result_aw<T, _type>(p),
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }
     {
     }
@@ -115,21 +122,26 @@ public:
         if (m_coro_handle) m_coro_handle.destroy();
     }
 
-    value_type operator()() 
+    void operator()() 
     {
         if (m_coro_handle) [[likely]]
         {
-            if constexpr (::std::same_as<value_type, void>)
-                m_coro_handle();
-            else return m_coro_handle();
+            m_coro_handle();
         }
+    }
+
+    bool done() const noexcept 
+    {
+        if (m_coro_handle) 
+            return m_coro_handle.done();
+        return true;
     }
 
     auto result()
     {
         if constexpr (::std::same_as<value_type, void>)
-            get_result_aw<T>::future().get();
-        else return get_result_aw<T>::future().get();
+            get_result_aw<T, _type>::future().get();
+        else return get_result_aw<T, _type>::future().get();
     }
 
     auto move_out_coro_handle() noexcept

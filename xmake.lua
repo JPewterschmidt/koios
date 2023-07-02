@@ -1,16 +1,23 @@
 add_rules("mode.debug", "mode.release")
-add_requires("fmt", "gflags", "gtest")
+add_requires(
+    "fmt", 
+    "gflags", 
+    "gtest", 
+    "concurrentqueue master"
+)
 
 target("koios")
     set_kind("shared")
-    add_packages("fmt", "gflags")
+    add_packages("fmt", "gflags", "concurrentqueue")
     set_languages("c++20", "c17")
     add_files("src/*.cc")
     add_includedirs("include")
 
 target("test")
     set_kind("binary")
+    add_packages("concurrentqueue")
     set_languages("c++20", "c17")
+    add_deps("koios")
     add_files("test/*.cc")
     add_packages("gtest")
     add_includedirs("include")
@@ -23,6 +30,8 @@ target("test")
     
 target("example")
     set_kind("binary")
+    add_packages("concurrentqueue")
+    add_deps("koios")
     set_languages("c++20", "c17")
     add_files("example/*.cc")
     add_packages("fmt", "gflags")

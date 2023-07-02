@@ -4,11 +4,35 @@
 #include "fmt/ranges.h"
 
 #include "koios/task.h"
+#include "koios/thread_pool.h"
+
+#include <chrono>
+#include <thread>
+#include <iostream>
 
 using namespace koios;
+using namespace ::std::chrono_literals;
+
+void func()
+{
+    ::std::cout << "ok" << ::std::endl;
+}
+
+task<int> coro2()
+{
+    ::std::cout << "ok2" << ::std::endl;
+    co_return 2;
+}
+
+task<int> coro()
+{
+    co_await coro2();
+    ::std::cout << "ok2" << ::std::endl;
+    co_return 1;
+}
 
 int main()
 {
-    ::std::vector ivec{ 1,2,3,4,5 };
-    fmt::print("{}\n", ivec);
+    task_scheduler_concept auto& schr = get_task_scheduler();
+    schr.enqueue(coro());
 }

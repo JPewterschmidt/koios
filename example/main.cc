@@ -39,9 +39,7 @@ namespace
 
 int main()
 {
-    task_scheduler_concept auto& scheduler = koios::get_task_scheduler();
-    scheduler.enqueue(starter());
-
-    sem.acquire();
+    auto t = starter();
+    t.run_sync();
     ::std::cout << result;
 }

@@ -13,6 +13,7 @@ public:
         { return {}; }
     constexpr ::std::suspend_always final_suspend() const noexcept
         { return {}; }
+    void unhandled_exception() const { throw; }
 };
 
 KOIOS_NAMESPACE_END

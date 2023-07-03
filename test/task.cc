@@ -70,3 +70,8 @@ TEST(task, with_scheduler)
     sem.acquire();
     ASSERT_EQ(result, 10);
 }
+
+TEST(task, user_friendly)
+{
+    ASSERT_EQ(1, 0);
+}

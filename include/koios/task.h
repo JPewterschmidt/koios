@@ -145,6 +145,24 @@ public:
         return ::std::exchange(m_coro_handle, nullptr);
     }
 
+    // ================== user friendly
+
+    void run_async()
+    {
+        task_scheduler_concept auto& scheduler = get_task_scheduler();
+        scheduler.enqueue(move_out_coro_handle());
+    }
+
+    void run_sync()
+    {
+        if (!m_coro_handle) return;
+
+        while (!done())
+        {
+            m_coro_handle();
+        }
+    }
+
 private:
     ::std::coroutine_handle<promise_type> m_coro_handle;
 };

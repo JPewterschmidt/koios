@@ -13,33 +13,35 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-int result{};
 
-task<int&> coro2()
+namespace 
 {
-    co_return result;
-}
+    int result{};
+    ::std::binary_semaphore sem{0}; 
 
-task<int> coro()
-{
-    int& val = co_await coro2();
-    val = 100;
-    ::std::cout << "coro2: " << result << ::std::endl;
-    co_return 1;
-}
+    task<int> for_with_scheduler()
+    {
+        static size_t count{};
+        if (++count >= 10)
+            co_return 1;
+        int result = co_await for_with_scheduler() + 1;
+        ::std::cout << result << ::std::endl;
+        co_return result;
+    }
 
-task<void> starter()
-{
-    result = co_await coro();
+    task<void> starter()
+    {
+        result = co_await for_with_scheduler();
+        ::std::cout << "starter: " << result << ::std::endl;
+        sem.release();
+    }
 }
-
-constinit size_t test_size{ 10000 };
-constinit size_t pool_size{ 10 };
 
 int main()
 {
     task_scheduler_concept auto& scheduler = koios::get_task_scheduler();
-
     scheduler.enqueue(starter());
-    scheduler.stop();
+
+    sem.acquire();
+    ::std::cout << result;
 }

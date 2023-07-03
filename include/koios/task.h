@@ -8,6 +8,7 @@
 #include "koios/global_task_scheduler.h"
 #include "koios/promise_wrapper.h"
 #include "koios/task_scheduler_concept.h"
+#include "koios/return_value_or_void.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -38,7 +39,7 @@ public:
         schr.enqueue(taskp->move_out_coro_handle());
     }
 
-    auto await_resume() noexcept { return m_future.get(); }
+    decltype(auto) await_resume() noexcept { return m_future.get(); }
 
     auto& future() noexcept { return m_future; }
 
@@ -81,33 +82,13 @@ class _task<T>::_type : public get_result_aw<T, _task<T>::_type>
 public:
     using value_type = T;
 
-    class promise_type : public promise_base
+    class promise_type : public promise_base, public return_value_or_void<T>
     {
     public:
         _task<T>::_type get_return_object() noexcept
         {
             return { *this };
         }
-
-        auto get_future() { return m_promise.get_future(); }
-        void set_caller(auto h) { m_caller = h; }
-        
-        void unhandled_exception() const { throw; }
-
-        template<typename TT>
-        void return_value(TT&& val)
-        {
-            m_promise.set_value(::std::forward<TT>(val));
-            if (m_caller)
-            {
-                task_scheduler_concept auto& scheduler = get_task_scheduler();
-                scheduler.enqueue(m_caller);
-            }
-        }
-
-    private:
-        ::std::promise<T> m_promise;
-        ::std::coroutine_handle<> m_caller{};
     };
 
 public:
@@ -152,6 +133,11 @@ public:
         if constexpr (::std::same_as<value_type, void>)
             get_result_aw<T, _type>::future().get();
         else return get_result_aw<T, _type>::future().get();
+    }
+
+    auto& future()
+    {
+        return get_result_aw<T, _type>::future();
     }
 
     auto move_out_coro_handle() noexcept

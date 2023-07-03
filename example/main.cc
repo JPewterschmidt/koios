@@ -13,44 +13,35 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-int result{};
 
-task<int> coro()
+namespace 
 {
-    ::std::this_thread::sleep_for(10min);
-    co_return 1;
-}
+    int result{};
+    ::std::binary_semaphore sem{0}; 
 
-task<void> starter()
-{
-    result = co_await coro();
-    ::std::cout << "coro: " << result << ::std::endl;
-}
+    task<int> for_with_scheduler()
+    {
+        static size_t count{};
+        if (++count >= 10)
+            co_return 1;
+        int result = co_await for_with_scheduler() + 1;
+        ::std::cout << result << ::std::endl;
+        co_return result;
+    }
 
-constinit size_t test_size{ 10000 };
-constinit size_t pool_size{ 10 };
+    task<void> starter()
+    {
+        result = co_await for_with_scheduler();
+        ::std::cout << "starter: " << result << ::std::endl;
+        sem.release();
+    }
+}
 
 int main()
 {
-    thread_pool tp{ pool_size };
-    ::std::atomic_size_t count{ test_size };
-
-    for (size_t i = 0; i < test_size / 10; ++i)
-    {
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-    }
-    
-    tp.stop();
-    ::std::cout << count << ::std::endl;
     task_scheduler_concept auto& scheduler = koios::get_task_scheduler();
-    scheduler.stop();
+    scheduler.enqueue(starter());
+
+    sem.acquire();
+    ::std::cout << result;
 }

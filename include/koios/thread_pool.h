@@ -8,32 +8,23 @@
 #include <stop_token>
 #include <utility>
 #include <future>
+#include <condition_variable>
+#include <semaphore>
+
 #include "koios/macros.h"
 #include "concurrentqueue/blockingconcurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG
 
-constexpr void noop_function() noexcept {}
+enum manually_stop_type { };
+extern manually_stop_type manually_stop;
 
 class thread_pool
 {
 public:
-    explicit thread_pool(size_t numthr)
-        : m_numthrs{ numthr }, 
-          m_active_threads{ numthr }
-    {
-        for (size_t i = 0; i < numthr; ++i)
-        {
-            m_thrs.emplace_back([this]() noexcept { 
-                this->consumer(m_stop_source.get_token()); 
-            });
-        }
-    }
-
-    ~thread_pool()
-    {
-        stop();
-    }
+    explicit thread_pool(size_t numthr);
+    thread_pool(size_t numthr, manually_stop_type);
+    ~thread_pool() noexcept;
           
     template<typename F, typename... Args>
     auto enqueue(F&& func, Args&&... args)
@@ -44,40 +35,30 @@ public:
         );
         ::std::future<return_type> result = task->get_future();
         m_tasks.enqueue([task]{ (*task)(); });
+        m_cond.notify_one();
 
         return result;
     }
     
-    void stop()
-    {
-        m_stop_source.request_stop();
-        while (m_active_threads.load() > 0)
-        {
-            m_tasks.enqueue(noop_function);
-        }
-    }
-
-    auto size() const noexcept { return m_active_threads.load(); }
+    void stop() noexcept;
+    void quick_stop() noexcept;
 
 private:
-    void consumer(::std::stop_token token) noexcept
-    {
-        while (!token.stop_requested())
-        {
-            ::std::function<void()> task;
-            m_tasks.wait_dequeue(task);
-            if (!task) [[unlikely]]
-                continue;
-            try { task(); } catch (...) {}
-        }
-        m_active_threads.fetch_sub(1u);
-    }
+    void consumer(::std::stop_token token) noexcept;
+    [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
+    bool need_stop_now() const noexcept;
 
 private:
     size_t m_numthrs;
+    bool m_manully_stop{ false };
+    ::std::atomic_bool m_stop_now{ false };
     ::std::atomic_size_t m_active_threads;
     ::std::stop_source m_stop_source;
-    moodycamel::BlockingConcurrentQueue<::std::function<void()>> m_tasks;
+    moodycamel::ConcurrentQueue<::std::function<void()>> m_tasks;
+    mutable ::std::mutex m_lock;
+    ::std::condition_variable m_cond;
+    ::std::counting_semaphore<> m_stop_sem{ 0 };
+    ::std::once_flag m_stop_call_guard;
     ::std::vector<::std::jthread> m_thrs;
 };
 

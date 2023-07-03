@@ -5,7 +5,7 @@ KOIOS_NAMESPACE_BEG
 
 namespace
 {
-    task_scheduler g_ts{ 10 };
+    task_scheduler g_ts{ 1, manually_stop };
 }
 
 task_scheduler& get_task_scheduler()

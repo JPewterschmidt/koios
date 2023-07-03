@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "koios/thread_pool.h"
+#include "koios/global_task_scheduler.h"
 
 using namespace koios;
 
@@ -13,19 +14,18 @@ TEST(thread_pool, basic)
 
     for (size_t i = 0; i < test_size / 10; ++i)
     {
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
-        tp.enqueue([&]{ count.fetch_sub(1u); });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
     }
     
-    ASSERT_EQ(count.load(), 1);
     tp.stop();
-    ASSERT_EQ(tp.size(), 0);
+    ASSERT_EQ(count.load(), 0);
 }

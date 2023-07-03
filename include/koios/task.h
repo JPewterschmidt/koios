@@ -119,7 +119,17 @@ public:
 
     ~_type() noexcept
     {
-        if (m_coro_handle) m_coro_handle.destroy();
+        if (m_coro_handle) 
+        {
+            m_coro_handle.destroy();
+            m_coro_handle = nullptr; // debug
+        }
+    }
+
+    _type(_type&& other) noexcept
+        : get_result_aw<T, _task<T>::_type>(::std::move(other)),
+          m_coro_handle{ ::std::exchange(other.m_coro_handle, nullptr) }
+    {
     }
 
     void operator()() 

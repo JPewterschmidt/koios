@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "koios/thread_pool.h"
 #include "koios/task.h"
+#include "koios/task_scheduler_concept.h"
+#include "koios/global_task_scheduler.h"
 
 using namespace koios;
 
@@ -46,11 +48,11 @@ TEST(task, basic)
 namespace 
 {
     int result{};
+    int count{};
     ::std::binary_semaphore sem{0}; 
 
     task<int> for_with_scheduler()
     {
-        static size_t count{};
         if (++count >= 10) co_return 1;
         co_return co_await for_with_scheduler() + 1;
     }
@@ -71,7 +73,12 @@ TEST(task, with_scheduler)
     ASSERT_EQ(result, 10);
 }
 
-TEST(task, with_local_thread_scheduler)
+TEST(task, run_async)
 {
-    ASSERT_EQ(1, 0);
+    result = 0;
+    count = 0;
+    starter().run_async();
+    sem.acquire();
+    ASSERT_EQ(result, 10);
 }
+

@@ -5,10 +5,11 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
-#include "koios/global_task_scheduler.h"
 #include "koios/promise_wrapper.h"
-#include "koios/task_scheduler_concept.h"
 #include "koios/return_value_or_void.h"
+#include "koios/task_scheduler_wrapper.h"
+#include "koios/local_thread_scheduler.h"
+#include "koios/task_scheduler_selector.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -18,14 +19,9 @@ struct _task
     struct [[nodiscard]] _type;
 };
 
-class get_return_aw_base
-{
-protected:
-    
-};
-
 template<typename T, typename Task>
-class get_result_aw : private get_return_aw_base
+class get_result_aw 
+    : public virtual task_scheduler_selector
 {
 public:
     using value_type = T;
@@ -40,9 +36,9 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
-        auto* taskp = static_cast<Task*>(this);
-        task_scheduler_concept auto& schr = get_task_scheduler();
-        schr.enqueue(taskp->move_out_coro_handle());
+        scheduler().enqueue(
+            static_cast<Task*>(this)->move_out_coro_handle()
+        );
     }
 
     decltype(auto) await_resume() noexcept { return m_future.get(); }
@@ -55,7 +51,8 @@ protected:
 };
 
 template<typename Task>
-class get_result_aw<void, Task> : private get_return_aw_base
+class get_result_aw<void, Task>
+    : public virtual task_scheduler_selector
 {
 public:
     get_result_aw(promise_wrapper<void> promise)
@@ -68,9 +65,9 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
-        auto* taskp = static_cast<Task*>(this);
-        task_scheduler_concept auto& schr = get_task_scheduler();
-        schr.enqueue(taskp->move_out_coro_handle());
+        scheduler().enqueue(
+            static_cast<Task*>(this)->move_out_coro_handle()
+        );
     }
 
     constexpr void await_resume() const noexcept {}
@@ -88,7 +85,7 @@ class _task<T>::_type : public get_result_aw<T, _task<T>::_type>
 public:
     using value_type = T;
 
-    class promise_type : public promise_base, public return_value_or_void<T>
+    class promise_type : public promise_base, public return_value_or_void<T, promise_type>
     {
     public:
         _task<T>::_type get_return_object() noexcept
@@ -155,18 +152,7 @@ public:
 
     void run_async()
     {
-        task_scheduler_concept auto& scheduler = get_task_scheduler();
-        scheduler.enqueue(move_out_coro_handle());
-    }
-
-    void run_sync()
-    {
-        if (!m_coro_handle) return;
-
-        while (!done())
-        {
-            m_coro_handle();
-        }
+        get_task_scheduler().enqueue(move_out_coro_handle());
     }
 
 private:

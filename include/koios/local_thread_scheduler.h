@@ -21,7 +21,7 @@ public:
     {
         while (!m_tasks.empty())
         {
-            tiny_task t = ::std::move(m_tasks.top());
+            tiny_task t = ::std::move(m_tasks.front());
             m_tasks.pop();
             try { t(); } catch (...) {}
         }

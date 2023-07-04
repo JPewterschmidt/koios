@@ -1,8 +1,12 @@
 #ifndef TASK_PROMISE_BASE_H
 #define TASK_PROMISE_BASE_H
 
-#include "koios/macros.h"
 #include <coroutine>
+
+#include "koios/macros.h"
+#include "koios/local_thread_scheduler.h"
+#include "koios/global_task_scheduler.h"
+#include "koios/task_scheduler_wrapper.h"
 
 KOIOS_NAMESPACE_BEG
 

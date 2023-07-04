@@ -71,7 +71,7 @@ TEST(task, with_scheduler)
     ASSERT_EQ(result, 10);
 }
 
-TEST(task, user_friendly)
+TEST(task, with_local_thread_scheduler)
 {
     ASSERT_EQ(1, 0);
 }

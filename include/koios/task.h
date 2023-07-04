@@ -18,8 +18,14 @@ struct _task
     struct [[nodiscard]] _type;
 };
 
+class get_return_aw_base
+{
+protected:
+    
+};
+
 template<typename T, typename Task>
-class get_result_aw
+class get_result_aw : private get_return_aw_base
 {
 public:
     using value_type = T;
@@ -49,7 +55,7 @@ protected:
 };
 
 template<typename Task>
-class get_result_aw<void, Task>
+class get_result_aw<void, Task> : private get_return_aw_base
 {
 public:
     get_result_aw(promise_wrapper<void> promise)

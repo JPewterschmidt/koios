@@ -5,6 +5,7 @@
 
 #include "koios/task.h"
 #include "koios/thread_pool.h"
+#include "koios/from_result.h"
 
 #include <chrono>
 #include <thread>
@@ -28,8 +29,9 @@ namespace
 
     task<void> starter()
     {
-        result = co_await for_with_scheduler();
-        ::std::cout << "result: " << result << ::std::endl;
+        int i = co_await from_result(10);
+        ::std::cout << i << ::std::endl;
+        co_await for_with_scheduler();
         sem.release();
     }
 }
@@ -37,4 +39,5 @@ namespace
 int main()
 {
     starter().run();
+    sem.acquire();
 }

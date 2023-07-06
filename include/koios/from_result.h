@@ -28,20 +28,12 @@ namespace from_result_detial
     private:
         Ret m_obj;
     };
-
-    template<typename T, typename... Args>
-    task<T> from_result_impl(Args&&... args)
-    {
-        co_return T(::std::forward<Args>(args)...);
-    }
 }
 
-template<typename T, typename... Args>
-task<T> from_result_impl(Args&&... args)
+template<typename Ret>
+sync_task<Ret> from_result(Ret r)
 {
-    task<T> result = from_result_detial::from_result_impl(::std::forward<Args>(args)...);
-    result.set_run_sync();
-    return result;
+    co_return r;
 }
 
 KOIOS_NAMESPACE_END

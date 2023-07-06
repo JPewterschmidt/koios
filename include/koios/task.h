@@ -19,7 +19,9 @@ struct _task
     struct [[nodiscard]] _type;
 };
 
-template<typename T, driver_policy_concept DriverPolicy>
+template<
+    typename T, 
+    driver_policy_concept DriverPolicy>
 class _task<T, DriverPolicy>::_type : public get_result_aw<T, _task<T, DriverPolicy>::_type>
 {
 public:

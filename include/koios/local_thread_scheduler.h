@@ -15,8 +15,10 @@ public:
     void enqueue(::std::coroutine_handle<> h)
     {
         m_tasks.emplace(h);
+        run();
     }
 
+private:
     void run() noexcept
     {
         while (!m_tasks.empty())

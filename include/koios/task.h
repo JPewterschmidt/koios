@@ -22,7 +22,7 @@ struct _task
 template<
     typename T, 
     driver_policy_concept DriverPolicy>
-class _task<T, DriverPolicy>::_type : public get_result_aw<T, _task<T, DriverPolicy>::_type>
+class _task<T, DriverPolicy>::_type : public get_result_aw<T, _task<T, DriverPolicy>::_type, DriverPolicy>
 {
 public:
     using value_type = T;
@@ -40,7 +40,7 @@ public:
 
 public:
     _type(promise_type& p)
-        : get_result_aw<T, _type>(p),
+        : get_result_aw<T, _type, DriverPolicy>(p),
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }
     {
     }
@@ -55,7 +55,7 @@ public:
     }
 
     _type(_type&& other) noexcept
-        : get_result_aw<T, _task<T, DriverPolicy>::_type>(::std::move(other)),
+        : get_result_aw<T, _task<T, DriverPolicy>::_type, DriverPolicy>(::std::move(other)),
           m_coro_handle{ ::std::exchange(other.m_coro_handle, nullptr) }
     {
     }
@@ -78,13 +78,13 @@ public:
     auto result()
     {
         if constexpr (::std::same_as<value_type, void>)
-            get_result_aw<T, _type>::future().get();
-        else return get_result_aw<T, _type>::future().get();
+            get_result_aw<T, _type, DriverPolicy>::future().get();
+        else return get_result_aw<T, _type, DriverPolicy>::future().get();
     }
 
     auto& future()
     {
-        return get_result_aw<T, _type>::future();
+        return get_result_aw<T, _type, DriverPolicy>::future();
     }
 
     auto move_out_coro_handle() noexcept

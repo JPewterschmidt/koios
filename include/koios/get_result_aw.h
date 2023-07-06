@@ -10,9 +10,8 @@
 
 KOIOS_NAMESPACE_BEG
 
-template<typename T, typename Task>
+template<typename T, typename Task, typename DriverPolicy>
 class get_result_aw 
-    : public virtual task_scheduler_selector
 {
 public:
     using value_type = T;
@@ -27,7 +26,7 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
-        scheduler().enqueue(
+        DriverPolicy{}.scheduler().enqueue(
             static_cast<Task*>(this)->move_out_coro_handle()
         );
     }
@@ -41,9 +40,8 @@ protected:
     promise_wrapper<value_type> m_promise;
 };
 
-template<typename Task>
-class get_result_aw<void, Task>
-    : public virtual task_scheduler_selector
+template<typename Task, typename DriverPolicy>
+class get_result_aw<void, Task, DriverPolicy>
 {
 public:
     get_result_aw(promise_wrapper<void> promise)
@@ -56,7 +54,7 @@ public:
     void await_suspend(::std::coroutine_handle<> h)
     {
         m_promise.set_caller(h);
-        scheduler().enqueue(
+        DriverPolicy{}.scheduler().enqueue(
             static_cast<Task*>(this)->move_out_coro_handle()
         );
     }

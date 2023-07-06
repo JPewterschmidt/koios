@@ -5,13 +5,11 @@
 #include <coroutine>
 
 #include "koios/macros.h"
-#include "koios/task_scheduler_selector.h"
 
 KOIOS_NAMESPACE_BEG
 
-template<typename T, typename Promise>
+template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void_base 
-    : public virtual task_scheduler_selector
 {
 public:
     void set_caller(::std::coroutine_handle<> h) noexcept { m_caller = h; }
@@ -24,31 +22,31 @@ protected:
     void wake_caller()
     {
         if (!m_caller) return;
-        scheduler().enqueue(m_caller);
+        DriverPolicy{}.scheduler().enqueue(m_caller);
     }
 };
 
-template<typename T, typename Promise>
+template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void 
-    : public return_value_or_void_base<T, Promise>
+    : public return_value_or_void_base<T, Promise, DriverPolicy>
 {
 public: 
     template<typename TT>
     void return_value(TT&& val)
     {
-        return_value_or_void_base<T, Promise>::m_promise.set_value(::std::forward<TT>(val));
-        return_value_or_void_base<T, Promise>::wake_caller();
+        return_value_or_void_base<T, Promise, DriverPolicy>::m_promise.set_value(::std::forward<TT>(val));
+        return_value_or_void_base<T, Promise, DriverPolicy>::wake_caller();
     }
 };
 
-template<typename Promise>
-class return_value_or_void<void, Promise> 
-    : public return_value_or_void_base<void, Promise>
+template<typename Promise, typename DriverPolicy>
+class return_value_or_void<void, Promise, DriverPolicy> 
+    : public return_value_or_void_base<void, Promise, DriverPolicy>
 {
 public:
     void return_void() 
     { 
-        return_value_or_void_base<void, Promise>::wake_caller(); 
+        return_value_or_void_base<void, Promise, DriverPolicy>::wake_caller(); 
     }
 };
 

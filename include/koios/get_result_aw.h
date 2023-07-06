@@ -4,7 +4,6 @@
 #include <future>
 
 #include "koios/macros.h"
-#include "koios/task_scheduler_selector.h"
 #include "koios/local_thread_scheduler.h"
 #include "koios/task_scheduler_wrapper.h"
 

@@ -29,7 +29,7 @@ public:
 
     class promise_type 
         : public promise_base, 
-          public return_value_or_void<T, promise_type>
+          public return_value_or_void<T, promise_type, DriverPolicy>
     {
     public:
         _task<T, DriverPolicy>::_type get_return_object() noexcept

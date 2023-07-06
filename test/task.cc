@@ -77,7 +77,7 @@ TEST(task, run_async)
 {
     result = 0;
     count = 0;
-    starter().run_async();
+    starter().run();
     sem.acquire();
     ASSERT_EQ(result, 10);
 }

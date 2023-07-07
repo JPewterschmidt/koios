@@ -62,6 +62,15 @@ namespace
         result = co_await for_with_scheduler();
         sem.release();
     }
+
+    async_task<void> func1() { co_return; }
+    sync_task<void> func2() { co_return; }
+}
+
+TEST(task, async_and_sync)
+{
+    func1().run();
+    func2().run();
 }
 
 TEST(task, with_scheduler)

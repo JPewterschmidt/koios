@@ -39,5 +39,4 @@ namespace
 int main()
 {
     starter().run();
-    sem.acquire();
 }

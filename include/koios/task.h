@@ -96,6 +96,7 @@ public:
 
     void run()
     {
+        if (done()) return;
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
 

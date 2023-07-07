@@ -6,6 +6,7 @@
 #include "koios/task.h"
 #include "koios/thread_pool.h"
 #include "koios/from_result.h"
+#include "koios/generator.h"
 
 #include <chrono>
 #include <thread>
@@ -20,23 +21,28 @@ namespace
     int count{};
     ::std::binary_semaphore sem{0}; 
 
-    task<int> for_with_scheduler()
-    {
-        if (++count >= 10) co_return 1;
-        ::std::cout << "count: " << count << ::std::endl;
-        co_return co_await for_with_scheduler() + 1;
-    }
+    ::std::vector<int> ivec{ 1,2,3,4,5 };
 
-    task<void> starter()
+    generator<int&> g1()
     {
-        int i = co_await from_result(10);
-        ::std::cout << i << ::std::endl;
-        co_await for_with_scheduler();
-        sem.release();
+        for (auto i : ivec)
+            co_yield i;
     }
 }
 
 int main()
 {
-    starter().run();
+    auto g = g1();
+    
+    g.move_next();
+    auto v = g.current_value();
+    fmt::print("{}\n", v);
+
+    g.move_next();
+    v = g.current_value();
+    fmt::print("{}\n", v);
+
+    g.move_next();
+    v = g.current_value();
+    fmt::print("{}\n", v);
 }

@@ -38,19 +38,20 @@ public:
         }
     };
 
-public:
+private:
     _type(promise_type& p)
         : get_result_aw<T, _type, DriverPolicy>(p),
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }
     {
     }
 
+public:
     ~_type() noexcept
     {
         if (m_coro_handle) 
         {
             m_coro_handle.destroy();
-            m_coro_handle = nullptr; // debug
+            m_coro_handle = nullptr;
         }
     }
 

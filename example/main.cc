@@ -25,6 +25,7 @@ namespace
 
     generator<int&> g1()
     {
+        co_await ::std::suspend_always{};
         for (auto i : ivec)
             co_yield i;
     }

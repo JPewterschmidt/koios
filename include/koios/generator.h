@@ -50,9 +50,11 @@ struct generator_promise_type : promise_base
         return bool(m_current_value_p);
     }
 
-    decltype(auto) value()
+    T value()
     {
-        return *m_current_value_p;
+        auto result = ::std::move(*m_current_value_p);
+        m_current_value_p = nullptr;
+        return result;
     }
 };
 
@@ -89,7 +91,7 @@ struct generator_promise_type<T&> : promise_base
     T& value()
     {
         assert(m_current_ref);
-        return *m_current_ref;
+        return *::std::exchange(m_current_ref, nullptr);
     }
 };
 
@@ -113,8 +115,13 @@ public:
     {
         auto& promise = m_coro.promise();
         if (!promise.has_value()) 
-            throw ::std::out_of_range{ "There's no next val could be retrived, call `has_value()` first!" };
-        return ::std::move(promise.value());
+        {
+            throw ::std::out_of_range{ 
+                "There's no next val could be retrived, call `has_value()` first! "
+                "Or, you may perform co_await call, it's not supported yet."
+            };
+        }
+        return promise.value();
     }
 
     _type(const _type&) = delete;

@@ -3,7 +3,8 @@ add_requires(
     "fmt", 
     "gflags", 
     "gtest", 
-    "concurrentqueue master"
+    "concurrentqueue master",
+    "benchmark"
 )
 
 target("koios")
@@ -23,6 +24,7 @@ target("test")
     add_includedirs("include")
     after_build(function (target)
         os.exec(target:targetfile())
+        print("xmake: unittest complete.")
     end)
     on_run(function (target)
         --nothing

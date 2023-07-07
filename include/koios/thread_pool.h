@@ -9,7 +9,6 @@
 #include <utility>
 #include <future>
 #include <condition_variable>
-#include <semaphore>
 
 #include "koios/macros.h"
 #include "concurrentqueue/blockingconcurrentqueue.h"
@@ -57,8 +56,6 @@ private:
     moodycamel::ConcurrentQueue<::std::function<void()>> m_tasks;
     mutable ::std::mutex m_lock;
     ::std::condition_variable m_cond;
-    ::std::counting_semaphore<> m_stop_sem{ 0 };
-    ::std::once_flag m_stop_call_guard;
     ::std::vector<::std::jthread> m_thrs;
 };
 

@@ -17,33 +17,29 @@ using namespace ::std::chrono_literals;
 
 namespace 
 {
-    int result{};
-    int count{};
-    ::std::binary_semaphore sem{0}; 
-
-    ::std::vector<int> ivec{ 1,2,3,4,5 };
-
-    generator<int&> g1()
-    {
-        co_await ::std::suspend_always{};
-        for (auto i : ivec)
-            co_yield i;
-    }
+    constinit size_t test_size{ 100000 };
+    constinit size_t pool_size{ 10 };
 }
 
 int main()
 {
-    auto g = g1();
+    thread_pool tp{ pool_size };
+    ::std::atomic_size_t count{ test_size };
+
+    for (size_t i = 0; i < test_size / 10; ++i)
+    {
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+        tp.enqueue([&]{ --count; });
+    }
     
-    g.move_next();
-    auto v = g.current_value();
-    fmt::print("{}\n", v);
-
-    g.move_next();
-    v = g.current_value();
-    fmt::print("{}\n", v);
-
-    g.move_next();
-    v = g.current_value();
-    fmt::print("{}\n", v);
+    tp.stop();
+    ::std::cout << count << ::std::endl;
 }

@@ -24,31 +24,26 @@ thread_pool::thread_pool(size_t numthr, manually_stop_type)
 
 thread_pool::~thread_pool() noexcept
 {
-    if (m_manully_stop)
-    {
-        for (auto& thr : m_thrs)
-            thr.join();
-    }
-    else quick_stop();
+    if (m_manully_stop) return;
+    quick_stop();
 }
 
 void thread_pool::stop() noexcept
 {
     if (m_numthrs == 0) return;
     m_stop_source.request_stop();
+    m_cond.notify_all();
 
-    ::std::call_once(m_stop_call_guard, [this] {
-        m_cond.notify_all();
-        for (size_t i = 0; i < m_numthrs; ++i)
-            m_stop_sem.acquire();
-    });
+    for (auto& thr : m_thrs)
+    {
+        if (thr.joinable()) thr.join();
+    }
 }
 
 void thread_pool::quick_stop() noexcept
 {
     if (m_numthrs == 0) return;
     m_stop_now.store(true, ::std::memory_order::release); // TODO
-    m_cond.notify_all();
     stop();
 }
 
@@ -67,8 +62,6 @@ void thread_pool::consumer(::std::stop_token token) noexcept
         try { task(); } catch (...) {}
     }
     while (!done(token));
-
-    m_stop_sem.release();
 }
 
 bool thread_pool::done(::std::stop_token& tk) const noexcept

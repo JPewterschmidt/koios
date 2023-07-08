@@ -7,12 +7,16 @@ add_requires(
     "benchmark"
 )
 
+add_includedirs(
+    "include",
+    "toolpex/include"
+)
+
 target("koios")
     set_kind("shared")
     add_packages("fmt", "gflags", "concurrentqueue")
     set_languages("c++20", "c17")
     add_files("src/*.cc")
-    add_includedirs("include")
 
 target("test")
     set_kind("binary")
@@ -21,7 +25,6 @@ target("test")
     add_deps("koios")
     add_files("test/*.cc")
     add_packages("gtest")
-    add_includedirs("include")
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")
@@ -37,7 +40,6 @@ target("example")
     set_languages("c++20", "c17")
     add_files("example/*.cc")
     add_packages("fmt", "gflags")
-    add_includedirs("include")
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

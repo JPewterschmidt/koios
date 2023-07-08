@@ -8,6 +8,8 @@
 #include "koios/from_result.h"
 #include "koios/generator.h"
 
+#include "toolpex/unique_resource.h"
+
 #include <chrono>
 #include <thread>
 #include <iostream>

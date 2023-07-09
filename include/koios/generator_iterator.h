@@ -12,7 +12,8 @@ namespace detial
 {
     class generator_iterator_sentinel{};
 
-    template<value_result_generator_concept G>
+    //template<generator_concept G>
+    template<typename G>
     class generator_iterator
     {
     private:
@@ -20,9 +21,10 @@ namespace detial
         using result_type = typename generator_type::result_type;
 
     public:
-        generator_iterator(generator_type g) noexcept
+        generator_iterator(generator_type& g) noexcept
             : m_generator{ g }
         {
+            m_reach_end = !m_generator.move_next();
         }
 
         generator_iterator(const generator_iterator&) = delete;
@@ -31,11 +33,15 @@ namespace detial
         generator_iterator& operator++()
         {
             m_storage = nullptr;
-            if (!m_generator.move_next())
-                m_reach_end = true;
-            m_reach_end = m_generator.has_value();
+            m_reach_end = !m_generator.move_next() || !m_generator.has_value();
 
             return *this;
+        }
+
+        generator_iterator& operator=(generator_iterator_sentinel)
+        {
+            m_storage = nullptr;
+            m_reach_end = true;
         }
 
         result_type& operator *()
@@ -59,13 +65,13 @@ namespace detial
             {
                 if (!m_generator.has_value())
                     return false;
-                m_storage = ::std::make_unique<result_type>(m_generator.value());
+                m_storage = ::std::make_unique<result_type>(m_generator.current_value());
             }
             return true;
         }
 
         template<generator_concept GG>
-        friend bool operator == (generator_iterator<GG>, generator_iterator_sentinel);
+        friend bool operator != (const generator_iterator<GG>&, const generator_iterator_sentinel&);
 
     private: 
         generator_type& m_generator;
@@ -74,9 +80,9 @@ namespace detial
     };
 
     template<generator_concept G>
-    bool operator==(generator_iterator<G> iter, generator_iterator_sentinel)
+    bool operator!=(const generator_iterator<G>& iter, const generator_iterator_sentinel&)
     {
-        return iter.m_reach_end;
+        return !iter.m_reach_end;
     }
 }
 

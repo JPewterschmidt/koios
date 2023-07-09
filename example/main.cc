@@ -13,35 +13,25 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <future>
 
-using namespace koios;
-using namespace ::std::chrono_literals;
-
-namespace 
+koios::generator<int> g(int last_val)
 {
-    constinit size_t test_size{ 100000 };
-    constinit size_t pool_size{ 10 };
+    for (int i = 1; i <= last_val; ++i)
+        co_yield i;
 }
 
 int main()
 {
-    thread_pool tp{ pool_size };
-    ::std::atomic_size_t count{ test_size };
+    auto gg = g(10);
+    int val{};
 
-    for (size_t i = 0; i < test_size / 10; ++i)
+    for (auto i = gg.begin(); i != gg.end(); ++i)
     {
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
-        tp.enqueue([&]{ --count; });
+        val = *i;
+        val = *i;
+        ::std::cout << val << ::std::endl;
     }
-    
-    tp.stop();
-    ::std::cout << count << ::std::endl;
+
+    return 0;
 }

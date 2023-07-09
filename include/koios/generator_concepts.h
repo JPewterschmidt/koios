@@ -17,12 +17,6 @@ concept generator_concept = requires(G g)
     { g.has_value() } -> ::std::same_as<bool>;
 };
 
-template<typename G>
-concept ref_result_generator_concept = generator_concept<G> && ::std::is_reference_v<typename G::result_type>;
-
-template<typename G>
-concept value_result_generator_concept = generator_concept<G> && !::std::is_reference_v<typename G::result_type>;
-
 KOIOS_NAMESPACE_END
 
 #endif

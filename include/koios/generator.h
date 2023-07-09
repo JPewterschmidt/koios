@@ -57,57 +57,25 @@ struct generator_promise_type : promise_base
         m_current_value_p = nullptr;
         return result;
     }
-};
 
-template<typename T>
-struct generator_promise_type<T&> : promise_base
-{
-    using handle_type = ::std::coroutine_handle<generator_promise_type<T&>>;
-
-    T* m_current_ref{ nullptr };
-
-    static _generator<T&>::_type get_return_object_on_allocation_failure()
-    {
-        return { handle_type{} };
-    }
-
-    _generator<T&>::_type get_return_object()
-    {
-        return { handle_type::from_promise(*this) };
-    }
-
-    constexpr void return_void() const noexcept {}
-
-    auto yield_value(T& ref) noexcept
-    {
-        m_current_ref = &ref;
-        return ::std::suspend_always{};
-    }
-
-    bool has_value() const noexcept
-    {
-        return bool(m_current_ref);
-    }
-
-    T& value()
-    {
-        assert(m_current_ref);
-        return *::std::exchange(m_current_ref, nullptr);
-    }
+    void clear() noexcept { m_current_value_p.reset(); }
 };
 
 template<typename T>
 class _generator<T>::_type
 {
+    static_assert(!::std::is_reference_v<T>, "The `result_type` of generator could not be a reference!");
 public:
     friend class generator_promise_type<T>;
     using promise_type = generator_promise_type<T>;
     using result_type = T;
+    using iterator = detial::generator_iterator<_generator<T>::_type>;
 
     bool move_next()
     {
         if (m_coro == nullptr) [[unlikely]]
             return false;
+        m_coro.promise().clear();
         return (m_coro.resume(), !m_coro.done());
     }
 
@@ -132,6 +100,13 @@ public:
     {
     }
 
+    _type& operator = (_type&& other) noexcept
+    {
+        if (m_coro) [[likely]] m_coro.destroy();
+        m_coro = ::std::exchange(other.m_coro, nullptr);
+        return *this;
+    }
+
     ~_type() noexcept
     {
         if (m_coro) 
@@ -140,6 +115,9 @@ public:
             m_coro = nullptr;
         }
     }
+
+    iterator begin() noexcept { return { *this }; }
+    constexpr detial::generator_iterator_sentinel end() const noexcept { return {}; };
 
 private:
     _type(::std::coroutine_handle<promise_type> h) 

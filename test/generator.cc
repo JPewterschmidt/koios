@@ -6,34 +6,16 @@ using namespace koios;
 
 namespace
 {
-    const ::std::vector<int> ivec{ 1,2,3,4,5 };
-
-    generator<int&> g1()
+    generator<int> g1(int last_val)
     {
-        for (auto i : ivec) co_yield i;
+        for (int i = 1; i <= last_val; ++i)
+            co_yield i;
     }
 
     generator<int> g2()
     {
         for (int i{};; co_yield i++);
     }
-}
-
-TEST(generator, return_ref)
-{
-    auto g = g1();
-    
-    g.move_next();
-    auto v = g.current_value();
-    ASSERT_EQ(v, ivec[0]);
-
-    g.move_next();
-    v = g.current_value();
-    ASSERT_EQ(v, ivec[1]);
-
-    g.move_next();
-    v = g.current_value();
-    ASSERT_EQ(v, ivec[2]);
 }
 
 TEST(generator, return_value)
@@ -51,5 +33,28 @@ TEST(generator, return_value)
     g.move_next();
     v = g.current_value();
     ASSERT_EQ(v, 2);
+}
+
+TEST(generator_iterator, ranged_for)
+{
+    auto g = g1(10);
+    int count{1};
+    
+    for (const auto& i : g)
+        ASSERT_EQ(count++, i);
+}
+
+TEST(generator_iterator, multi_dereference)
+{
+    auto g = g1(10);
+
+    int val1, val2;
+    for (auto iter = g.begin(); iter != g.end(); ++iter)
+    {
+        val1 = *iter;
+        val2 = *iter;
+
+        ASSERT_EQ(val1, val2);
+    }
 }
 

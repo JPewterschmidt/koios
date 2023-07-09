@@ -1,5 +1,5 @@
-#ifndef KOIOs_GENERATOR_H
-#define KOIOs_GENERATOR_H
+#ifndef KOIOS_GENERATOR_H
+#define KOIOS_GENERATOR_H
 
 #include <coroutine>
 #include <memory>
@@ -10,6 +10,7 @@
 #include "koios/macros.h"
 #include "koios/promise_base.h"
 #include "koios/driver_policy.h"
+#include "koios/generator_iterator.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -101,6 +102,7 @@ class _generator<T>::_type
 public:
     friend class generator_promise_type<T>;
     using promise_type = generator_promise_type<T>;
+    using result_type = T;
 
     bool move_next()
     {

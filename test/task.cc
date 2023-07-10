@@ -34,7 +34,6 @@ namespace
 task<void> for_basic_test()
 {
     flag = 1;
-    sem.release();
     co_return;
 }
 
@@ -50,20 +49,22 @@ task<int&> for_basic_test3()
 
 TEST(task, basic)
 {
-    for_basic_test().run();
-    sem.acquire();
+    auto t1 = for_basic_test();
+    auto& f1 = t1.future();
+    t1.run();
+    f1.get();
     ASSERT_EQ(flag, 1);
 
     auto t2 = for_basic_test2();
-    auto& f = t2.future();
+    auto& f2 = t2.future();
     t2.run();
-    ASSERT_EQ(f.get(), 2);
+    ASSERT_EQ(f2.get(), 2);
     
     ASSERT_EQ(referd_obj, 0);
     auto t3 = for_basic_test3();
-    auto& f2 = t3.future();
+    auto& f3 = t3.future();
     t3.run();
-    int& ref = f2.get();
+    int& ref = f3.get();
     ref = 100;
     ASSERT_EQ(referd_obj, 100);
 }

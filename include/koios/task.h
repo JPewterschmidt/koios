@@ -2,6 +2,7 @@
 #define KOIOS_TASK_H
 
 #include <utility>
+#include <memory>
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
@@ -28,7 +29,7 @@ public:
     using value_type = T;
 
     class promise_type 
-        : public promise_base, 
+        : public promise_base<>, 
           public return_value_or_void<T, promise_type, DriverPolicy>
     {
     public:
@@ -79,6 +80,12 @@ public:
 
     auto& future()
     {
+        if (!m_need_destroy_in_dtor)
+            throw ::std::logic_error{ "You should call `future()` before `run()`" };
+
+        // prevent the `::std::promise` object being destroied by `coro.destroy()`
+        m_std_promise_p = m_coro_handle.promise().get_std_promise_pointer();
+
         return get_result_aw<T, _type, DriverPolicy>::future();
     }
 
@@ -97,6 +104,7 @@ public:
 
 private:
     ::std::coroutine_handle<promise_type> m_coro_handle;
+    ::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
     bool m_need_destroy_in_dtor{ true };
 };
 

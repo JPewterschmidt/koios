@@ -4,6 +4,7 @@
 #include "macros.h"
 #include <coroutine>
 #include <future>
+#include <memory>
 
 KOIOS_NAMESPACE_BEG
 

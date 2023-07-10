@@ -20,18 +20,8 @@ struct _generator
     struct [[nodiscard]] _type;
 };
 
-class generator_promise_base
-{
-public:
-    constexpr ::std::suspend_always initial_suspend() const noexcept
-        { return {}; }
-    constexpr ::std::suspend_always final_suspend() const noexcept
-        { return {}; }
-    void unhandled_exception() const { throw; }
-};
-
 template<typename T>
-struct generator_promise_type : generator_promise_base
+struct generator_promise_type : promise_base<::std::suspend_always>
 {
     using handle_type = ::std::coroutine_handle<generator_promise_type<T>>;
 

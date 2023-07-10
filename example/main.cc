@@ -2,6 +2,7 @@
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
+#include "glog/logging.h"
 
 #include "koios/task.h"
 #include "koios/thread_pool.h"
@@ -40,6 +41,7 @@ koios::task<int> task1(int count = 0)
     {
         co_return 1;
     }
+    LOG(INFO) << "fuck";
     co_return co_await task1(count + 1);
 }
 
@@ -65,12 +67,25 @@ namespace
     sync_task<void> func2() { co_return; }
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    google::InitGoogleLogging(argv[0]);
+    
     for (size_t i{}; i < 100000; ++i)
+    {
         task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+        task1().run();
+    }
 
+    
     get_task_scheduler().stop();
-
     return 0;
 }

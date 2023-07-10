@@ -1,4 +1,4 @@
-add_rules("mode.asan", "mode.debug", "mode.release")
+add_rules("mode.tsan", "mode.ubsan", "mode.asan", "mode.debug", "mode.release")
 add_requires(
     "fmt", 
     "gflags", 
@@ -18,7 +18,8 @@ target("koios")
     add_packages(
         "fmt", 
         "gflags", 
-        "concurrentqueue"
+        "concurrentqueue",
+        "glog"
     )
     set_languages("c++20", "c17")
     add_files("src/*.cc")

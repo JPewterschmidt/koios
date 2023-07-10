@@ -28,7 +28,7 @@ public:
     using value_type = T;
 
     class promise_type 
-        : public promise_base, 
+        : public promise_base<>, 
           public return_value_or_void<T, promise_type, DriverPolicy>
     {
     public:

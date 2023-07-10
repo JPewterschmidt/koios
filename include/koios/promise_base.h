@@ -18,12 +18,13 @@ public:
     constexpr void await_resume() const noexcept { }
 };
 
+template<typename FinalSuspendAwaitable = destroy_aw>
 class promise_base
 {
 public:
     constexpr ::std::suspend_always initial_suspend() const noexcept
         { return {}; }
-    constexpr destroy_aw final_suspend() const noexcept
+    constexpr FinalSuspendAwaitable final_suspend() const noexcept
         { return {}; }
     void unhandled_exception() const { throw; }
 };

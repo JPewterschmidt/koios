@@ -7,7 +7,6 @@
 #include "koios/macros.h"
 #include "koios/task_concepts.h"
 #include "koios/thread_pool.h"
-#include "koios/tiny_task.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -33,14 +32,8 @@ public:
     {
         if (h) [[likely]]
         {
-            //tiny_task tt{ h };
-            //thread_pool::enqueue([tt = ::std::move(tt)]() noexcept { 
             thread_pool::enqueue([h]() noexcept { 
-                try 
-                { 
-                    //tt(); 
-                    h(); 
-                } 
+                try { h(); } 
                 catch (...) {}
             });
         }

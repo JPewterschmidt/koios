@@ -32,7 +32,7 @@ public:
     {
         if (h) [[likely]]
         {
-            thread_pool::enqueue([h]() noexcept { 
+            thread_pool::enqueue_no_future([h]() noexcept { 
                 try { h(); } 
                 catch (...) {}
             });

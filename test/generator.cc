@@ -48,7 +48,7 @@ TEST(generator_iterator, multi_dereference)
 {
     auto g = g1(10);
 
-    int val1, val2;
+    int val1{}, val2{};
     for (auto iter = g.begin(); iter != g.end(); ++iter)
     {
         val1 = *iter;

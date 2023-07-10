@@ -5,7 +5,6 @@
 #include <queue>
 
 #include "koios/macros.h"
-#include "koios/tiny_task.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -23,14 +22,14 @@ private:
     {
         while (!m_tasks.empty())
         {
-            tiny_task t = ::std::move(m_tasks.front());
+            auto h = ::std::move(m_tasks.front());
             m_tasks.pop();
-            try { t(); } catch (...) {}
+            try { h(); } catch (...) {}
         }
     }
 
 private:
-    ::std::queue<tiny_task> m_tasks;
+    ::std::queue<::std::coroutine_handle<>> m_tasks;
 };
 
 KOIOS_NAMESPACE_END

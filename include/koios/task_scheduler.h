@@ -33,11 +33,13 @@ public:
     {
         if (h) [[likely]]
         {
-            tiny_task tt{ h };
-            thread_pool::enqueue([tt = ::std::move(tt)]() noexcept { 
+            //tiny_task tt{ h };
+            //thread_pool::enqueue([tt = ::std::move(tt)]() noexcept { 
+            thread_pool::enqueue([h]() noexcept { 
                 try 
                 { 
-                    tt(); 
+                    //tt(); 
+                    h(); 
                 } 
                 catch (...) {}
             });

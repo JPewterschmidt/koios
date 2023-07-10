@@ -10,12 +10,20 @@
 
 KOIOS_NAMESPACE_BEG
 
+class destroy_aw 
+{
+public:
+    constexpr bool await_ready() const noexcept { return false; }
+    void await_suspend(::std::coroutine_handle<> h) const noexcept { h.destroy(); }
+    constexpr void await_resume() const noexcept { }
+};
+
 class promise_base
 {
 public:
     constexpr ::std::suspend_always initial_suspend() const noexcept
         { return {}; }
-    constexpr ::std::suspend_always final_suspend() const noexcept
+    constexpr destroy_aw final_suspend() const noexcept
         { return {}; }
     void unhandled_exception() const { throw; }
 };

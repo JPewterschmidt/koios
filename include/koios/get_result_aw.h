@@ -2,6 +2,7 @@
 #define KOIOS_GET_RESULT_AW_H
 
 #include <future>
+#include <memory>
 
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
@@ -16,8 +17,7 @@ public:
     using value_type = T;
 
     get_result_aw(promise_wrapper<value_type> promise)
-        : m_future{ promise.get_future() }, 
-          m_promise{ ::std::move(promise) }
+        : m_future{ promise.get_future() }, m_promise{ ::std::move(promise) }
     {
     }
     
@@ -44,8 +44,7 @@ class get_result_aw<void, Task, DriverPolicy>
 {
 public:
     get_result_aw(promise_wrapper<void> promise)
-        : m_future{ promise.get_future() }, 
-          m_promise{ ::std::move(promise) }
+        : m_future{ promise.get_future() }, m_promise{ ::std::move(promise) }
     {
     }
 

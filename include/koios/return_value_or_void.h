@@ -3,6 +3,8 @@
 
 #include <future>
 #include <coroutine>
+#include <memory>
+#include <utility>
 
 #include "koios/macros.h"
 
@@ -13,10 +15,11 @@ class return_value_or_void_base
 {
 public:
     void set_caller(::std::coroutine_handle<> h) noexcept { m_caller = h; }
-    auto get_future() { return m_promise.get_future(); }
+    auto get_future() { return m_promise_p->get_future(); }
+    auto get_std_promise_pointer() { return m_promise_p; }
 
 protected:
-    ::std::promise<T> m_promise;
+    ::std::shared_ptr<::std::promise<T>> m_promise_p{ new ::std::promise<T>{} };
     ::std::coroutine_handle<> m_caller{};
 
     void wake_caller()
@@ -34,7 +37,7 @@ public:
     template<typename TT>
     void return_value(TT&& val)
     {
-        return_value_or_void_base<T, Promise, DriverPolicy>::m_promise.set_value(::std::forward<TT>(val));
+        return_value_or_void_base<T, Promise, DriverPolicy>::m_promise_p->set_value(::std::forward<TT>(val));
         return_value_or_void_base<T, Promise, DriverPolicy>::wake_caller();
     }
 };
@@ -46,6 +49,7 @@ class return_value_or_void<void, Promise, DriverPolicy>
 public:
     void return_void() 
     { 
+        return_value_or_void_base<void, Promise, DriverPolicy>::m_promise_p->set_value(); 
         return_value_or_void_base<void, Promise, DriverPolicy>::wake_caller(); 
     }
 };

@@ -14,6 +14,10 @@
 #include <thread>
 #include <iostream>
 #include <future>
+#include <ranges>
+#include <iterator>
+
+using namespace koios;
 
 koios::generator<int> g(int last_val)
 {
@@ -21,17 +25,52 @@ koios::generator<int> g(int last_val)
         co_yield i;
 }
 
+void func(::std::ranges::range auto& r)
+{
+    for (const auto& i : r)
+    {
+        ::std::cout << i << ::std::endl;
+    }
+}
+
+
+koios::task<int> task1(int count = 0)
+{
+    if (count == 10) 
+    {
+        co_return 1;
+    }
+    co_return co_await task1(count + 1);
+}
+
+namespace 
+{
+    int result{};
+    int count{};
+    ::std::binary_semaphore sem{0}; 
+
+    task<int> for_with_scheduler()
+    {
+        if (++count >= 10) co_return 1;
+        co_return co_await for_with_scheduler() + 1;
+    }
+
+    task<void> starter()
+    {
+        result = co_await for_with_scheduler();
+        sem.release();
+    }
+
+    async_task<void> func1() { co_return; }
+    sync_task<void> func2() { co_return; }
+}
+
 int main()
 {
-    auto gg = g(10);
-    int val{};
+    for (size_t i{}; i < 100000; ++i)
+        task1().run();
 
-    for (auto i = gg.begin(); i != gg.end(); ++i)
-    {
-        val = *i;
-        val = *i;
-        ::std::cout << val << ::std::endl;
-    }
+    get_task_scheduler().stop();
 
     return 0;
 }

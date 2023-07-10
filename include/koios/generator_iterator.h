@@ -2,6 +2,8 @@
 #define KOIOS_GENERATOR_ITERATOR_H
 
 #include <memory>
+#include <cstddef>
+#include <iterator>
 
 #include "koios/macros.h"
 #include "koios/generator_concepts.h"
@@ -20,6 +22,12 @@ namespace detial
         using generator_type = G;
         using result_type = typename generator_type::result_type;
 
+        using difference_type = ::std::size_t;
+        using value_type = result_type;
+        using pointer = value_type*;
+        using reference = value_type&;
+        using iterator_category = ::std::forward_iterator_tag;
+
     public:
         generator_iterator(generator_type& g) noexcept
             : m_generator{ g }
@@ -37,6 +45,8 @@ namespace detial
 
             return *this;
         }
+
+        void operator++(int) { operator++(); }
 
         generator_iterator& operator=(generator_iterator_sentinel)
         {

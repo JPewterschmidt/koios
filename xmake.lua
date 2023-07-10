@@ -1,10 +1,11 @@
-add_rules("mode.debug", "mode.release")
+add_rules("mode.asan", "mode.debug", "mode.release")
 add_requires(
     "fmt", 
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark"
+    "benchmark",
+    "glog"
 )
 
 add_includedirs(
@@ -14,7 +15,11 @@ add_includedirs(
 
 target("koios")
     set_kind("shared")
-    add_packages("fmt", "gflags", "concurrentqueue")
+    add_packages(
+        "fmt", 
+        "gflags", 
+        "concurrentqueue"
+    )
     set_languages("c++20", "c17")
     add_files("src/*.cc")
 
@@ -35,11 +40,11 @@ target("test")
     
 target("example")
     set_kind("binary")
-    add_packages("concurrentqueue")
+    add_packages("concurrentqueue", "spdlog")
     add_deps("koios")
     set_languages("c++20", "c17")
     add_files("example/*.cc")
-    add_packages("fmt", "gflags")
+    add_packages("fmt", "gflags", "glog")
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

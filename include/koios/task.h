@@ -48,25 +48,19 @@ private:
 public:
     ~_type() noexcept
     {
-        if (m_coro_handle) 
-        {
-            m_coro_handle.destroy();
-            m_coro_handle = nullptr;
-        }
+        if (m_need_destroy_in_dtor && m_coro_handle) [[unlikely]] m_coro_handle.destroy();
     }
 
     _type(_type&& other) noexcept
         : get_result_aw<T, _task<T, DriverPolicy>::_type, DriverPolicy>(::std::move(other)),
-          m_coro_handle{ ::std::exchange(other.m_coro_handle, nullptr) }
+          m_coro_handle{ other.m_coro_handle }, 
+          m_need_destroy_in_dtor{ ::std::exchange(other.m_need_destroy_in_dtor, false) }
     {
     }
 
     void operator()() 
     {
-        if (m_coro_handle) [[likely]]
-        {
-            m_coro_handle();
-        }
+        run();
     }
 
     bool done() const noexcept 
@@ -97,12 +91,13 @@ public:
 
     void run()
     {
-        if (done()) return;
+        if (!::std::exchange(m_need_destroy_in_dtor, false)) return;
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
 
 private:
     ::std::coroutine_handle<promise_type> m_coro_handle;
+    bool m_need_destroy_in_dtor{ true };
 };
 
 template<typename T>

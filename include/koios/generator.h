@@ -20,8 +20,18 @@ struct _generator
     struct [[nodiscard]] _type;
 };
 
+class generator_promise_base
+{
+public:
+    constexpr ::std::suspend_always initial_suspend() const noexcept
+        { return {}; }
+    constexpr ::std::suspend_always final_suspend() const noexcept
+        { return {}; }
+    void unhandled_exception() const { throw; }
+};
+
 template<typename T>
-struct generator_promise_type : promise_base
+struct generator_promise_type : generator_promise_base
 {
     using handle_type = ::std::coroutine_handle<generator_promise_type<T>>;
 
@@ -69,11 +79,10 @@ public:
     friend class generator_promise_type<T>;
     using promise_type = generator_promise_type<T>;
     using result_type = T;
-    using iterator = detial::generator_iterator<_generator<T>::_type>;
 
     bool move_next()
     {
-        if (m_coro == nullptr) [[unlikely]]
+        if (m_coro == nullptr)
             return false;
         m_coro.promise().clear();
         return (m_coro.resume(), !m_coro.done());
@@ -116,9 +125,6 @@ public:
         }
     }
 
-    iterator begin() noexcept { return { *this }; }
-    constexpr detial::generator_iterator_sentinel end() const noexcept { return {}; };
-
 private:
     _type(::std::coroutine_handle<promise_type> h) 
         : m_coro{ h } 
@@ -126,7 +132,13 @@ private:
     }
 
     ::std::coroutine_handle<promise_type> m_coro;
+
+public:
+    using iterator = detial::generator_iterator<_generator<T>::_type>;
+    iterator begin() noexcept { return { *this }; }
+    constexpr detial::generator_iterator_sentinel end() const noexcept { return {}; };
 };
+
 
 template<typename T>
 using generator = typename _generator<T>::_type;

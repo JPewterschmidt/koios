@@ -51,7 +51,7 @@ task<void> for_basic_test()
     co_return;
 }
 
-task<int> for_basic_test2()
+nodiscard_task<int> for_basic_test2()
 {
     co_return 2;
 }
@@ -63,5 +63,5 @@ task<int&> for_basic_test3()
 
 int main(int argc, char** argv)
 {
-    
+    for_basic_test2().run_with_future();   
 }

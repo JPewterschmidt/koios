@@ -3,6 +3,10 @@
 
 #include <utility>
 #include <memory>
+#include <source_location>
+#include <mutex>
+
+#include "fmt/format.h"
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
@@ -76,41 +80,43 @@ public:
         return true;
     }
 
-    auto& future()
+    [[nodiscard]] auto& future()
     {
         if (has_scheduled())
             throw ::std::logic_error{ "You should call `future()` before `run()`" };
 
-        // prevent the `::std::promise` object being destroied by `coro.destroy()`
-        m_std_promise_p = m_coro_handle.promise().get_std_promise_pointer();
+        ::std::call_once(
+            m_std_promise_p_guard, 
+            // prevent the `::std::promise` object being destroied by `coro.destroy()`
+            [this]{ m_std_promise_p = m_coro_handle.promise().get_std_promise_pointer(); }
+        );
 
         return get_result_aw<T, _type, DriverPolicy>::future();
     }
 
-    auto move_out_coro_handle() noexcept
+    [[nodiscard]] auto move_out_coro_handle() noexcept
     {
         return ::std::exchange(m_coro_handle, nullptr);
     }
 
-    // ================== user friendly
-
     void run()
     {
-        if constexpr (!is_discardable())
-        {
-            if (!has_got_future())
-            {
-                throw ::std::logic_error{ 
-                    "This task is non-discardable task, "
-                    "You have too get this future object before run it!" 
-                };
-            }
-        }
+        static_assert(is_discardable(), 
+                      "This is an non-discardable task, "
+                      "you should call `run_with_future()` nor `run()`.");
         if (!::std::exchange(m_need_destroy_in_dtor, false)) return;
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
 
-    [[nodiscard]] static constexpr bool is_discardable() 
+    [[nodiscard]] auto& run_with_future()
+    {
+        auto& result = future();
+        if (!::std::exchange(m_need_destroy_in_dtor, false)) return future();
+        DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
+        return result;
+    }
+
+    [[nodiscard]] static consteval bool is_discardable() 
     {
         return ::std::same_as<Discardable, discardable>;
     }
@@ -122,6 +128,7 @@ private:
 private:
     ::std::coroutine_handle<promise_type> m_coro_handle;
     ::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
+    ::std::once_flag m_std_promise_p_guard;
     bool m_need_destroy_in_dtor{ true };
 };
 

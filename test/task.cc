@@ -31,7 +31,11 @@ namespace
     {
         co_return 1;
     }
-
+    
+    nodiscard_task<int> for_nodiscard()
+    {
+        co_return 1;
+    }
 }
 
 TEST(task, basic)
@@ -64,3 +68,7 @@ TEST(task, sync_task)
     ASSERT_EQ(f.get(), 1);
 }
 
+TEST(task, nodiscard)
+{
+    ASSERT_EQ(for_nodiscard().run_with_future().get(), 1);
+}

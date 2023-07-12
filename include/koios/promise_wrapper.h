@@ -32,8 +32,8 @@ public:
 
 private:
     void* const m_promise;
-    void (*m_set_caller_impl)(void*, ::std::coroutine_handle<>);
-    ::std::future<T> (*m_get_future_impl)(void*);
+    void (* const m_set_caller_impl)(void*, ::std::coroutine_handle<>);
+    ::std::future<T> (* const m_get_future_impl)(void*);
 };
 
 KOIOS_NAMESPACE_END

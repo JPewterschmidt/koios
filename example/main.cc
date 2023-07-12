@@ -63,18 +63,5 @@ task<int&> for_basic_test3()
 
 int main(int argc, char** argv)
 {
-    auto t1 = for_basic_test();
-    auto& f1 = t1.future();
-    t1.run();
-    f1.get();
-
-    auto t2 = for_basic_test2();
-    auto& f2 = t2.future();
-    t2.run();
     
-    auto t3 = for_basic_test3();
-    auto& f3 = t3.future();
-    t3.run();
-    int& ref = f3.get();
-    ref = 100;
 }

@@ -13,7 +13,7 @@ concept task_concept = requires(T t)
 {
     { t.move_out_coro_handle() } -> ::std::convertible_to<::std::coroutine_handle<>>;
     { t() };
-    { t.result() };
+    { t.future() };
 };
 
 KOIOS_NAMESPACE_END

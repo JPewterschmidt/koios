@@ -1,4 +1,8 @@
-add_rules("mode.tsan", "mode.ubsan", "mode.asan", "mode.debug", "mode.release")
+add_rules(
+    "mode.tsan", "mode.ubsan", "mode.asan", 
+    "mode.debug", "mode.release"
+)
+
 add_requires(
     "fmt", 
     "gflags", 
@@ -22,6 +26,7 @@ target("koios")
         "glog"
     )
     set_languages("c++20", "c17")
+    set_warnings("all", "error")
     add_files("src/*.cc")
 
 target("test")

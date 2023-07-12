@@ -1,13 +1,13 @@
 #ifndef KOIOS_THREAD_POOL_H
 #define KOIOS_THREAD_POOL_H
 
-#include <functional>
 #include <thread>
 #include <vector>
 #include <memory>
-#include <stop_token>
-#include <utility>
 #include <future>
+#include <utility>
+#include <stop_token>
+#include <functional>
 #include <condition_variable>
 
 #include "koios/macros.h"
@@ -37,6 +37,14 @@ public:
         m_cond.notify_one();
 
         return result;
+    }
+
+    template<typename F, typename... Args>
+    auto enqueue_no_future(F&& func, Args&&... args)
+    {
+        auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
+        m_tasks.enqueue([task = ::std::move(task)]{ task(); });
+        m_cond.notify_one();
     }
     
     void stop() noexcept;

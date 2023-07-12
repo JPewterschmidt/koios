@@ -73,9 +73,8 @@ namespace detial
         {
             if (!m_storage)
             {
-                if (!m_generator.has_value())
-                    return false;
-                m_storage = ::std::make_unique<result_type>(m_generator.current_value());
+                m_storage.swap(m_generator.current_value_storage());
+                return bool(m_storage);
             }
             return true;
         }

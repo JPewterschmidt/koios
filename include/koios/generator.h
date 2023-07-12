@@ -53,10 +53,11 @@ struct generator_promise_type : promise_base<::std::suspend_always>
 
     T value()
     {
-        auto result = ::std::move(*m_current_value_p);
-        m_current_value_p = nullptr;
-        return result;
+        auto resultp = ::std::move(m_current_value_p);
+        return ::std::move(*resultp);
     }
+
+    auto& value_storage() noexcept { return m_current_value_p; }
 
     void clear() noexcept { m_current_value_p.reset(); }
 };
@@ -93,27 +94,29 @@ public:
         return promise.value();
     }
 
+    auto& current_value_storage()
+    {
+        return m_coro.promise().value_storage();
+    }
+
     _type(const _type&) = delete;
     _type(_type&& other) noexcept
-        : m_coro{ ::std::exchange(other.m_coro, nullptr) }
+        : m_coro{ ::std::exchange(other.m_coro, nullptr) }, 
+          m_need_destroy_in_dtor{ ::std::exchange(other.m_need_destroy_in_dtor, false) }
     {
     }
 
     _type& operator = (_type&& other) noexcept
     {
-        if (m_coro) [[likely]] m_coro.destroy();
+        destroy_current_coro();
+
         m_coro = ::std::exchange(other.m_coro, nullptr);
+        m_need_destroy_in_dtor = ::std::exchange(other.m_need_destroy_in_dtor, false);
+
         return *this;
     }
 
-    ~_type() noexcept
-    {
-        if (m_coro) 
-        {
-            m_coro.destroy();
-            m_coro = nullptr;
-        }
-    }
+    ~_type() noexcept { destroy_current_coro(); }
 
 private:
     _type(::std::coroutine_handle<promise_type> h) 
@@ -121,7 +124,14 @@ private:
     {
     }
 
+    void destroy_current_coro() noexcept
+    {
+        if (::std::exchange(m_need_destroy_in_dtor, false)) [[likely]]
+            m_coro.destroy();
+    }
+
     ::std::coroutine_handle<promise_type> m_coro;
+    bool m_need_destroy_in_dtor{ true };
 
 public:
     using iterator = detial::generator_iterator<_generator<T>::_type>;

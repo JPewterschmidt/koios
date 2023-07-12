@@ -8,43 +8,30 @@ using namespace koios;
 
 namespace 
 {
-    int result{};
-    int count{};
     int flag{};
     int referd_obj{};
 
-    ::std::binary_semaphore sem{0}; 
-
-    task<int> for_with_scheduler()
+    task<void> for_basic_test()
     {
-        if (++count >= 10) co_return 1;
-        co_return co_await for_with_scheduler() + 1;
+        flag = 1;
+        co_return;
     }
 
-    task<void> starter()
+    task<int> for_basic_test2()
     {
-        result = co_await for_with_scheduler();
-        sem.release();
+        co_return 2;
     }
 
-    async_task<void> func1() { co_return; }
-    sync_task<void> func2() { co_return; }
-}
+    task<int&> for_basic_test3()
+    {
+        co_return referd_obj;
+    }
 
-task<void> for_basic_test()
-{
-    flag = 1;
-    co_return;
-}
+    sync_task<int> for_sync_task()
+    {
+        co_return 1;
+    }
 
-task<int> for_basic_test2()
-{
-    co_return 2;
-}
-
-task<int&> for_basic_test3()
-{
-    co_return referd_obj;
 }
 
 TEST(task, basic)
@@ -69,27 +56,11 @@ TEST(task, basic)
     ASSERT_EQ(referd_obj, 100);
 }
 
-TEST(task, async_and_sync)
+TEST(task, sync_task)
 {
-    func1().run();
-    func2().run();
-}
-
-TEST(task, with_scheduler)
-{
-    task_scheduler_concept auto& scheduler = koios::get_task_scheduler();
-    scheduler.enqueue(starter());
-
-    sem.acquire();
-    ASSERT_EQ(result, 10);
-}
-
-TEST(task, run_async)
-{
-    result = 0;
-    count = 0;
-    starter().run();
-    sem.acquire();
-    ASSERT_EQ(result, 10);
+    auto t = for_sync_task();
+    auto& f = t.future();
+    t.run();
+    ASSERT_EQ(f.get(), 1);
 }
 

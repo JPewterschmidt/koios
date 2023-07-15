@@ -23,6 +23,7 @@ public:
     void set_caller(::std::coroutine_handle<> h) 
     {
         m_set_caller_impl(m_promise, h);
+        m_caller_set = true;
     }
     
     ::std::future<T> get_future()
@@ -30,10 +31,13 @@ public:
         return m_get_future_impl(m_promise);
     }
 
+    bool caller_set() const noexcept { return m_caller_set; }
+
 private:
     void* const m_promise;
     void (* const m_set_caller_impl)(void*, ::std::coroutine_handle<>);
     ::std::future<T> (* const m_get_future_impl)(void*);
+    bool m_caller_set{};
 };
 
 KOIOS_NAMESPACE_END

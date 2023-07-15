@@ -1,4 +1,5 @@
 #include <vector>
+#include <functional>
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
@@ -53,6 +54,7 @@ task<void> for_basic_test()
 
 nodiscard_task<int> for_basic_test2()
 {
+    unsigned char buffer[1024];
     co_return 2;
 }
 
@@ -63,5 +65,10 @@ task<int&> for_basic_test3()
 
 int main(int argc, char** argv)
 {
-    for_basic_test2().run_with_future();   
+    ::std::future<int> f;
+    {
+        f = for_basic_test2().run_and_get_future();
+    }
+    int i = f.get();
+    ::std::cout << i << ::std::endl;
 }

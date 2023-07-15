@@ -3,6 +3,7 @@
 
 #include <future>
 #include <memory>
+#include <cassert>
 
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
@@ -11,16 +12,17 @@
 KOIOS_NAMESPACE_BEG
 
 template<typename T, typename Task, typename DriverPolicy>
-class get_result_aw 
+class get_result_aw_base
 {
 public:
     using value_type = T;
 
-    get_result_aw(promise_wrapper<value_type> promise)
-        : m_future{ promise.get_future() }, m_promise{ ::std::move(promise) }
+    get_result_aw_base(promise_wrapper<value_type> p)
+        : m_promise{ ::std::move(p) }, 
+          m_future{ m_promise.get_future() }
     {
     }
-    
+
     constexpr bool await_ready() const noexcept { return false; }
     void await_suspend(::std::coroutine_handle<> h)
     {
@@ -30,40 +32,42 @@ public:
         );
     }
 
-    decltype(auto) await_resume() noexcept { return m_future.get(); }
-
-    auto& future() noexcept { return m_future; }
+    auto get_future() noexcept 
+    { 
+        // For which scheduled by user call `task::run()` or `task::run_and_get_future()` directly.
+        assert(!m_promise.caller_set());
+        return ::std::move(m_future); 
+    }
 
 protected:
-    ::std::future<T> m_future;
     promise_wrapper<value_type> m_promise;
+    ::std::future<T> m_future;
+};
+
+template<typename T, typename Task, typename DriverPolicy>
+class get_result_aw : public get_result_aw_base<T, Task, DriverPolicy>
+{
+public:
+    using value_type = T;
+
+    get_result_aw(promise_wrapper<value_type> promise)
+        : get_result_aw_base<T, Task, DriverPolicy>{ ::std::move(promise) }
+    {
+    }
+    
+    decltype(auto) await_resume() noexcept { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
 };
 
 template<typename Task, typename DriverPolicy>
-class get_result_aw<void, Task, DriverPolicy>
+class get_result_aw<void, Task, DriverPolicy> : public get_result_aw_base<void, Task, DriverPolicy>
 {
 public:
     get_result_aw(promise_wrapper<void> promise)
-        : m_future{ promise.get_future() }, m_promise{ ::std::move(promise) }
+        : get_result_aw_base<void, Task, DriverPolicy>{ ::std::move(promise) }
     {
-    }
-
-    constexpr bool await_ready() const { return false; }
-    void await_suspend(::std::coroutine_handle<> h)
-    {
-        m_promise.set_caller(h);
-        DriverPolicy{}.scheduler().enqueue(
-            static_cast<Task*>(this)->move_out_coro_handle()
-        );
     }
 
     constexpr void await_resume() const noexcept {}
-
-    auto& future() noexcept { return m_future; }
-
-protected:
-    ::std::future<void> m_future;
-    promise_wrapper<void> m_promise;
 };
 
 KOIOS_NAMESPACE_END

@@ -80,10 +80,10 @@ public:
         return true;
     }
 
-    [[nodiscard]] auto& future()
+    [[nodiscard]] auto get_future()
     {
         if (has_scheduled())
-            throw ::std::logic_error{ "You should call `future()` before `run()`" };
+            throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
 
         ::std::call_once(
             m_std_promise_p_guard, 
@@ -91,7 +91,7 @@ public:
             [this]{ m_std_promise_p = m_coro_handle.promise().get_std_promise_pointer(); }
         );
 
-        return get_result_aw<T, _type, DriverPolicy>::future();
+        return get_result_aw<T, _type, DriverPolicy>::get_future();
     }
 
     [[nodiscard]] auto move_out_coro_handle() noexcept
@@ -108,10 +108,10 @@ public:
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
 
-    [[nodiscard]] auto& run_with_future()
+    [[nodiscard]] auto run_and_get_future()
     {
-        auto& result = future();
-        if (!::std::exchange(m_need_destroy_in_dtor, false)) return future();
+        auto result = get_future();
+        if (!::std::exchange(m_need_destroy_in_dtor, false)) return result;
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
         return result;
     }
@@ -139,10 +139,10 @@ template<typename T>
 using sync_task = typename _task<T, run_this_sync, discardable>::_type;
 
 template<typename T>
-using task = async_task<T>;
+using nodiscard_task = typename _task<T, run_this_async, non_discardable>::_type;
 
 template<typename T>
-using nodiscard_task = typename _task<T, run_this_async, non_discardable>::_type;
+using task = async_task<T>;
 
 KOIOS_NAMESPACE_END
 

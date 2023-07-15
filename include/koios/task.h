@@ -103,7 +103,7 @@ public:
     {
         static_assert(is_discardable(), 
                       "This is an non-discardable task, "
-                      "you should call `run_with_future()` nor `run()`.");
+                      "you should call `run_and_get_future()` nor `run()`.");
         if (!::std::exchange(m_need_destroy_in_dtor, false)) return;
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
@@ -111,8 +111,10 @@ public:
     [[nodiscard]] auto run_and_get_future()
     {
         auto result = get_future();
-        if (!::std::exchange(m_need_destroy_in_dtor, false)) return result;
-        DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
+        if (::std::exchange(m_need_destroy_in_dtor, false))
+        {   
+            DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
+        }
         return result;
     }
 

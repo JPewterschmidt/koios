@@ -3,8 +3,10 @@
 
 #include <concepts>
 #include <coroutine>
+#include <future>
 
 #include "koios/macros.h"
+#include "toolpex/is_specialization_of.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -13,7 +15,7 @@ concept task_concept = requires(T t)
 {
     { t.move_out_coro_handle() } -> ::std::convertible_to<::std::coroutine_handle<>>;
     { t() };
-    { t.get_future() };
+    { t.get_future() } -> toolpex::is_specialization_of<::std::future>;
 };
 
 KOIOS_NAMESPACE_END

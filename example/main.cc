@@ -6,6 +6,7 @@
 #include "glog/logging.h"
 
 #include "koios/task.h"
+#include "koios/expected_task.h"
 #include "koios/thread_pool.h"
 #include "koios/from_result.h"
 #include "koios/generator.h"

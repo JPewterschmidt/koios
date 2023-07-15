@@ -36,6 +36,7 @@ class _task<T, DriverPolicy, Discardable>::_type
 {
 public:
     using value_type = T;
+    using future_type = ::std::future<value_type>;
 
     class promise_type 
         : public promise_base<>, 
@@ -80,7 +81,7 @@ public:
         return true;
     }
 
-    [[nodiscard]] auto get_future()
+    [[nodiscard]] future_type get_future()
     {
         if (has_scheduled())
             throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
@@ -108,7 +109,7 @@ public:
         DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
     }
 
-    [[nodiscard]] auto run_and_get_future()
+    [[nodiscard]] future_type run_and_get_future()
     {
         auto result = get_future();
         if (::std::exchange(m_need_destroy_in_dtor, false))

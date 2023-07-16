@@ -64,12 +64,18 @@ task<int&> for_basic_test3()
     co_return referd_obj;
 }
 
+monad_task<int> for_et()
+{
+    co_return 1;
+}
+
 int main(int argc, char** argv)
 {
-    ::std::future<int> f;
-    {
-        f = for_basic_test2().run_and_get_future();
-    }
-    int i = f.get();
-    ::std::cout << i << ::std::endl;
+    auto result = for_et()
+        .transform([](int i) -> monad_task<int>{
+                co_return ::std::error_code{ 1,::std::system_category() }; 
+        }).transform([](int i) -> monad_task<int>{ 
+            co_return i * 100; 
+        }).run_and_get_future().get().get_value();
+    ::std::cout << result;
 }

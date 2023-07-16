@@ -6,6 +6,7 @@
 #include <cassert>
 #include <utility>
 #include <stdexcept>
+#include <memory>
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
@@ -14,25 +15,45 @@
 
 KOIOS_NAMESPACE_BEG
 
-template<typename T>
+template<typename T, typename Alloc>
 struct _generator
 {
     struct [[nodiscard]] _type;
 };
 
-template<typename T>
-struct generator_promise_type : promise_base<::std::suspend_always>
+template<typename T, typename Alloc>
+class generator_promise_type : public promise_base<::std::suspend_always>
 {
-    using handle_type = ::std::coroutine_handle<generator_promise_type<T>>;
+private:
+    template<typename TT>
+    static T* alloc_and_construct(TT&& tt)
+    {
+        T* buffer = Alloc{}.allocate(sizeof(T));
+        ::std::construct_at(buffer, ::std::forward<TT>(tt));
+        return buffer;
+    }
 
-    ::std::unique_ptr<T> m_current_value_p{ nullptr };
+    struct value_deleter
+    {
+        void operator()(T* p) const noexcept 
+        {
+            p->~T();
+            Alloc{}.deallocate(p, sizeof(*p));
+        }
+    };
 
-    static _generator<T>::_type get_return_object_on_allocation_failure() 
+public:
+    using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
+    using storage_type = ::std::unique_ptr<T, value_deleter>;
+
+    storage_type m_current_value_p{ nullptr };
+
+    static _generator<T, Alloc>::_type get_return_object_on_allocation_failure() 
     { 
         return { handle_type{} }; 
     }
 
-    _generator<T>::_type get_return_object() 
+    _generator<T, Alloc>::_type get_return_object() 
     { 
         return { handle_type::from_promise(*this) }; 
     }
@@ -42,7 +63,11 @@ struct generator_promise_type : promise_base<::std::suspend_always>
     template<typename TT>
     auto yield_value(TT&& val)
     {
-        m_current_value_p.reset(new T(::std::forward<TT>(val)));
+        //m_current_value_p.reset(new T(::std::forward<TT>(val)));
+
+        m_current_value_p.reset(
+            alloc_and_construct(::std::forward<TT>(val))
+        );
         return ::std::suspend_always{};
     }
 
@@ -62,14 +87,15 @@ struct generator_promise_type : promise_base<::std::suspend_always>
     void clear() noexcept { m_current_value_p.reset(); }
 };
 
-template<typename T>
-class _generator<T>::_type
+template<typename T, typename Alloc>
+class _generator<T, Alloc>::_type
 {
     static_assert(!::std::is_reference_v<T>, "The `result_type` of generator could not be a reference!");
 public:
-    friend class generator_promise_type<T>;
-    using promise_type = generator_promise_type<T>;
+    friend class generator_promise_type<T, Alloc>;
+    using promise_type = generator_promise_type<T, Alloc>;
     using result_type = T;
+    using allocator = Alloc;
 
     bool move_next()
     {
@@ -134,14 +160,14 @@ private:
     bool m_need_destroy_in_dtor{ true };
 
 public:
-    using iterator = detial::generator_iterator<_generator<T>::_type>;
+    using iterator = detial::generator_iterator<_generator<T, Alloc>::_type>;
     iterator begin() noexcept { return { *this }; }
     constexpr detial::generator_iterator_sentinel end() const noexcept { return {}; };
 };
 
 
-template<typename T>
-using generator = typename _generator<T>::_type;
+template<typename T, typename Alloc = ::std::allocator<T>>
+using generator = typename _generator<T, Alloc>::_type;
 
 KOIOS_NAMESPACE_END
 

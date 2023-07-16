@@ -52,7 +52,7 @@ target("example")
     set_languages("c++20", "c17")
     add_files("example/*.cc")
     add_packages("fmt", "gflags", "glog")
-    set_warnings("unused-result", "error")
+    
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

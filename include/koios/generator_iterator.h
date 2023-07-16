@@ -28,6 +28,8 @@ namespace detial
         using reference = value_type&;
         using iterator_category = ::std::forward_iterator_tag;
 
+        using storage_type = typename generator_type::promise_type::storage_type;
+
     public:
         generator_iterator(generator_type& g) noexcept
             : m_generator{ g }
@@ -85,7 +87,7 @@ namespace detial
     private: 
         generator_type& m_generator;
         bool m_reach_end{};
-        ::std::unique_ptr<result_type> m_storage;
+        storage_type m_storage;
     };
 
     template<generator_concept G>

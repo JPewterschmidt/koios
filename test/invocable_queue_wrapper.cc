@@ -25,6 +25,8 @@ namespace
             return { result };
         }
 
+        bool empty() const noexcept { return m_q.empty(); }
+
         ~queue_wrapper() noexcept
         {
             ++dtor_count;
@@ -55,4 +57,5 @@ TEST(invocable_queue_wrapper, basic)
     }
 
     ASSERT_EQ(basic_count, 10);
+    ASSERT_EQ(iqw.empty(), true);
 }

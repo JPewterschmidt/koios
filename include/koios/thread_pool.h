@@ -11,6 +11,7 @@
 #include <condition_variable>
 
 #include "koios/macros.h"
+#include "koios/invocable_queue_wrapper.h"
 #include "concurrentqueue/blockingconcurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG
@@ -64,7 +65,8 @@ private:
     ::std::atomic_bool              m_stop_now{ false };
     ::std::atomic_size_t            m_active_threads;
     ::std::stop_source              m_stop_source;
-    queue_type                      m_tasks;
+    //queue_type                      m_tasks;
+    invocable_queue_wrapper         m_tasks;
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;
     ::std::vector<::std::jthread>   m_thrs;

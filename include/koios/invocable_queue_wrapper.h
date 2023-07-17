@@ -22,6 +22,7 @@ public:
     invocable_queue_wrapper(Queue&& q)
         : m_storage     { new unsigned char[sizeof(Queue)] }, 
           m_dtor        { +[](void* p) noexcept { CAST(p)->~Queue(); } }, 
+          m_empty_impl  { +[](void* q) { return CAST(q)->empty(); } },
           m_enqueue_impl{ +[](void* q, invocable_type&& func) { CAST(q)->enqueue(::std::move(func)); } }, 
           m_dequeue_impl{ +[](void* q) { return CAST(q)->dequeue(); } }
     {
@@ -35,10 +36,12 @@ public:
 
     void enqueue(invocable_type&& func) const;
     ::std::optional<invocable_type> dequeue() const;
+    bool empty() const;
 
 private:
     ::std::unique_ptr<unsigned char[]> m_storage;
     void (*m_dtor) (void*);
+    bool (*const m_empty_impl) (void*);
     void (*const m_enqueue_impl) (void*, invocable_type&&);
     ::std::optional<invocable_type> (*const m_dequeue_impl) (void*);
 };

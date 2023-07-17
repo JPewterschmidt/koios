@@ -52,13 +52,16 @@ void thread_pool::consumer(::std::stop_token token) noexcept
     do
     {
         ::std::function<void()> task;
-        if (!m_tasks.try_dequeue(task) && !token.stop_requested())
+
+        if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             ::std::unique_lock lk{ m_lock };
             m_cond.wait(lk);
         }
-        if (!task) [[unlikely]]
-            continue;
+        else task = ::std::move(task_opt.value());
+
+        if (!task) [[unlikely]] continue;
+
         try { task(); } catch (...) {}
     }
     while (!done(token));
@@ -70,7 +73,7 @@ bool thread_pool::done(::std::stop_token& tk) const noexcept
         return false;
 
     if (need_stop_now()) return true;
-    return m_tasks.size_approx() == 0;
+    return m_tasks.empty();
 }
 
 bool thread_pool::need_stop_now() const noexcept

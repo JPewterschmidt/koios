@@ -10,6 +10,7 @@
 #include "koios/thread_pool.h"
 #include "koios/from_result.h"
 #include "koios/generator.h"
+#include "koios/invocable_queue_wrapper.h"
 
 #include "toolpex/unique_resource.h"
 
@@ -22,26 +23,6 @@
 
 using namespace koios;
 
-struct foo
-{
-    foo() = default;
-    foo(const foo&) { ::std::cout << "copy\n"; }
-    foo(foo&&) { ::std::cout << "move\n"; }
-};
-
-::std::vector<foo> fvec(10);
-koios::generator<foo> g1()
-{
-    for (auto& f : fvec)
-        co_yield ::std::move(f);
-}
-
 int main()
 {
-    auto g = g1();
-    for (const auto& f : g)
-    {
-        ::std::cout << "ok" << ::std::endl;
-    }
-
 }

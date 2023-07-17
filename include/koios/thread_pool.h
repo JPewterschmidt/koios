@@ -21,6 +21,9 @@ extern manually_stop_type manually_stop;
 class thread_pool
 {
 public:
+    using queue_type = moodycamel::ConcurrentQueue<::std::function<void()>>;
+
+public:
     explicit thread_pool(size_t numthr);
     thread_pool(size_t numthr, manually_stop_type);
     ~thread_pool() noexcept;
@@ -56,15 +59,15 @@ private:
     bool need_stop_now() const noexcept;
 
 private:
-    size_t m_numthrs;
-    bool m_manully_stop{ false };
-    ::std::atomic_bool m_stop_now{ false };
-    ::std::atomic_size_t m_active_threads;
-    ::std::stop_source m_stop_source;
-    moodycamel::ConcurrentQueue<::std::function<void()>> m_tasks;
-    mutable ::std::mutex m_lock;
-    ::std::condition_variable m_cond;
-    ::std::vector<::std::jthread> m_thrs;
+    size_t                          m_numthrs;
+    bool                            m_manully_stop{ false };
+    ::std::atomic_bool              m_stop_now{ false };
+    ::std::atomic_size_t            m_active_threads;
+    ::std::stop_source              m_stop_source;
+    queue_type                      m_tasks;
+    mutable ::std::mutex            m_lock;
+    ::std::condition_variable       m_cond;
+    ::std::vector<::std::jthread>   m_thrs;
 };
 
 KOIOS_NAMESPACE_END

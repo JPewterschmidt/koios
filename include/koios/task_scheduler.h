@@ -7,6 +7,7 @@
 #include "koios/macros.h"
 #include "koios/task_concepts.h"
 #include "koios/thread_pool.h"
+#include "koios/moodycamel_queue_wrapper.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -14,12 +15,12 @@ class task_scheduler : public thread_pool
 {
 public:
     explicit task_scheduler(size_t thr_cnt, manually_stop_type)
-        : thread_pool{ thr_cnt, manually_stop }
+        : thread_pool{ thr_cnt, moodycamel_queue_wrapper{}, manually_stop }
     {
     }
 
     explicit task_scheduler(size_t thr_cnt)
-        : thread_pool{ thr_cnt }
+        : thread_pool{ thr_cnt, moodycamel_queue_wrapper{} }
     {
     }
 

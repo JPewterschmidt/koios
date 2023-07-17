@@ -12,7 +12,6 @@
 
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
-#include "concurrentqueue/blockingconcurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -22,11 +21,8 @@ extern manually_stop_type manually_stop;
 class thread_pool
 {
 public:
-    using queue_type = moodycamel::ConcurrentQueue<::std::function<void()>>;
-
-public:
-    explicit thread_pool(size_t numthr);
-    thread_pool(size_t numthr, manually_stop_type);
+    explicit thread_pool(size_t numthr, invocable_queue_wrapper q);
+    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type);
     ~thread_pool() noexcept;
           
     template<typename F, typename... Args>
@@ -65,7 +61,6 @@ private:
     ::std::atomic_bool              m_stop_now{ false };
     ::std::atomic_size_t            m_active_threads;
     ::std::stop_source              m_stop_source;
-    //queue_type                      m_tasks;
     invocable_queue_wrapper         m_tasks;
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;

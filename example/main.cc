@@ -25,4 +25,5 @@ using namespace koios;
 
 int main()
 {
+    ::std::cout << "ok" << ::std::endl;   
 }

@@ -1,12 +1,16 @@
+#include <chrono>
 #include "koios/thread_pool.h"
+
+using namespace ::std::chrono_literals;
 
 KOIOS_NAMESPACE_BEG
 
 manually_stop_type manually_stop{};
 
-thread_pool::thread_pool(size_t numthr)
+thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q)
     : m_numthrs{ numthr }, 
-      m_active_threads{ numthr }
+      m_active_threads{ numthr }, 
+      m_tasks{ ::std::move(q) }
 {
     for (size_t i = 0; i < numthr; ++i)
     {
@@ -16,8 +20,8 @@ thread_pool::thread_pool(size_t numthr)
     }
 }
 
-thread_pool::thread_pool(size_t numthr, manually_stop_type)
-    : thread_pool(numthr)
+thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
+    : thread_pool(numthr, ::std::move(q))
 {
     m_manully_stop = true;
 }
@@ -36,6 +40,7 @@ void thread_pool::stop() noexcept
 
     for (auto& thr : m_thrs)
     {
+        m_cond.notify_all();
         if (thr.joinable()) thr.join();
     }
 }
@@ -56,7 +61,7 @@ void thread_pool::consumer(::std::stop_token token) noexcept
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             ::std::unique_lock lk{ m_lock };
-            m_cond.wait(lk);
+            m_cond.wait_for(lk, 3s);
         }
         else task = ::std::move(task_opt.value());
 

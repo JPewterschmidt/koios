@@ -11,6 +11,10 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief The most fundamental exception type related koios.
+ *  
+ *  Every koios runtime related exception will inherited from this class.
+ */
 class exception : public ::std::exception
 {
 public:
@@ -25,6 +29,10 @@ protected:
     ::std::string m_msg;
 };
 
+/*! \brief Exception which will be thrown 
+ *         when user want to enqueue a new functor 
+ *         into a `thread_pool` which has called `quick_stop`.
+ */
 class thread_pool_stopped_exception : public koios::exception
 {
 public:
@@ -34,6 +42,7 @@ public:
     }
 };
 
+/*! \brief Similar to `thread_pool_stopped_exception`. only thrown in `runtime.cc` file. */
 class runtime_not_working_exception : public thread_pool_stopped_exception
 {
 public:

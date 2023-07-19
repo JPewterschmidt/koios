@@ -15,16 +15,20 @@ concept driver_policy_concept = requires(DP dp)
     { dp.scheduler() } -> task_scheduler_concept;
 };
 
+/*! \brief One of the drive policy, make the `task` runs asynchronous. */
 struct run_this_async
 {
+    /*! \return A global asynchronous task scheduler. */
     task_scheduler_wrapper scheduler()
     {
         return { get_task_scheduler() };
     };
 };
 
+/*! \brief One of the drive policy, make the `task` runs synchronous. */
 struct run_this_sync
 {
+    /*! \return A local synchronous task scheduler. */
     task_scheduler_owned_wrapper scheduler()
     {
         return { local_thread_scheduler{} };

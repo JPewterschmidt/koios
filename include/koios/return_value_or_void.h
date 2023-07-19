@@ -35,9 +35,11 @@ class return_value_or_void
 {
 public: 
     template<typename TT>
+    requires (::std::constructible_from<T, TT>)
     void return_value(TT&& val)
     {
-        return_value_or_void_base<T, Promise, DriverPolicy>::m_promise_p->set_value(::std::forward<TT>(val));
+        return_value_or_void_base<T, Promise, DriverPolicy>::
+            m_promise_p->set_value(::std::forward<TT>(val));
         return_value_or_void_base<T, Promise, DriverPolicy>::wake_caller();
     }
 };

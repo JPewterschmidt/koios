@@ -1,74 +1,30 @@
-#include <vector>
-#include <functional>
-
-#include "fmt/core.h"
-#include "fmt/ranges.h"
-#include "glog/logging.h"
-
-#include "koios/task.h"
-#include "koios/thread_pool.h"
-#include "koios/from_result.h"
-#include "koios/generator.h"
-
-#include "toolpex/unique_resource.h"
-
-#include <chrono>
-#include <thread>
 #include <iostream>
-#include <future>
-#include <ranges>
-#include <iterator>
+#include "koios/task.h"
 
-using namespace koios;
-
-namespace 
+koios::task<void> coro_task3()
 {
-    int result{};
-    int count{};
-    int flag{};
-    int referd_obj{};
-
-    ::std::binary_semaphore sem{0}; 
-
-    task<int> for_with_scheduler()
-    {
-        if (++count >= 10) co_return 1;
-        co_return co_await for_with_scheduler() + 1;
-    }
-
-    task<void> starter()
-    {
-        result = co_await for_with_scheduler();
-        sem.release();
-    }
-
-    async_task<void> func1() { co_return; }
-    sync_task<void> func2() { co_return; }
-}
-
-task<void> for_basic_test()
-{
-    flag = 1;
+    ::std::cout << "world!" << ::std::endl;
     co_return;
 }
 
-nodiscard_task<int> for_basic_test2()
+koios::task<int> coro_task2()
 {
-    unsigned char buffer[1024];
-    co_return 2;
+    ::std::cout << "koios' ";
+    co_await coro_task3();
+    co_return 1;
 }
 
-task<int&> for_basic_test3()
+koios::task<int> coro_task()
 {
-    co_return referd_obj;
+    ::std::cout << "hello ";
+    co_return co_await coro_task2();
 }
 
-int main(int argc, char** argv)
+int main()
 {
-    ::std::future<int> f;
-    {
-        f = for_basic_test2().run_and_get_future();
-    }
-    int i = f.get();
-    ::std::cout << i << ::std::endl;
+    koios::runtime_init(12);
+
+    int val = coro_task().run_and_get_future().get();
+
+    return koios::runtime_exit();
 }

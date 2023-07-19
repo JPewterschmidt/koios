@@ -1,12 +1,15 @@
+#include <chrono>
 #include "koios/thread_pool.h"
+#include "koios/exceptions.h"
+#include "spdlog/spdlog.h"
+
+using namespace ::std::chrono_literals;
 
 KOIOS_NAMESPACE_BEG
 
 manually_stop_type manually_stop{};
 
-thread_pool::thread_pool(size_t numthr)
-    : m_numthrs{ numthr }, 
-      m_active_threads{ numthr }
+void thread_pool::init(size_t numthr)
 {
     for (size_t i = 0; i < numthr; ++i)
     {
@@ -14,12 +17,6 @@ thread_pool::thread_pool(size_t numthr)
             this->consumer(m_stop_source.get_token()); 
         });
     }
-}
-
-thread_pool::thread_pool(size_t numthr, manually_stop_type)
-    : thread_pool(numthr)
-{
-    m_manully_stop = true;
 }
 
 thread_pool::~thread_pool() noexcept
@@ -30,19 +27,20 @@ thread_pool::~thread_pool() noexcept
 
 void thread_pool::stop() noexcept
 {
-    if (m_numthrs == 0) return;
-    m_stop_source.request_stop();
-    m_cond.notify_all();
+    ::std::call_once(m_stop_once_flag, [this]{
+        m_stop_source.request_stop();
+        m_cond.notify_all();
 
-    for (auto& thr : m_thrs)
-    {
-        if (thr.joinable()) thr.join();
-    }
+        for (auto& thr : m_thrs)
+        {
+            m_cond.notify_all();
+            if (thr.joinable()) thr.join();
+        }
+    });
 }
 
 void thread_pool::quick_stop() noexcept
 {
-    if (m_numthrs == 0) return;
     m_stop_now.store(true, ::std::memory_order::release); // TODO
     stop();
 }
@@ -51,15 +49,27 @@ void thread_pool::consumer(::std::stop_token token) noexcept
 {
     do
     {
-        ::std::function<void()> task;
-        if (!m_tasks.try_dequeue(task) && !token.stop_requested())
+        if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             ::std::unique_lock lk{ m_lock };
-            m_cond.wait(lk);
+            m_cond.wait_for(lk, 3s);
         }
-        if (!task) [[unlikely]]
-            continue;
-        try { task(); } catch (...) {}
+        else try 
+        { 
+            task_opt.value()(); 
+        } 
+        catch (const koios::exception& e)
+        {
+            spdlog::info(e.what());
+        }
+        catch (const ::std::exception& e)
+        {
+            spdlog::error(e.what());
+        }
+        catch (...)
+        { 
+            spdlog::error("user code has throw something not inherited from `std::exception`");
+        }
     }
     while (!done(token));
 }
@@ -70,7 +80,7 @@ bool thread_pool::done(::std::stop_token& tk) const noexcept
         return false;
 
     if (need_stop_now()) return true;
-    return m_tasks.size_approx() == 0;
+    return m_tasks.empty();
 }
 
 bool thread_pool::need_stop_now() const noexcept

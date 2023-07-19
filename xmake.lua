@@ -9,7 +9,7 @@ add_requires(
     "gtest", 
     "concurrentqueue master",
     "benchmark",
-    "glog"
+    "spdlog"
 )
 
 add_includedirs(
@@ -17,26 +17,28 @@ add_includedirs(
     "toolpex/include"
 )
 
+set_languages("c++2b", "c17")
+
 target("koios")
     set_kind("shared")
     add_packages(
         "fmt", 
         "gflags", 
         "concurrentqueue",
-        "glog"
+        "spdlog"
     )
-    set_languages("c++20", "c17")
     set_warnings("all", "error")
     add_files("src/*.cc")
 
 target("test")
     set_kind("binary")
     add_packages("concurrentqueue")
-    set_languages("c++20", "c17")
     add_deps("koios")
     set_warnings("all", "error")
     add_files("test/*.cc")
-    add_packages("gtest", "fmt")
+    add_packages(
+        "gtest", "fmt"
+    )
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")
@@ -49,10 +51,12 @@ target("example")
     set_kind("binary")
     add_packages("concurrentqueue", "spdlog")
     add_deps("koios")
-    set_languages("c++20", "c17")
     add_files("example/*.cc")
-    add_packages("fmt", "gflags", "glog")
-    set_warnings("unused-result", "error")
+    add_packages(
+        "fmt", "gflags", 
+        "spdlog"
+    )
+    
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io

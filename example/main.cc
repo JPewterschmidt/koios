@@ -10,6 +10,7 @@
 #include "koios/thread_pool.h"
 #include "koios/from_result.h"
 #include "koios/generator.h"
+#include "koios/invocable_queue_wrapper.h"
 
 #include "toolpex/unique_resource.h"
 
@@ -20,28 +21,27 @@
 #include <ranges>
 #include <iterator>
 
+using namespace ::std::chrono_literals;
 using namespace koios;
 
-struct foo
+task<void> func2(int i)
 {
-    foo() = default;
-    foo(const foo&) { ::std::cout << "copy\n"; }
-    foo(foo&&) { ::std::cout << "move\n"; }
-};
+    if (i-- == 0) co_return;
+    co_await func2(i);
+}
 
-::std::vector<foo> fvec(10);
-koios::generator<foo> g1()
+task<void> func()
 {
-    for (auto& f : fvec)
-        co_yield ::std::move(f);
+    co_await func2(10);
 }
 
 int main()
 {
-    auto g = g1();
-    for (const auto& f : g)
-    {
-        ::std::cout << "ok" << ::std::endl;
-    }
+    koios::runtime_init(1);
+    func().run();
+    auto& ts = get_task_scheduler();
 
+    ::std::this_thread::sleep_for(3s);
+
+    return runtime_exit();
 }

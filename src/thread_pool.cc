@@ -1,5 +1,7 @@
 #include <chrono>
 #include "koios/thread_pool.h"
+#include "koios/exceptions.h"
+#include "spdlog/spdlog.h"
 
 using namespace ::std::chrono_literals;
 
@@ -52,7 +54,22 @@ void thread_pool::consumer(::std::stop_token token) noexcept
             ::std::unique_lock lk{ m_lock };
             m_cond.wait_for(lk, 3s);
         }
-        else try { task_opt.value()(); } catch (...) {}
+        else try 
+        { 
+            task_opt.value()(); 
+        } 
+        catch (const koios::exception& e)
+        {
+            spdlog::info(e.what());
+        }
+        catch (const ::std::exception& e)
+        {
+            spdlog::error(e.what());
+        }
+        catch (...)
+        { 
+            spdlog::error("user code has throw something not inherited from `std::exception`");
+        }
     }
     while (!done(token));
 }

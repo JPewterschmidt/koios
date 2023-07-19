@@ -3,7 +3,6 @@
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
-#include "glog/logging.h"
 
 #include "koios/task.h"
 #include "koios/monad_task.h"
@@ -38,10 +37,26 @@ task<void> func()
 int main()
 {
     koios::runtime_init(1);
-    func().run();
-    auto& ts = get_task_scheduler();
 
-    ::std::this_thread::sleep_for(3s);
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+    func().run();
+
+    get_task_scheduler().stop();
+    ::std::cout << get_task_scheduler().number_remain_tasks() << ::std::endl;
 
     return runtime_exit();
 }

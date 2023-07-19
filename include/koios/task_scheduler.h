@@ -8,6 +8,7 @@
 #include "koios/task_concepts.h"
 #include "koios/thread_pool.h"
 #include "koios/moodycamel_queue_wrapper.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -33,7 +34,7 @@ public:
     {
         if (h) [[likely]]
         {
-            thread_pool::enqueue_no_future([h]() noexcept { 
+            thread_pool::enqueue_no_future([h = task_on_the_fly(h)]() noexcept { 
                 try { h(); } 
                 catch (...) {}
             });

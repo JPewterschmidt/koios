@@ -8,9 +8,7 @@ KOIOS_NAMESPACE_BEG
 manually_stop_type manually_stop{};
 
 thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q)
-    : m_numthrs{ numthr }, 
-      m_active_threads{ numthr }, 
-      m_tasks{ ::std::move(q) }
+    : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
 {
     for (size_t i = 0; i < numthr; ++i)
     {
@@ -18,12 +16,6 @@ thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q)
             this->consumer(m_stop_source.get_token()); 
         });
     }
-}
-
-thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
-    : thread_pool(numthr, ::std::move(q))
-{
-    m_manully_stop = true;
 }
 
 thread_pool::~thread_pool() noexcept
@@ -34,20 +26,20 @@ thread_pool::~thread_pool() noexcept
 
 void thread_pool::stop() noexcept
 {
-    if (m_numthrs == 0) return;
-    m_stop_source.request_stop();
-    m_cond.notify_all();
-
-    for (auto& thr : m_thrs)
-    {
+    ::std::call_once(m_stop_once_flag, [this]{
+        m_stop_source.request_stop();
         m_cond.notify_all();
-        if (thr.joinable()) thr.join();
-    }
+
+        for (auto& thr : m_thrs)
+        {
+            m_cond.notify_all();
+            if (thr.joinable()) thr.join();
+        }
+    });
 }
 
 void thread_pool::quick_stop() noexcept
 {
-    if (m_numthrs == 0) return;
     m_stop_now.store(true, ::std::memory_order::release); // TODO
     stop();
 }
@@ -56,18 +48,16 @@ void thread_pool::consumer(::std::stop_token token) noexcept
 {
     do
     {
-        ::std::function<void()> task;
-
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             ::std::unique_lock lk{ m_lock };
             m_cond.wait_for(lk, 3s);
         }
-        else task = ::std::move(task_opt.value());
-
-        if (!task) [[unlikely]] continue;
-
-        try { task(); } catch (...) {}
+        else 
+        {
+            auto task = ::std::move(task_opt.value());
+            try { task(); } catch (...) {}
+        }
     }
     while (!done(token));
 }

@@ -6,6 +6,7 @@
 #include <memory>
 #include <future>
 #include <utility>
+#include <mutex>
 #include <stop_token>
 #include <functional>
 #include <condition_variable>
@@ -22,7 +23,12 @@ class thread_pool
 {
 public:
     explicit thread_pool(size_t numthr, invocable_queue_wrapper q);
-    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type);
+
+    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
+        : thread_pool(numthr, ::std::move(q))
+    { 
+    }
+
     ~thread_pool() noexcept;
           
     template<typename F, typename... Args>
@@ -40,7 +46,7 @@ public:
     }
 
     template<typename F, typename... Args>
-    auto enqueue_no_future(F&& func, Args&&... args)
+    void enqueue_no_future(F&& func, Args&&... args)
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)]{ task(); });
@@ -56,14 +62,13 @@ private:
     bool need_stop_now() const noexcept;
 
 private:
-    size_t                          m_numthrs;
-    bool                            m_manully_stop{ false };
     ::std::atomic_bool              m_stop_now{ false };
-    ::std::atomic_size_t            m_active_threads;
     ::std::stop_source              m_stop_source;
     invocable_queue_wrapper         m_tasks;
+    const bool                      m_manully_stop{ true };
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;
+    ::std::once_flag                m_stop_once_flag;
     ::std::vector<::std::jthread>   m_thrs;
 };
 

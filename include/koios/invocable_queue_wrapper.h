@@ -24,7 +24,8 @@ public:
           m_dtor        { +[](void* p) noexcept { CAST(p)->~Queue(); } }, 
           m_empty_impl  { +[](void* q) { return CAST(q)->empty(); } },
           m_enqueue_impl{ +[](void* q, invocable_type&& func) { CAST(q)->enqueue(::std::move(func)); } }, 
-          m_dequeue_impl{ +[](void* q) { return CAST(q)->dequeue(); } }
+          m_dequeue_impl{ +[](void* q) { return CAST(q)->dequeue(); } }, 
+          m_size_impl   { +[](void* q) { return CAST(q)->size(); } }
     {
         ::std::construct_at(CAST(m_storage.get()), ::std::forward<Queue>(q));
     }
@@ -37,6 +38,7 @@ public:
     void enqueue(invocable_type&& func) const;
     ::std::optional<invocable_type> dequeue() const;
     bool empty() const;
+    size_t size() const noexcept { return m_size_impl(m_storage.get()); }
 
 private:
     ::std::unique_ptr<unsigned char[]> m_storage;
@@ -44,6 +46,7 @@ private:
     bool (*const m_empty_impl) (void*);
     void (*const m_enqueue_impl) (void*, invocable_type&&);
     ::std::optional<invocable_type> (*const m_dequeue_impl) (void*);
+    size_t (*const m_size_impl) (void*);
 };
 
 KOIOS_NAMESPACE_END

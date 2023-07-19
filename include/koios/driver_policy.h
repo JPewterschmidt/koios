@@ -4,7 +4,7 @@
 #include "koios/macros.h"
 #include "koios/task_scheduler_concept.h"
 #include "koios/local_thread_scheduler.h"
-#include "koios/global_task_scheduler.h"
+#include "koios/runtime.h"
 #include "koios/task_scheduler_wrapper.h"
 
 KOIOS_NAMESPACE_BEG

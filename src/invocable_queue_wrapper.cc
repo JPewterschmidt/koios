@@ -16,7 +16,8 @@ invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept
       m_dtor        { ::std::exchange(other.m_dtor, nullptr)    }, 
       m_empty_impl  { other.m_empty_impl                        },
       m_enqueue_impl{ other.m_enqueue_impl                      }, 
-      m_dequeue_impl{ other.m_dequeue_impl                      }
+      m_dequeue_impl{ other.m_dequeue_impl                      }, 
+      m_size_impl   { other.m_size_impl                         }
 {
 }
 

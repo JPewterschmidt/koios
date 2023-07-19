@@ -39,6 +39,9 @@ public:
     template<typename F, typename... Args>
     auto enqueue(F&& func, Args&&... args)
     {
+        if (m_stop_source.stop_requested())
+            throw ::std::logic_error{ "thread_pool stopped!" };
+
         using return_type = typename std::result_of<F(Args...)>::type;
         auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
@@ -53,6 +56,9 @@ public:
     template<typename F, typename... Args>
     void enqueue_no_future(F&& func, Args&&... args)
     {
+        if (m_stop_source.stop_requested())
+            throw ::std::logic_error{ "thread_pool stopped!" };
+
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
         m_cond.notify_one();
@@ -60,6 +66,8 @@ public:
     
     void stop() noexcept;
     void quick_stop() noexcept;
+
+    size_t number_remain_tasks() const noexcept { return m_tasks.size(); }
 
 private:
     void consumer(::std::stop_token token) noexcept;

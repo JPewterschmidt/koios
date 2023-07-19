@@ -36,6 +36,12 @@ public:
         return m_q.empty(); 
     }
 
+    size_t size() const noexcept 
+    { 
+        ::std::unique_lock lk{ m_lock };
+        return m_q.size(); 
+    }
+
     std_queue_wrapper(std_queue_wrapper&& other) noexcept
         : m_q{ ::std::move(other.m_q) }
     {

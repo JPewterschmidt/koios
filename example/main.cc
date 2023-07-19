@@ -21,23 +21,27 @@
 #include <ranges>
 #include <iterator>
 
+using namespace ::std::chrono_literals;
 using namespace koios;
 
-task<void> func2()
+task<void> func2(int i)
 {
-    ::std::cout << "func2" << ::std::endl;
-    co_await func2();
+    if (i-- == 0) co_return;
+    co_await func2(i);
 }
 
 task<void> func()
 {
-    ::std::cout << "func" << ::std::endl;
-    co_await func2();
+    co_await func2(10);
 }
 
 int main()
 {
+    koios::runtime_init(1);
     func().run();
     auto& ts = get_task_scheduler();
-    ts.quick_stop();
+
+    ::std::this_thread::sleep_for(3s);
+
+    return runtime_exit();
 }

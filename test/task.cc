@@ -2,7 +2,7 @@
 #include "koios/thread_pool.h"
 #include "koios/task.h"
 #include "koios/task_scheduler_concept.h"
-#include "koios/global_task_scheduler.h"
+#include "koios/runtime.h"
 
 using namespace koios;
 

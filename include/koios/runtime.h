@@ -5,10 +5,11 @@
 #include "koios/task_scheduler.h"
 
 #include <memory>
+#include <source_location>
 
 KOIOS_NAMESPACE_BEG
 
-task_scheduler& get_task_scheduler();
+task_scheduler& get_task_scheduler(::std::source_location sl = ::std::source_location::current());
 
 void runtime_init(size_t numthr);
 void runtime_init(size_t numthr, manually_stop_type);

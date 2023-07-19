@@ -13,6 +13,7 @@
 
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
+#include "koios/exceptions.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -39,8 +40,8 @@ public:
     template<typename F, typename... Args>
     auto enqueue(F&& func, Args&&... args)
     {
-        if (m_stop_source.stop_requested())
-            throw ::std::logic_error{ "thread_pool stopped!" };
+        if (m_stop_now) [[unlikely]]
+            throw thread_pool_stopped_exception{ "thread_pool::quick_stop() called!" };
 
         using return_type = typename std::result_of<F(Args...)>::type;
         auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
@@ -56,8 +57,8 @@ public:
     template<typename F, typename... Args>
     void enqueue_no_future(F&& func, Args&&... args)
     {
-        if (m_stop_source.stop_requested())
-            throw ::std::logic_error{ "thread_pool stopped!" };
+        if (m_stop_now) [[unlikely]]
+            throw thread_pool_stopped_exception{ "thread_pool::quick_stop() called" };
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });

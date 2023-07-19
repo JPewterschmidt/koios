@@ -9,7 +9,7 @@ add_requires(
     "gtest", 
     "concurrentqueue master",
     "benchmark",
-    "glog"
+    "spdlog"
 )
 
 add_includedirs(
@@ -25,7 +25,7 @@ target("koios")
         "fmt", 
         "gflags", 
         "concurrentqueue",
-        "glog"
+        "spdlog"
     )
     set_warnings("all", "error")
     add_files("src/*.cc")
@@ -36,7 +36,9 @@ target("test")
     add_deps("koios")
     set_warnings("all", "error")
     add_files("test/*.cc")
-    add_packages("gtest", "fmt")
+    add_packages(
+        "gtest", "fmt"
+    )
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")
@@ -50,7 +52,10 @@ target("example")
     add_packages("concurrentqueue", "spdlog")
     add_deps("koios")
     add_files("example/*.cc")
-    add_packages("fmt", "gflags", "glog")
+    add_packages(
+        "fmt", "gflags", 
+        "spdlog"
+    )
     
 
 --

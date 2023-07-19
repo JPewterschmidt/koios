@@ -38,9 +38,8 @@ public:
     {
         if (h) [[likely]]
         {
-            thread_pool::enqueue_no_future([h = task_on_the_fly(h)] mutable noexcept { 
-                try { h(); } 
-                catch (...) {}
+            thread_pool::enqueue_no_future([h = task_on_the_fly(h)] mutable { 
+                h();
             });
         }
     }

@@ -27,6 +27,11 @@ struct _task
 struct discardable{};
 struct non_discardable{};
 
+/*! \brief The most basic unit of the runtime.
+ *
+ *  All of the user's asynchronous tasks managed by koios are represented by this class. 
+ *  This is a class backed by the C++20 coroutine facility.
+ */
 template<
     typename T, 
     driver_policy_concept DriverPolicy,

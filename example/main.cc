@@ -23,40 +23,37 @@
 using namespace ::std::chrono_literals;
 using namespace koios;
 
-task<void> func2(int i)
+namespace
 {
-    if (i-- == 0) co_return;
-    co_await func2(i);
+    int basic_count{};
+    int dtor_count{};
 }
 
-task<void> func()
+using namespace koios;
+
+void test1()
 {
-    co_await func2(10);
+    dtor_count = 0;
+    {
+        koios::invocable_queue_wrapper iqw{ std_queue_wrapper{} };
+
+        for (size_t i{}; i < 10; ++i)
+            iqw.enqueue([h = toolpex::unique_resource(1, [](int){ ++dtor_count; })]{ ++basic_count; });
+
+        koios::invocable_queue_wrapper iqw2{ ::std::move(iqw) };
+
+        for (size_t i{}; i < 5; ++i)
+        {
+            auto ret = iqw2.dequeue();
+            if (ret) (*ret)();
+        }
+
+    }
+    ::std::cout << ::std::boolalpha << (dtor_count == 10) << ::std::endl;
 }
 
 int main()
 {
-    koios::runtime_init(12);
-
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-    func().run();
-
-    get_task_scheduler().stop();
-    ::std::cout << get_task_scheduler().number_remain_tasks() << ::std::endl;
-
+    test1();
     return runtime_exit();
 }

@@ -30,3 +30,19 @@ TEST(thread_pool, basic)
     tp.stop();
     ASSERT_EQ(count.load(), 0);
 }
+
+TEST(thread_pool, after_quick_stop)
+{
+    thread_pool tp{ pool_size, moodycamel_queue_wrapper{} };
+    tp.quick_stop();
+    int success{};
+    try
+    {
+        tp.enqueue([]{});
+    }
+    catch (koios::thread_pool_stopped_exception& [[maybe_unused]] e)
+    {
+        success = 1;
+    }
+    ASSERT_EQ(success, 1);
+}

@@ -19,7 +19,7 @@ namespace
 task_scheduler& get_task_scheduler(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
-        throw runtime_shutdown_exception{ ::std::move(sl) };
+        throw runtime_not_working_exception{ ::std::move(sl) };
     return *g_ts_p;
 }
 

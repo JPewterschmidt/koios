@@ -36,7 +36,7 @@ task<void> func()
 
 int main()
 {
-    koios::runtime_init(1);
+    koios::runtime_init(12);
 
     func().run();
     func().run();

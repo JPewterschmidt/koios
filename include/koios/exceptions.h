@@ -34,12 +34,12 @@ public:
     }
 };
 
-class runtime_shutdown_exception : public thread_pool_stopped_exception
+class runtime_not_working_exception : public thread_pool_stopped_exception
 {
 public:
-    runtime_shutdown_exception(::std::source_location sl = ::std::source_location::current()) noexcept
+    runtime_not_working_exception(::std::source_location sl = ::std::source_location::current()) noexcept
         : thread_pool_stopped_exception{ 
-            fmt::format("runtime_shutdown_exception: {}:{}:{}", 
+            fmt::format("runtime_not_working_exception: {}:{}:{}", 
                         sl.file_name(), sl.line(), sl.function_name()) 
           }
     {

@@ -7,8 +7,7 @@ KOIOS_NAMESPACE_BEG
 
 manually_stop_type manually_stop{};
 
-thread_pool::thread_pool(size_t numthr, invocable_queue_wrapper q)
-    : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
+void thread_pool::init(size_t numthr)
 {
     for (size_t i = 0; i < numthr; ++i)
     {
@@ -53,11 +52,7 @@ void thread_pool::consumer(::std::stop_token token) noexcept
             ::std::unique_lock lk{ m_lock };
             m_cond.wait_for(lk, 3s);
         }
-        else 
-        {
-            auto task = ::std::move(task_opt.value());
-            try { task(); } catch (...) {}
-        }
+        else try { task_opt.value()(); } catch (...) {}
     }
     while (!done(token));
 }

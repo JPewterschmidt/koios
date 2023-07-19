@@ -39,7 +39,7 @@ public:
     using future_type = ::std::future<value_type>;
 
     class promise_type 
-        : public promise_base<::std::suspend_always>, 
+        : public promise_base<destroy_aw>, 
           public return_value_or_void<T, promise_type, DriverPolicy>
     {
     public:

@@ -13,7 +13,7 @@ KOIOS_NAMESPACE_BEG
 class moodycamel_queue_wrapper
 {
 public:
-    using invocable_type = ::std::function<void()>;
+    using invocable_type = ::std::move_only_function<void()>;
     using queue_type = moodycamel::ConcurrentQueue<invocable_type>;
 
 public:

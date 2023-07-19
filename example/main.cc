@@ -23,7 +23,21 @@
 
 using namespace koios;
 
+task<void> func2()
+{
+    ::std::cout << "func2" << ::std::endl;
+    co_await func2();
+}
+
+task<void> func()
+{
+    ::std::cout << "func" << ::std::endl;
+    co_await func2();
+}
+
 int main()
 {
-    ::std::cout << "ok" << ::std::endl;   
+    func().run();
+    auto& ts = get_task_scheduler();
+    ts.quick_stop();
 }

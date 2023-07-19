@@ -22,11 +22,16 @@ extern manually_stop_type manually_stop;
 class thread_pool
 {
 public:
-    explicit thread_pool(size_t numthr, invocable_queue_wrapper q);
+    explicit thread_pool(size_t numthr, invocable_queue_wrapper q)
+        : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
+    {
+        init(numthr);
+    }
 
     thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
-        : thread_pool(numthr, ::std::move(q))
+        : m_tasks{ ::std::move(q) }, m_manully_stop{ true }
     { 
+        init(numthr);
     }
 
     ~thread_pool() noexcept;
@@ -39,7 +44,7 @@ public:
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
         ::std::future<return_type> result = task->get_future();
-        m_tasks.enqueue([task]{ (*task)(); });
+        m_tasks.enqueue([task] mutable { (*task)(); });
         m_cond.notify_one();
 
         return result;
@@ -49,7 +54,7 @@ public:
     void enqueue_no_future(F&& func, Args&&... args)
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
-        m_tasks.enqueue([task = ::std::move(task)]{ task(); });
+        m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
         m_cond.notify_one();
     }
     
@@ -60,6 +65,7 @@ private:
     void consumer(::std::stop_token token) noexcept;
     [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
     bool need_stop_now() const noexcept;
+    void init(size_t numthr);
 
 private:
     ::std::atomic_bool              m_stop_now{ false };

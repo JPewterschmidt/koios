@@ -17,6 +17,8 @@ add_includedirs(
     "toolpex/include"
 )
 
+set_languages("c++2b", "c17")
+
 target("koios")
     set_kind("shared")
     add_packages(
@@ -25,14 +27,12 @@ target("koios")
         "concurrentqueue",
         "glog"
     )
-    set_languages("c++20", "c17")
     set_warnings("all", "error")
     add_files("src/*.cc")
 
 target("test")
     set_kind("binary")
     add_packages("concurrentqueue")
-    set_languages("c++20", "c17")
     add_deps("koios")
     set_warnings("all", "error")
     add_files("test/*.cc")
@@ -49,7 +49,6 @@ target("example")
     set_kind("binary")
     add_packages("concurrentqueue", "spdlog")
     add_deps("koios")
-    set_languages("c++20", "c17")
     add_files("example/*.cc")
     add_packages("fmt", "gflags", "glog")
     

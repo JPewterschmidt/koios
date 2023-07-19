@@ -40,32 +40,20 @@ namespace
 
 TEST(task, basic)
 {
-    auto t1 = for_basic_test();
-    auto f1 = t1.get_future();
-    t1.run();
-    f1.get();
+    for_basic_test().run_and_get_future().get();
     ASSERT_EQ(flag, 1);
 
-    auto t2 = for_basic_test2();
-    auto f2 = t2.get_future();
-    t2.run();
-    ASSERT_EQ(f2.get(), 2);
+    ASSERT_EQ(for_basic_test2().run_and_get_future().get(), 2);
     
     ASSERT_EQ(referd_obj, 0);
-    auto t3 = for_basic_test3();
-    auto f3 = t3.get_future();
-    t3.run();
-    int& ref = f3.get();
+    int& ref = for_basic_test3().run_and_get_future().get();
     ref = 100;
     ASSERT_EQ(referd_obj, 100);
 }
 
 TEST(task, sync_task)
 {
-    auto t = for_sync_task();
-    auto f = t.get_future();
-    t.run();
-    ASSERT_EQ(f.get(), 1);
+    ASSERT_EQ(for_sync_task().run_and_get_future().get(), 1);
 }
 
 TEST(task, nodiscard)

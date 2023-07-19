@@ -20,15 +20,31 @@ KOIOS_NAMESPACE_BEG
 enum manually_stop_type { };
 extern manually_stop_type manually_stop;
 
+/*! \brief The most fundamental native thread level management.
+ *
+ *  You could chouse the underlying queue which contains the invocable objects.
+ */
 class thread_pool
 {
 public:
+    /*! \param numthr The number of threads this `thread_pool` hold.
+     *  \param q The underlying queue type.
+     *
+     *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
+     */
     explicit thread_pool(size_t numthr, invocable_queue_wrapper q)
         : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
     {
         init(numthr);
     }
 
+    /*! \param numthr The number of threads this `thread_pool` hold.
+     *  \param q The underlying queue type.
+     *
+     *  This constructor will mark this `thread_pool` to NOT call the `quick_stop()` in the destructor.
+     *  If you want to stop the `thread_pool`, you need call the `stop()` or `quick_stop()` manually.
+     *  Or the destructor will blocked.
+     */
     thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
         : m_tasks{ ::std::move(q) }, m_manully_stop{ true }
     { 
@@ -37,6 +53,12 @@ public:
 
     ~thread_pool() noexcept;
           
+    /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
+     *  \param func The functor.
+     *  \param args The arguments of the functor.
+     *  \ret The corresponding future type, which user could retrive the actuall return value of the enqueued functor.
+     *  \see `std::future`
+     */
     template<typename F, typename... Args>
     auto enqueue(F&& func, Args&&... args)
     {
@@ -54,6 +76,11 @@ public:
         return result;
     }
 
+    /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
+     *  \param func The functor.
+     *  \param args The arguments of the functor.
+     *  \ret Nothing
+     */
     template<typename F, typename... Args>
     void enqueue_no_future(F&& func, Args&&... args)
     {
@@ -65,9 +92,25 @@ public:
         m_cond.notify_one();
     }
     
+    /*! \brief Wake up all sleeping threads and join all threads.
+     * 
+     *  The awakened thread will not go to sleep again, 
+     *  and will continue to get functors from the queue. 
+     *  Exit the thread until no functors are available.
+     */
     void stop() noexcept;
+
+    /*! \brief Wake up all sleeping threads and return immediately.
+     * 
+     *  Similar to `stop()`, but the holding thread will exit immediately 
+     *  without attempting to execute remaining functors in the queue. 
+     *  Ownership of the remaining functors goes to the queue object. 
+     *  Queue objects are responsible for destroying them.
+     */
     void quick_stop() noexcept;
 
+    /*! \return the number of remain tasks.
+     */
     size_t number_remain_tasks() const noexcept { return m_tasks.size(); }
 
 private:

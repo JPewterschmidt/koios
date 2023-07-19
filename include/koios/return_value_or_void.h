@@ -10,6 +10,12 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief store the return value. Wake this caller coroutine.
+ *
+ *  \tparam T the return value type just like the one of a regular function.
+ *  \tparam Promise the promise type of inherited class.
+ *  \tparam The DriverPolicy of the promise type of inherited class.
+ */
 template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void_base 
 {

@@ -15,6 +15,7 @@
 #include "koios/task_scheduler_wrapper.h"
 #include "koios/get_result_aw.h"
 #include "koios/driver_policy.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -76,25 +77,22 @@ public:
 private:
     _type(promise_type& p)
         : get_result_aw<T, _type, DriverPolicy>(p),
-          m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }
+          m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
+          m_std_promise_p{ p.get_std_promise_pointer() }
     {
     }
 
 public:
-    /*! If member function `run()` etc. are not called, means the current object still holds the ownership of the handler.
-     *  Thus, the destructor will call the `::std::coroutine_handle::dedtroy()`.
-     */
-    ~_type() noexcept
-    {
-        if (m_need_destroy_in_dtor && m_coro_handle) [[unlikely]] m_coro_handle.destroy();
-    }
-
     /*! Of course move constructor will move the ownership of the handler. */
     _type(_type&& other) noexcept
         : get_result_aw<T, _task<T, DriverPolicy, Discardable>::_type, DriverPolicy>(::std::move(other)),
-          m_coro_handle{ other.m_coro_handle }, 
-          m_need_destroy_in_dtor{ ::std::exchange(other.m_need_destroy_in_dtor, false) }
+          m_coro_handle{ ::std::move(other.m_coro_handle) }
     {
+    }
+
+    operator task_on_the_fly() noexcept
+    {
+        return get_handler_to_schedule();
     }
 
     /*! \brief Run the current task.
@@ -113,9 +111,7 @@ public:
      */
     bool done() const noexcept 
     {
-        if (!has_scheduled()) 
-            return m_coro_handle.done();
-        return true;
+        return m_coro_handle.done();
     }
 
     /*! \brief Run the task.
@@ -131,8 +127,7 @@ public:
         static_assert(is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if (!::std::exchange(m_need_destroy_in_dtor, false)) return;
-        DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
+        DriverPolicy{}.scheduler().enqueue(get_handler_to_schedule());
     }
 
     /*! \brief Run the task.
@@ -146,9 +141,9 @@ public:
     [[nodiscard]] future_type run_and_get_future()
     {
         auto result = get_future();
-        if (::std::exchange(m_need_destroy_in_dtor, false))
+        if (!has_scheduled())
         {   
-            DriverPolicy{}.scheduler().enqueue(move_out_coro_handle());
+            DriverPolicy{}.scheduler().enqueue(get_handler_to_schedule());
         }
         return result;
     }
@@ -165,7 +160,7 @@ public:
 
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
-    [[nodiscard]] bool has_scheduled() const noexcept { return !m_need_destroy_in_dtor; }
+    [[nodiscard]] bool has_scheduled() const noexcept { return !m_coro_handle; }
 
     /*! \brief Take the ownership of the future object related to this task.
      *  \return the future object.
@@ -179,29 +174,14 @@ private:
         if (has_scheduled())
             throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
 
-        ::std::call_once(
-            m_std_promise_p_guard, 
-            // prevent the `::std::promise` object being destroied by `coro.destroy()`
-            [this]{ m_std_promise_p = m_coro_handle.promise().get_std_promise_pointer(); }
-        );
-
         return get_result_aw<T, _type, DriverPolicy>::get_future();
     }
 
-    /*! \brief Take the ownership of the underlying `std::coroutine_handle`
-     *  \warning NOT for user.
-     */
-    [[nodiscard]] auto move_out_coro_handle() noexcept
-    {
-        return ::std::exchange(m_coro_handle, nullptr);
-    }
-
+    auto get_handler_to_schedule() noexcept { return ::std::exchange(m_coro_handle, {}); }
 
 private:
-    ::std::coroutine_handle<promise_type> m_coro_handle;
+    task_on_the_fly m_coro_handle;
     ::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
-    ::std::once_flag m_std_promise_p_guard;
-    bool m_need_destroy_in_dtor{ true };
 };
 
 template<typename T>

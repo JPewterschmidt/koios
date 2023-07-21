@@ -7,7 +7,12 @@
 
 KOIOS_NAMESPACE_BEG
 
-struct std_queue_wrapper
+/*! \brief Wrapper class of `std::queue<::std::move_only_function<void>>`. 
+ *         To satisfy the `invocable_queue_wrapper`. 
+ *
+ *  This is a thread-safe class.
+ */
+class std_queue_wrapper
 {
 public:
     using invocable_type = ::std::move_only_function<void()>;

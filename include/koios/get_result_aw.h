@@ -8,6 +8,7 @@
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
 #include "koios/task_scheduler_wrapper.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -24,11 +25,12 @@ public:
     }
 
     constexpr bool await_ready() const noexcept { return false; }
-    void await_suspend(::std::coroutine_handle<> h)
+    //void await_suspend(::std::coroutine_handle<> h)
+    void await_suspend(task_on_the_fly h)
     {
-        m_promise.set_caller(h);
+        m_promise.set_caller(::std::move(h));
         DriverPolicy{}.scheduler().enqueue(
-            static_cast<Task*>(this)->move_out_coro_handle()
+            static_cast<Task*>(this)->get_handler_to_schedule()
         );
     }
 

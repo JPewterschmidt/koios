@@ -14,7 +14,6 @@ namespace detial
 {
     class generator_iterator_sentinel{};
 
-    //template<generator_concept G>
     template<typename G>
     class generator_iterator
     {
@@ -40,6 +39,9 @@ namespace detial
         generator_iterator(const generator_iterator&) = delete;
         generator_iterator& operator=(const generator_iterator&) = delete;
 
+        /*! \brief Call the `move_next()`
+         *  But won't take the ownership of the current yield value.
+         */
         generator_iterator& operator++()
         {
             m_storage = nullptr;

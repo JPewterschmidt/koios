@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "koios/macros.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -20,26 +21,42 @@ template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void_base 
 {
 public:
-    void set_caller(::std::coroutine_handle<> h) noexcept { m_caller = h; }
+    /*! Set the caller coroutine handle which coroutine represented will be wake up after this task done.  */
+    void set_caller(task_on_the_fly h) noexcept { m_caller = ::std::move(h); } 
+
+    /*! Take the ownership of the future object */
     auto get_future() { return m_promise_p->get_future(); }
     auto get_std_promise_pointer() { return m_promise_p; }
 
 protected:
     ::std::shared_ptr<::std::promise<T>> m_promise_p{ new ::std::promise<T>{} };
-    ::std::coroutine_handle<> m_caller{};
+    task_on_the_fly m_caller{};
 
+    /*! \brief Wake the caller coroutine, if this task has been called with `co_await`.
+     *  If this task was scheduled by `task_scheduler` directly, this function won't do anything.
+     */
     void wake_caller()
     {
         if (!m_caller) return;
-        DriverPolicy{}.scheduler().enqueue(m_caller);
+        DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
     }
 };
 
+/*! \brief The major `return_value_or_void` class template.
+ *  \tparam T the return type of the task.
+ *  \tparam Promise the promise type of the `task`.
+ *  \tparam DriverPolicy the driver policy type used when waking up the caller coroutine.
+ */
 template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void 
     : public return_value_or_void_base<T, Promise, DriverPolicy>
 {
 public: 
+    /*! \brief set the return value.
+     *  The compiler generates code which call this function when user `co_return` something.
+     *  After store the return value, this function will wake up the caller, 
+     *  if there's a caller task call this task by `co_await`.
+     */
     template<typename TT>
     requires (::std::constructible_from<T, TT>)
     void return_value(TT&& val)
@@ -50,11 +67,13 @@ public:
     }
 };
 
+/*! \brief the specializtion of return_value_or_void, which deal with void return type. */
 template<typename Promise, typename DriverPolicy>
 class return_value_or_void<void, Promise, DriverPolicy> 
     : public return_value_or_void_base<void, Promise, DriverPolicy>
 {
 public:
+    /*! \brief Just wake the caller. */
     void return_void() 
     { 
         return_value_or_void_base<void, Promise, DriverPolicy>::m_promise_p->set_value(); 

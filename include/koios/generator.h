@@ -21,10 +21,18 @@ struct _generator
     struct [[nodiscard]] _type;
 };
 
+/*! \brief The `generator` specific promise class.
+ *  The ownership of handler won't move out.
+ *
+ *  \tparam Alloc The allocator type used.
+ */
 template<typename T, typename Alloc>
 class generator_promise_type : public promise_base<::std::suspend_always>
 {
 private:
+    /*! \brief allocate memory then initialize the object at.
+     *  \return the pointer to the memory buffer allocated.
+     */
     template<typename TT>
     static T* alloc_and_construct(TT&& tt)
     {
@@ -33,6 +41,9 @@ private:
         return buffer;
     }
 
+    /*! The deleter for `::std::unique_ptr`, which firstly destruct the object on it,
+     *  the deallocate it by the allocator.
+     */
     struct value_deleter
     {
         void operator()(T* p) const noexcept 
@@ -46,7 +57,7 @@ public:
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
     using storage_type = ::std::unique_ptr<T, value_deleter>;
 
-    storage_type m_current_value_p{ nullptr };
+    storage_type m_current_value_p{ nullptr }; /*! Holds the memory and the return value object. */
 
     static _generator<T, Alloc>::_type get_return_object_on_allocation_failure() 
     { 
@@ -60,33 +71,48 @@ public:
 
     constexpr void return_void() const noexcept {}
 
+    /*! \brief Function which stores the yield value.
+     *  After store the yield value, this will makes the generator coroutine suspend and back to the caller function.
+     */
     template<typename TT>
     auto yield_value(TT&& val)
     {
-        //m_current_value_p.reset(new T(::std::forward<TT>(val)));
-
         m_current_value_p.reset(
             alloc_and_construct(::std::forward<TT>(val))
         );
         return ::std::suspend_always{};
     }
 
+    /*! \retval true Current yield value was not been moved.
+     *  \retval false Current yield value was moved out.
+     */
     bool has_value() const noexcept
     {
         return bool(m_current_value_p);
     }
 
+    /*! \brief Take the ownership of the current yield value.
+     *  \return The current yield value object.
+     */
     T value()
     {
         auto resultp = ::std::move(m_current_value_p);
         return ::std::move(*resultp);
     }
 
+    /*! \return Reference of the storage which holds the yield value and its memory buffer. */
     auto& value_storage() noexcept { return m_current_value_p; }
 
+    /*! \brief destruct the current yield value and deallocate the memory. */
     void clear() noexcept { m_current_value_p.reset(); }
 };
 
+/*! \brief The generator type
+ *  \tparam T the yield value type.
+ *  \tparam Alloc the allocator type.
+ *
+ *  This type will always holds this ownership of the coroutine handler.
+ */
 template<typename T, typename Alloc>
 class _generator<T, Alloc>::_type
 {
@@ -97,6 +123,10 @@ public:
     using result_type = T;
     using allocator = Alloc;
 
+    /*! \brief Resume the execution of the generator, and update the yield value.
+     *  \retval true Move successfully, you could take the newly yield value.
+     *  \retval false Move failure, usually caused by there're actuall no more yield value.
+     */
     bool move_next()
     {
         if (m_coro == nullptr)
@@ -105,8 +135,14 @@ public:
         return (m_coro.resume(), !m_coro.done());
     }
 
+    /*! \retval true There's a yield value you could retrive.
+     *  \retval false There's no any yield value you could retrived.
+     */
     bool has_value() const noexcept { return m_coro ? m_coro.promise().has_value() : false; }
 
+    /*! \return the non-constant reference type of the yield value. 
+     *  You could call this with `std::move`
+     */
     decltype(auto) current_value()
     {
         auto& promise = m_coro.promise();
@@ -120,6 +156,8 @@ public:
         return promise.value();
     }
 
+    /*! \return The reference of the storage which holds the memory buffer and the yield value.
+     */
     auto& current_value_storage()
     {
         return m_coro.promise().value_storage();
@@ -142,6 +180,8 @@ public:
         return *this;
     }
 
+    /*! \brief Will destroy the coroutine handler, wether the generator has been `move_next`
+     */
     ~_type() noexcept { destroy_current_coro(); }
 
 private:

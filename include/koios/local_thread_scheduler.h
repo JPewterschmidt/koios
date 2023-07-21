@@ -5,15 +5,16 @@
 #include <queue>
 
 #include "koios/macros.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
 class local_thread_scheduler
 {
 public:
-    void enqueue(::std::coroutine_handle<> h)
+    void enqueue(task_on_the_fly h)
     {
-        m_tasks.emplace(h);
+        m_tasks.emplace(::std::move(h));
         run();
     }
 
@@ -29,7 +30,7 @@ private:
     }
 
 private:
-    ::std::queue<::std::coroutine_handle<>> m_tasks;
+    ::std::queue<task_on_the_fly> m_tasks;
 };
 
 KOIOS_NAMESPACE_END

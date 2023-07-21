@@ -10,6 +10,10 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief The moodycamel Concurrent queue wrapper. 
+ *         To satisfy the `invocable_queue_wrapper`.
+ *  This is a thread-safe class.
+ */
 class moodycamel_queue_wrapper
 {
 public:

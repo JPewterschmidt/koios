@@ -10,6 +10,7 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief Allow user to use different qeuue implement in `thread_pool` */
 class invocable_queue_wrapper
 {
 public:
@@ -18,6 +19,17 @@ public:
 public:
 #define CAST(p) (reinterpret_cast<Queue*>(p))
 
+    /*! \brief All information about the specific queue implementation is confined to the constructor. 
+     *         Take ownership of the queue.
+     *
+     *  This is a typical type erasure class, and the user needs to hand over 
+     *  the ownership of the queue to this class. 
+     *  It expresses the functionality of interest to `thread_pool` 
+     *  as function pointers independent of the template parameters.
+     *
+     *  \warning This type-erasure class does not provide thread-safe guarantee.
+     *  \tparam Queue A arbitrary queue type.
+     */
     template<::std::default_initializable Queue>
     invocable_queue_wrapper(Queue&& q)
         : m_storage     { new unsigned char[sizeof(Queue)] }, 

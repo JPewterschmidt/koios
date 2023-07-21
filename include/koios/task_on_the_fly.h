@@ -60,15 +60,15 @@ public:
      */
     void operator()()
     { 
-        m_holds_ownership = false;
+        give_up_ownership();
         m_h.resume(); 
     }
 
-    operator bool() const noexcept { return m_h != nullptr && m_holds_ownership; }
+    operator bool() const noexcept { return holds_ownership() && m_h; }
 
     bool done() const noexcept
     {
-        if (m_holds_ownership && m_h) [[likely]] return m_h.done();
+        if (holds_ownership()) [[likely]] return m_h.done();
         return true;
     }
 
@@ -81,12 +81,20 @@ public:
 private:
     void destroy() noexcept
     {
-        if (!m_holds_ownership) return;
-        m_holds_ownership = false;
-        m_h.destroy();
+        if (!holds_ownership()) return;
+
+        /**************************************/
+        /** The order of the following code  **/
+        /** is extremely important!          **/
+        /**************************************/
+        /**/give_up_ownership();         /* 1 */ 
+        /**/m_h.destroy();               /* 2 */ 
+        /**************************************/
     }
 
     bool exchange_ownership() noexcept { return ::std::exchange(m_holds_ownership, false); }
+    void give_up_ownership() noexcept { exchange_ownership(); }
+    bool holds_ownership() const noexcept { return m_holds_ownership; }
 
 private:
     ::std::coroutine_handle<> m_h;

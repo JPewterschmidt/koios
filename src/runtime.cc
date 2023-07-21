@@ -1,8 +1,10 @@
 #include "koios/runtime.h"
 #include "koios/task_scheduler.h"
 #include "spdlog/spdlog.h"
+#include "toolpex/exceptions.h"
 
 #include <utility>
+#include <atomic>
 
 KOIOS_NAMESPACE_BEG
 
@@ -68,6 +70,16 @@ int runtime_exit()
 exchange_task_scheduler(::std::unique_ptr<task_scheduler> other)
 {
     return ::std::exchange(g_ts_p, ::std::move(other));
+}
+
+void runtime_reload(size_t numthr)
+{
+    toolpex::not_implemented();   
+}
+
+void runtime_reload(size_t numthr, manually_stop_type)
+{
+    toolpex::not_implemented();   
 }
 
 KOIOS_NAMESPACE_END

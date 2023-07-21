@@ -34,7 +34,7 @@ try {
 
     ::std::vector<::std::future<void>> fvec{};
 
-    for (size_t i{}; i < 10000; ++i)
+    for (size_t i{}; i < 1000; ++i)
         fvec.emplace_back(starter().run_and_get_future());
 
     for (auto& i : fvec)

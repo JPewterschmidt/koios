@@ -15,6 +15,9 @@ void runtime_init(size_t numthr);
 void runtime_init(size_t numthr, manually_stop_type);
 int runtime_exit();
 
+void runtime_reload(size_t numthr);
+void runtime_reload(size_t numthr, manually_stop_type);
+
 ::std::unique_ptr<task_scheduler> exchange_task_scheduler(::std::unique_ptr<task_scheduler> other);
 
 KOIOS_NAMESPACE_END

@@ -18,6 +18,8 @@ KOIOS_NAMESPACE_BEG
 class exception : public ::std::exception
 {
 public:
+    exception() = default;
+
     exception(auto&& msg)
         : m_msg{ ::std::forward<decltype(msg)>(msg) }
     {

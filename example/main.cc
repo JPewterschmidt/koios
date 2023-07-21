@@ -1,7 +1,13 @@
 #include <iostream>
 #include "koios/task.h"
+#include "toolpex/tic_toc.h"
+
+#include <chrono>
 
 using namespace koios;
+using namespace toolpex;
+
+using namespace ::std::chrono_literals;
 
 task<int> coro()
 {
@@ -30,17 +36,13 @@ task<void> starter()
 
 int main()
 try {
+    auto t = tic();
     koios::runtime_init(12);
 
-    ::std::vector<::std::future<void>> fvec{};
+    ::std::this_thread::sleep_for(10s);
 
-    for (size_t i{}; i < 1000; ++i)
-        fvec.emplace_back(starter().run_and_get_future());
-
-    for (auto& i : fvec)
-        i.get();
-
-    return koios::runtime_exit();
+    koios::runtime_exit();
+    return 0;
 
 } catch (...) {
     return 1;

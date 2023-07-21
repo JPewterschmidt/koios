@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <atomic>
+#include <signal.h>
 
 KOIOS_NAMESPACE_BEG
 
@@ -15,6 +16,27 @@ namespace
     void logging_init()
     {
         spdlog::set_level(spdlog::level::info);
+    }
+
+    void signal_handler(int signum)
+    {
+        ::std::unique_ptr<task_scheduler> ts_p{};
+        g_ts_p.swap(ts_p);
+        spdlog::info("koios: SIGINT receive, cleaning");
+    }
+
+    void signal_handle_init()
+    {
+        struct ::sigaction sa{ };
+
+        sa.sa_handler = signal_handler, 
+        sa.sa_flags   = SA_RESTART,
+        ::sigemptyset(&sa.sa_mask);
+
+        if (::sigaction(SIGINT, &sa, nullptr) == -1)
+        {
+            throw koios::exception{};
+        }
     }
 }
 
@@ -39,8 +61,10 @@ task_scheduler& get_task_scheduler(::std::source_location sl)
  */
 void runtime_init(size_t numthr, manually_stop_type)
 {
-    g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
     logging_init();
+    signal_handle_init();
+
+    g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
 }
 
 /*! \brief Initialize this koios runtime.
@@ -48,8 +72,10 @@ void runtime_init(size_t numthr, manually_stop_type)
  */
 void runtime_init(size_t numthr)
 {
-    g_ts_p.reset(new task_scheduler{ numthr });
     logging_init();
+    signal_handle_init();
+
+    g_ts_p.reset(new task_scheduler{ numthr });
 }
 
 /*! \brief Clean the koios runtime, stop all of the resource needs `stop()` or `close()` etc.

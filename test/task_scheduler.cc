@@ -3,24 +3,47 @@
 #include "koios/runtime.h"
 #include "koios/task_scheduler_concept.h"
 #include "koios/task.h"
-#include <semaphore>
+
+#include <vector>
 
 using namespace koios;
 
-int result{};
+::std::atomic_int result{};
 
 task<int> coro()
 {
-    co_return 1;
+    ::std::vector tvec{ 
+        +[] -> task<int> { co_return 1; }, 
+        +[] -> task<int> { co_return 1; }, 
+        +[] -> task<int> { co_return 1; }, 
+        +[] -> task<int> { co_return 1; }, 
+        +[] -> task<int> { co_return 1; }, 
+    };
+
+    int result{};
+
+    for (const auto& i : tvec)
+    {
+        result += co_await i();
+    }
+
+    co_return result;
 }
 
 task<void> starter()
 {
-    result = co_await coro();
+    result += co_await coro();
 }
 
 TEST(task_scheduler, basic)
 {
-    starter().run_and_get_future().get();
-    ASSERT_EQ(result, 1);
+    constexpr size_t loop_size{ 10 };
+    ::std::vector<::std::future<void>> fvec{};
+    for (size_t i{}; i < loop_size; ++i)
+        fvec.emplace_back(starter().run_and_get_future());
+
+    for (auto& item : fvec)
+        item.get();
+
+    ASSERT_EQ(result, 5 * loop_size);
 }

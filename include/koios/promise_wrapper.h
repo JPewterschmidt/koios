@@ -8,6 +8,7 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief Type Erasure class of promise. */
 template<typename T>
 class promise_wrapper
 {

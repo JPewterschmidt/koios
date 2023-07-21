@@ -13,12 +13,17 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief the async task scheduler class. */
 class task_scheduler : public thread_pool
 {
 public:
-    using queue_type = std_queue_wrapper;
+    using queue_type = moodycamel_queue_wrapper;
 
 public:
+    /*! \param thr_cnt the number of thread you want.
+     *  \param manually_stop_type a tag which indecate 
+     *                            your willing of how the destructor behave. Just like `thread_pool`.
+     */
     explicit task_scheduler(size_t thr_cnt, manually_stop_type)
         : thread_pool{ thr_cnt, queue_type{}, manually_stop }
     {

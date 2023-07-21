@@ -1,4 +1,4 @@
-#include "koios/runtime.h"
+rome#include "koios/runtime.h"
 #include "koios/task_scheduler.h"
 #include "spdlog/spdlog.h"
 
@@ -68,6 +68,15 @@ int runtime_exit()
 exchange_task_scheduler(::std::unique_ptr<task_scheduler> other)
 {
     return ::std::exchange(g_ts_p, ::std::move(other));
+}
+
+void runtime_reload(size_t numthr)
+{
+    
+}
+
+void runtime_reload(size_t numthr, manually_stop_type)
+{
 }
 
 KOIOS_NAMESPACE_END

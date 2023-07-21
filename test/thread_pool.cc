@@ -34,6 +34,7 @@ TEST(thread_pool, basic)
 TEST(thread_pool, after_quick_stop)
 {
     thread_pool tp{ pool_size, moodycamel_queue_wrapper{} };
+
     tp.quick_stop();
     int success{};
     try

@@ -39,14 +39,10 @@ public:
         enqueue(t.move_out_coro_handle());
     }
 
-    void enqueue(::std::coroutine_handle<> h)
+    void enqueue(task_on_the_fly h)
     {
-        if (h) [[likely]]
-        {
-            thread_pool::enqueue_no_future([h = task_on_the_fly(h)] mutable { 
-                h();
-            });
-        }
+        if (!h) [[unlikely]] return;
+        thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
     }
 
     void stop() noexcept { thread_pool::stop(); }

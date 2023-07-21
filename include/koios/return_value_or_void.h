@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "koios/macros.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -21,7 +22,7 @@ class return_value_or_void_base
 {
 public:
     /*! Set the caller coroutine handle which coroutine represented will be wake up after this task done.  */
-    void set_caller(::std::coroutine_handle<> h) noexcept { m_caller = h; } 
+    void set_caller(task_on_the_fly h) noexcept { m_caller = ::std::move(h); } 
 
     /*! Take the ownership of the future object */
     auto get_future() { return m_promise_p->get_future(); }
@@ -29,7 +30,7 @@ public:
 
 protected:
     ::std::shared_ptr<::std::promise<T>> m_promise_p{ new ::std::promise<T>{} };
-    ::std::coroutine_handle<> m_caller{};
+    task_on_the_fly m_caller{};
 
     /*! \brief Wake the caller coroutine, if this task has been called with `co_await`.
      *  If this task was scheduled by `task_scheduler` directly, this function won't do anything.
@@ -37,7 +38,7 @@ protected:
     void wake_caller()
     {
         if (!m_caller) return;
-        DriverPolicy{}.scheduler().enqueue(m_caller);
+        DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
     }
 };
 

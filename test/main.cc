@@ -8,7 +8,6 @@ int main(int argc, char** argv)
     ::testing::InitGoogleTest(&argc, argv);
     koios::runtime_init(12);
     auto result = RUN_ALL_TESTS();
-    koios::task_scheduler_concept auto& scheduler = koios::get_task_scheduler();
-    scheduler.quick_stop();
+    koios::runtime_exit();
     return result;
 }

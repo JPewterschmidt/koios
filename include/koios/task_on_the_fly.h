@@ -23,15 +23,35 @@ KOIOS_NAMESPACE_BEG
 class task_on_the_fly
 {
 public:
+    constexpr task_on_the_fly() : m_h{}, m_holds_ownership{ false } {}
+
     task_on_the_fly(::std::coroutine_handle<> h) 
         : m_h{ h }
     {
     }
 
-    task_on_the_fly(task_on_the_fly&& other) noexcept
-        : m_h{ other.m_h }, m_need_destroy{ ::std::exchange(other.m_need_destroy, false) }
+    template<typename T>
+    task_on_the_fly(::std::coroutine_handle<T> h)
+        : m_h{ h }
     {
     }
+
+    task_on_the_fly(task_on_the_fly&& other) noexcept
+        : m_h{ other.m_h }, m_holds_ownership{ other.exchange_ownership() }
+    {
+    }
+
+    task_on_the_fly& operator=(task_on_the_fly&& other) noexcept
+    {
+        destroy();
+        m_h = other.m_h;
+        m_holds_ownership = other.exchange_ownership();
+
+        return *this;
+    }
+
+    task_on_the_fly(const task_on_the_fly&) = delete;
+    task_on_the_fly& operator=(const task_on_the_fly&) = delete;
 
     /*! \brief Execute and give up the ownership of the related `std::coroutine_handle`.
      *
@@ -40,22 +60,45 @@ public:
      */
     void operator()()
     { 
-        m_need_destroy = false;
+        give_up_ownership();
         m_h.resume(); 
+    }
+
+    operator bool() const noexcept { return holds_ownership() && m_h; }
+
+    bool done() const noexcept
+    {
+        if (holds_ownership()) [[likely]] return m_h.done();
+        return true;
     }
 
     /*! If the `operator()()` not called, in other words, 
      *  this `task_on_the_fly` still holds the ownership of the handler, 
      *  the destructor will call `::std::coroutine_handle::destroy()`.
      */
-    ~task_on_the_fly() noexcept
+    ~task_on_the_fly() noexcept { destroy(); }
+
+private:
+    void destroy() noexcept
     {
-        if (m_need_destroy) [[unlikely]] m_h.destroy();
+        if (!holds_ownership()) return;
+
+        /**************************************/
+        /** The order of the following code  **/
+        /** is extremely important!          **/
+        /**************************************/
+        /**/give_up_ownership();         /* 1 */ 
+        /**/m_h.destroy();               /* 2 */ 
+        /**************************************/
     }
+
+    bool exchange_ownership() noexcept { return ::std::exchange(m_holds_ownership, false); }
+    void give_up_ownership() noexcept { exchange_ownership(); }
+    bool holds_ownership() const noexcept { return m_holds_ownership; }
 
 private:
     ::std::coroutine_handle<> m_h;
-    bool m_need_destroy{ true };
+    bool m_holds_ownership{ true };
 };
 
 KOIOS_NAMESPACE_END

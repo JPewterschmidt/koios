@@ -1,12 +1,11 @@
 #ifndef TASK_PROMISE_BASE_H
 #define TASK_PROMISE_BASE_H
 
-#include <coroutine>
-
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
 #include "koios/runtime.h"
 #include "koios/task_scheduler_wrapper.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -22,7 +21,7 @@ class destroy_aw
 {
 public:
     constexpr bool await_ready() const noexcept { return false; }
-    void await_suspend(::std::coroutine_handle<> h) const noexcept { h.destroy(); }
+    constexpr void await_suspend(task_on_the_fly h) const noexcept { }
     constexpr void await_resume() const noexcept { }
 };
 

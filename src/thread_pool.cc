@@ -47,12 +47,19 @@ void thread_pool::quick_stop() noexcept
 
 void thread_pool::consumer(::std::stop_token token) noexcept
 {
-    do
+    while (!done(token))
     {
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
-            ::std::unique_lock lk{ m_lock };
-            m_cond.wait_for(lk, 3s);
+            if (!done(token))
+            {
+                ::std::unique_lock lk{ m_lock };
+                m_cond.wait_for(lk, 3s);
+            }
+        }
+        else if (done(token))
+        {
+            break;
         }
         else try 
         { 
@@ -71,7 +78,6 @@ void thread_pool::consumer(::std::stop_token token) noexcept
             spdlog::error("user code has throw something not inherited from `std::exception`");
         }
     }
-    while (!done(token));
 }
 
 bool thread_pool::done(::std::stop_token& tk) const noexcept

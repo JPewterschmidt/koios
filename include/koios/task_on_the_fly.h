@@ -83,13 +83,8 @@ private:
     {
         if (!holds_ownership()) return;
 
-        /**************************************/
-        /** The order of the following code  **/
-        /** is extremely important!          **/
-        /**************************************/
-        /**/give_up_ownership();         /* 1 */ 
-        /**/m_h.destroy();               /* 2 */ 
-        /**************************************/
+        give_up_ownership();
+        m_h.destroy();
     }
 
     bool exchange_ownership() noexcept { return ::std::exchange(m_holds_ownership, false); }
@@ -98,7 +93,10 @@ private:
 
 private:
     ::std::coroutine_handle<> m_h;
-    bool m_holds_ownership{ true };
+
+    // instead of using this member directly, 
+    // use `exchange_ownership()`, `give_up_ownership()`, `holds_ownership()` instead.
+    bool m_holds_ownership{ true }; 
 };
 
 KOIOS_NAMESPACE_END

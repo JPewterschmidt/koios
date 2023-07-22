@@ -5,6 +5,7 @@
 #include <memory>
 #include <source_location>
 #include <mutex>
+#include <concepts>
 
 #include "fmt/format.h"
 
@@ -153,6 +154,13 @@ public:
         return result;
     }
 
+    [[nodiscard]] auto result()
+    {
+        if constexpr (is_return_void())
+            run_and_get_future().get();
+        else return run_and_get_future().get();
+    }
+
     /*! \retval true This task is a discardable task. You could ignore the return value.
      *  \retval false This task is NOT a Discardable task. You have to take the ownership of the related future object.
      *
@@ -166,6 +174,7 @@ public:
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
     [[nodiscard]] bool has_scheduled() const noexcept { return !m_coro_handle; }
+    [[nodiscard]] static consteval bool is_return_void() { return ::std::same_as<void, value_type>; }
 
     /*! \brief Take the ownership of the future object related to this task.
      *  \return the future object.

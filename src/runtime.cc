@@ -20,9 +20,8 @@ namespace
 
     void signal_handler(int signum)
     {
-        ::std::unique_ptr<task_scheduler> ts_p{};
-        g_ts_p.swap(ts_p);
         spdlog::info("koios: SIGINT receive, cleaning");
+        g_ts_p->quick_stop();
     }
 
     void signal_handle_init()
@@ -84,7 +83,7 @@ void runtime_init(size_t numthr)
  */
 int runtime_exit()
 {
-    g_ts_p.reset(nullptr);
+    g_ts_p->quick_stop();
     return 0;
 }
 

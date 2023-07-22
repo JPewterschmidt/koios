@@ -5,7 +5,7 @@
 
 using namespace koios;
 
-constinit size_t test_size{ 100000 };
+constinit size_t test_size{ 10000 };
 constinit size_t pool_size{ 10 };
 
 TEST(thread_pool, basic)

@@ -9,9 +9,13 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief A tiny task scheduler which allow tasks run synchronously. */ 
 class local_thread_scheduler
 {
 public:
+    /*! This is sync call, which means only the scheduled task return, this function return.
+     *  Of course, this will call the coroutine immediately.
+     */
     void enqueue(task_on_the_fly h)
     {
         m_tasks.emplace(::std::move(h));
@@ -30,6 +34,7 @@ private:
     }
 
 private:
+    // std::queue is not suppose to be there...
     ::std::queue<task_on_the_fly> m_tasks;
 };
 

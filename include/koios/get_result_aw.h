@@ -12,6 +12,15 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief Awaitable base class for coroutine call in another coroutine task.
+ *  
+ *  Contains the requried member function which needed by the compiler,
+ *  also holds the ownership of future.
+ *
+ *  \tparam T result type of the current task.
+ *  \tparam Task `task` type of the current task.
+ *  \tparam DriverPolicy Decide where to resume the caller task and the task itself.
+ */
 template<typename T, typename Task, typename DriverPolicy>
 class get_result_aw_base
 {
@@ -25,7 +34,10 @@ public:
     }
 
     constexpr bool await_ready() const noexcept { return false; }
-    //void await_suspend(::std::coroutine_handle<> h)
+
+    /*! This function will record the caller coroutine for resuming it.
+     *  It will also schedule this current task with `DriverPolicy`.
+     */
     void await_suspend(task_on_the_fly h)
     {
         m_promise.set_caller(::std::move(h));
@@ -34,6 +46,9 @@ public:
         );
     }
 
+    /*! \brief Get the ownership of the future type.
+     *  \return the `std::future<T>` object.
+     */
     auto get_future() noexcept 
     { 
         // For which scheduled by user call `task::run()` or `task::run_and_get_future()` directly.

@@ -40,6 +40,12 @@ protected:
         if (!m_caller) return;
         DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
     }
+
+    void deal_exception(::std::exception_ptr ep)
+    {
+        m_promise_p->set_exception(::std::move(ep));
+        wake_caller();
+    }
 };
 
 /*! \brief The major `return_value_or_void` class template.

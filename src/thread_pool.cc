@@ -67,15 +67,15 @@ void thread_pool::consumer(::std::stop_token token) noexcept
         } 
         catch (const koios::exception& e)
         {
-            spdlog::info(e.what());
+            e.log();
         }
         catch (const ::std::exception& e)
         {
-            spdlog::error(e.what());
+            koios::log_error(e.what());
         }
         catch (...)
         { 
-            spdlog::error("user code has throw something not inherited from `std::exception`");
+            koios::log_error("user code has throw something not inherited from `std::exception`");
         }
     }
 }

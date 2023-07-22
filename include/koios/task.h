@@ -67,6 +67,11 @@ public:
         {
             return { *this };
         }
+
+        void unhandled_exception()
+        {
+            return_value_or_void<T, promise_type, DriverPolicy>::deal_exception(::std::current_exception());
+        }
     };
 
     friend class task_scheduler;

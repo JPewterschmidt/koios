@@ -25,7 +25,8 @@ public:
     {
     }
 
-    const char* what() const noexcept { return m_msg.c_str(); }
+    virtual const char* what() const noexcept override { return m_msg.c_str(); }
+    void log() const noexcept;
 
 protected:
     ::std::string m_msg;
@@ -56,6 +57,10 @@ public:
     {
     }
 };
+
+void log_info(::std::string msg);
+void log_error(::std::string msg);
+void log_debug(::std::string msg);
 
 KOIOS_NAMESPACE_END
 

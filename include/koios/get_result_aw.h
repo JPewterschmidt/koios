@@ -72,7 +72,7 @@ public:
     {
     }
     
-    decltype(auto) await_resume() noexcept { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
+    decltype(auto) await_resume() { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
 };
 
 template<typename Task, typename DriverPolicy>

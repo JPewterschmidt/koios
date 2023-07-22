@@ -71,6 +71,8 @@ public:
 
     constexpr void return_void() const noexcept {}
 
+    void unhandled_exception() const { throw; }
+
     /*! \brief Function which stores the yield value.
      *  After store the yield value, this will makes the generator coroutine suspend and back to the caller function.
      */

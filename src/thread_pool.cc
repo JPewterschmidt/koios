@@ -51,15 +51,9 @@ void thread_pool::consumer(::std::stop_token token) noexcept
     {
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
-            if (!done(token))
-            {
-                ::std::unique_lock lk{ m_lock };
-                m_cond.wait_for(lk, 3s);
-            }
-        }
-        else if (done(token))
-        {
-            break;
+            if (done(token)) break;
+            ::std::unique_lock lk{ m_lock };
+            m_cond.wait_for(lk, 3s);
         }
         else try 
         { 
@@ -67,15 +61,15 @@ void thread_pool::consumer(::std::stop_token token) noexcept
         } 
         catch (const koios::exception& e)
         {
-            spdlog::info(e.what());
+            e.log();
         }
         catch (const ::std::exception& e)
         {
-            spdlog::error(e.what());
+            koios::log_error(e.what());
         }
         catch (...)
         { 
-            spdlog::error("user code has throw something not inherited from `std::exception`");
+            koios::log_error("user code has throw something not inherited from `std::exception`");
         }
     }
 }

@@ -38,14 +38,18 @@ public:
     /*! This function will record the caller coroutine for resuming it.
      *  It will also schedule this current task with `DriverPolicy`.
      */
-    void await_suspend(task_on_the_fly h)
+    void await_suspend(task_on_the_fly h) noexcept
     {
+        // Dear developers: 
+        // This function should not throw (even potentially) anything.
+        // See also comments of `thread_pool::enqueue`
+
         m_promise.set_caller(::std::move(h));
         DriverPolicy{}.scheduler().enqueue(
             static_cast<Task*>(this)->get_handler_to_schedule()
         );
     }
-
+    
     /*! \brief Get the ownership of the future type.
      *  \return the `std::future<T>` object.
      */
@@ -72,7 +76,7 @@ public:
     {
     }
     
-    decltype(auto) await_resume() noexcept { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
+    decltype(auto) await_resume() { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
 };
 
 template<typename Task, typename DriverPolicy>

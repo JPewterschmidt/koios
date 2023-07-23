@@ -8,6 +8,9 @@ using namespace koios;
 using namespace toolpex;
 using namespace ::std::chrono_literals;
 
+#include <semaphore>
+::std::binary_semaphore bs{0};
+
 task<int> coro()
 {
     ::std::vector tvec{ 
@@ -19,6 +22,9 @@ task<int> coro()
     };
 
     int result{};
+
+    bs.release();
+    ::std::this_thread::sleep_for(3s);
 
     for (const auto& i : tvec)
     {
@@ -51,15 +57,12 @@ catch (...)
 int main()
 try 
 {
-    auto t = tic();
-    koios::runtime_init(12);
+    koios::runtime_init(1);
 
     starter().run();
+    bs.acquire();
+
     koios::runtime_exit();
-
-    auto now = ::std::chrono::high_resolution_clock::now();
-    ::std::cout << ::std::chrono::duration_cast<::std::chrono::nanoseconds>(now - t).count() << ::std::endl;
-
     return 0;
 } 
 catch (...) 

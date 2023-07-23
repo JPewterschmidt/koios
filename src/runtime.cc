@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <atomic>
+#include <exception>
 #include <signal.h>
 
 KOIOS_NAMESPACE_BEG
@@ -20,7 +21,16 @@ namespace
 
     void signal_handler(int signum)
     {
-        spdlog::info("koios: SIGINT receive, cleaning");
+        static ::std::atomic_bool called{ false };       
+
+        if (called)
+        {
+            koios::log_info("koios: SIGINT receive again, system will be terminate right now!");
+            ::std::terminate();
+        }
+
+        called = true;
+        koios::log_info("koios: SIGINT receive, cleaning");
         g_ts_p->quick_stop();
     }
 
@@ -72,6 +82,8 @@ void runtime_init(size_t numthr, manually_stop_type)
 void runtime_init(size_t numthr)
 {
     logging_init();
+    koios::log_info("runtime initializing");
+
     signal_handle_init();
 
     g_ts_p.reset(new task_scheduler{ numthr });

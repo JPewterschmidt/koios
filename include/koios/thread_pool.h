@@ -56,36 +56,51 @@ public:
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
      *  \param func The functor.
      *  \param args The arguments of the functor.
-     *  \ret The corresponding future type, which user could retrive the actuall return value of the enqueued functor.
+     *  \return The corresponding future type, which user could retrive the actuall return value of the enqueued functor.
      *  \see `std::future`
+     *  \see `enqueue_no_future()`
+     *
+     *  Lower than `enqueue_no_future()`
      */
     template<typename F, typename... Args>
-    auto enqueue(F&& func, Args&&... args)
+    [[nodiscard]] auto enqueue(F&& func, Args&&... args) noexcept
     {
-        if (m_stop_now) [[unlikely]]
-            throw thread_pool_stopped_exception{ "thread_pool::quick_stop() called!" };
+        // Dear developers: 
+        // Do NOT try to throw anything in this function.
+        // See the comments of `enqueue_no_future`.
 
         using return_type = typename std::result_of<F(Args...)>::type;
+        using future_type = ::std::future<return_type>;
+
         auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
-        ::std::future<return_type> result = task->get_future();
+        future_type result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
         m_cond.notify_one();
 
+        if (m_stop_now) [[unlikely]] return future_type{};
         return result;
     }
 
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
      *  \param func The functor.
      *  \param args The arguments of the functor.
-     *  \ret Nothing
+     *  \see `enqueue()`
+     *
+     *  Faster than `enqueue()`
      */
     template<typename F, typename... Args>
-    void enqueue_no_future(F&& func, Args&&... args)
+    void enqueue_no_future(F&& func, Args&&... args) noexcept
     {
-        if (m_stop_now) [[unlikely]]
-            throw thread_pool_stopped_exception{ "thread_pool::quick_stop() called" };
+        // Dear developers: 
+        // Do NOT try to throw anything in this function.
+        // Because one of the most important caller of this function, `suspend_await`, 
+        // will take the ownership (by holding a `task_on_the_fly` instance ) of the coroutine handler of its caller.
+        // Throwing something will trigger the destuctor of that `task_on_the_fly` instance.
+        // Which means the resources of that caller will also be destructed!
+        // But after that, something you thrown here will continue propogating,
+        // which will cause problem like *use-after-free* or *double-free*.
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });

@@ -39,6 +39,11 @@ protected:
 class thread_pool_stopped_exception : public koios::exception
 {
 public:
+    thread_pool_stopped_exception()
+        : koios::exception("thread_pool has been stopped, now stop try to enqueue something else.")
+    {
+    }
+
     thread_pool_stopped_exception(auto&& msg)
         : koios::exception(::std::forward<decltype(msg)>(msg))
     {

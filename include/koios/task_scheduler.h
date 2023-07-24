@@ -34,12 +34,12 @@ public:
     {
     }
 
-    void enqueue(task_concept auto t)
+    void enqueue(task_concept auto t) noexcept
     {
         enqueue(t.move_out_coro_handle());
     }
 
-    void enqueue(task_on_the_fly h)
+    void enqueue(task_on_the_fly h) noexcept
     {
         if (!h) [[unlikely]] return;
         thread_pool::enqueue_no_future_without_checking([h = ::std::move(h)] mutable { h(); });

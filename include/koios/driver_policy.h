@@ -19,7 +19,7 @@ concept driver_policy_concept = requires(DP dp)
 struct run_this_async
 {
     /*! \return A global asynchronous task scheduler. */
-    task_scheduler_wrapper scheduler()
+    task_scheduler_wrapper scheduler() noexcept
     {
         return { get_task_scheduler() };
     };

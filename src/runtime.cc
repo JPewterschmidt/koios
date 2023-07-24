@@ -58,7 +58,10 @@ namespace
 task_scheduler& get_task_scheduler(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
-        throw runtime_not_working_exception{ ::std::move(sl) };
+    {
+        koios::log_error("koios: runtime has not been started! terminating...");
+        ::std::terminate();
+    }
     return *g_ts_p;
 }
 

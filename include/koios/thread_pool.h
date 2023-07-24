@@ -63,24 +63,10 @@ public:
      *  Lower than `enqueue_no_future()`
      */
     template<typename F, typename... Args>
-    [[nodiscard]] auto enqueue(F&& func, Args&&... args) noexcept
+    [[nodiscard]] auto enqueue(F&& func, Args&&... args)
     {
-        // Dear developers: 
-        // Do NOT try to throw anything in this function.
-        // See the comments of `enqueue_no_future`.
-
-        using return_type = typename std::result_of<F(Args...)>::type;
-        using future_type = ::std::future<return_type>;
-
-        auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
-            ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
-        );
-        future_type result = task->get_future();
-        m_tasks.enqueue([task] mutable { (*task)(); });
-        m_cond.notify_one();
-
-        if (m_stop_now) [[unlikely]] return future_type{};
-        return result;
+        if (m_stop_now) [[unlikely]] throw thread_pool_stopped_exception{};
+        return enqueue_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
@@ -91,20 +77,10 @@ public:
      *  Faster than `enqueue()`
      */
     template<typename F, typename... Args>
-    void enqueue_no_future(F&& func, Args&&... args) noexcept
+    void enqueue_no_future(F&& func, Args&&... args)
     {
-        // Dear developers: 
-        // Do NOT try to throw anything in this function.
-        // Because one of the most important caller of this function, `suspend_await`, 
-        // will take the ownership (by holding a `task_on_the_fly` instance ) of the coroutine handler of its caller.
-        // Throwing something will trigger the destuctor of that `task_on_the_fly` instance.
-        // Which means the resources of that caller will also be destructed!
-        // But after that, something you thrown here will continue propogating,
-        // which will cause problem like *use-after-free* or *double-free*.
-
-        auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
-        m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
-        m_cond.notify_one();
+        if (m_stop_now) [[unlikely]] throw thread_pool_stopped_exception{};
+        enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
     
     /*! \brief Wake up all sleeping threads and join all threads.
@@ -127,6 +103,44 @@ public:
     /*! \return the number of remain tasks.
      */
     size_t number_remain_tasks() const noexcept { return m_tasks.size(); }
+
+protected:
+    template<typename F, typename... Args>
+    void enqueue_no_future_without_checking(F&& func, Args&&... args) noexcept
+    {
+        // Dear developers: 
+        // Do NOT try to throw anything in this function.
+        // Because one of the most important caller of this function, `suspend_await`, 
+        // will take the ownership (by holding a `task_on_the_fly` instance ) of the coroutine handler of its caller.
+        // Throwing something will trigger the destuctor of that `task_on_the_fly` instance.
+        // Which means the resources of that caller will also be destructed!
+        // But after that, something you thrown here will continue propogating,
+        // which will cause problem like *use-after-free* or *double-free*.
+
+        auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
+        m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
+        m_cond.notify_one();
+    }
+
+    template<typename F, typename... Args>
+    [[nodiscard]] auto enqueue_without_checking(F&& func, Args&&... args) noexcept
+    {
+        // Dear developers: 
+        // Do NOT try to throw anything in this function.
+        // See the comments of `enqueue_no_future`.
+
+        using return_type = typename std::result_of<F(Args...)>::type;
+        using future_type = ::std::future<return_type>;
+
+        auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
+            ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
+        );
+        future_type result = task->get_future();
+        m_tasks.enqueue([task] mutable { (*task)(); });
+        m_cond.notify_one();
+
+        return result;
+    }
 
 private:
     void consumer(::std::stop_token token) noexcept;

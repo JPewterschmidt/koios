@@ -36,7 +36,7 @@ private:
     template<typename TT>
     static T* alloc_and_construct(TT&& tt)
     {
-        T* buffer = Alloc{}.allocate(sizeof(T));
+        T* buffer = Alloc{}.allocate(1);
         ::std::construct_at(buffer, ::std::forward<TT>(tt));
         return buffer;
     }
@@ -49,7 +49,7 @@ private:
         void operator()(T* p) const noexcept 
         {
             p->~T();
-            Alloc{}.deallocate(p, sizeof(*p));
+            Alloc{}.deallocate(p, 1);
         }
     };
 

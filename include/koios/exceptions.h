@@ -63,6 +63,17 @@ public:
     }
 };
 
+class uring_exception : public koios::exception
+{
+public:
+    uring_exception() = default;
+
+    uring_exception(auto&& msg)
+        : koios::exception{ ::std::forward<decltype(msg)>(msg) }
+    {
+    }
+};
+
 void log_info(::std::string msg);
 void log_error(::std::string msg);
 void log_debug(::std::string msg);

@@ -14,6 +14,7 @@
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
+#include "koios/event_loop.h"
 
 KOIOS_NAMESPACE_BEG
 

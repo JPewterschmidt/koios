@@ -26,7 +26,10 @@ target("koios")
         "concurrentqueue"
     )
     set_warnings("all", "error")
-    add_syslinks("spdlog")
+    add_syslinks(
+        "spdlog", 
+        "uring"
+    )
     add_files("src/*.cc")
 
 target("test")

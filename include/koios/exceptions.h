@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <exception>
 #include <source_location>
+#include <cstring>
 
 #include "fmt/core.h"
 
@@ -70,6 +71,11 @@ public:
 
     uring_exception(auto&& msg)
         : koios::exception{ ::std::forward<decltype(msg)>(msg) }
+    {
+    }
+
+    uring_exception(int errno)
+        : uring_exception{ ::strerror(errno) }
     {
     }
 };

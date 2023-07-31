@@ -8,8 +8,7 @@ add_requires(
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark",
-    "spdlog"
+    "benchmark"
 )
 
 add_includedirs(
@@ -24,10 +23,13 @@ target("koios")
     add_packages(
         "fmt", 
         "gflags", 
-        "concurrentqueue",
-        "spdlog"
+        "concurrentqueue"
     )
     set_warnings("all", "error")
+    add_syslinks(
+        "spdlog", 
+        "uring"
+    )
     add_files("src/*.cc")
 
 target("test")
@@ -37,7 +39,7 @@ target("test")
     set_warnings("all", "error")
     add_files("test/*.cc")
     add_packages(
-        "gtest", "fmt"
+        "gtest", "fmt", "spdlog"
     )
     after_build(function (target)
         os.exec(target:targetfile())
@@ -49,12 +51,13 @@ target("test")
     
 target("example")
     set_kind("binary")
-    add_packages("concurrentqueue", "spdlog")
+    add_packages("")
     add_deps("koios")
     add_files("example/*.cc")
+    add_syslinks("spdlog")
     add_packages(
         "fmt", "gflags", 
-        "spdlog"
+        "concurrentqueue"
     )
     
 

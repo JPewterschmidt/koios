@@ -143,6 +143,8 @@ protected:
         return result;
     }
 
+    virtual void before_each_task() noexcept { }
+
 private:
     void consumer(::std::stop_token token) noexcept;
     [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;

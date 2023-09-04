@@ -11,47 +11,17 @@ using namespace ::std::chrono_literals;
 #include <semaphore>
 ::std::binary_semaphore bs{0};
 
-task<int> coro()
+task<int> func()
 {
-    ::std::vector tvec{ 
-        +[] -> task<int> { co_return 1; }, 
-        +[] -> task<int> { co_return 2; }, 
-        +[] -> task<int> { co_return 3; }, 
-        +[] -> task<int> { co_return 4; }, 
-        +[] -> task<int> { co_return 5; }, 
-    };
-
-    int result{};
-
-    bs.release();
-    ::std::this_thread::sleep_for(3s);
-
-    for (const auto& i : tvec)
-    {
-        int val = co_await i();
-        ::std::cout << val << ::std::endl;
-        result += val;
-    }
-
-    co_return result;
+    co_return 1;
 }
 
-task<void> starter() noexcept
-try 
+task<void> starter()
 {
-    co_await coro();
-} 
-catch (const koios::exception& e)
-{
-    e.log();
-}
-catch (const std::exception& e)
-{
-    ::std::cout << e.what();
-}
-catch (...)
-{
-    ::std::cout << "starter have caught comething, exiting" << ::std::endl;
+    auto b = tic();
+    for (size_t i = 0; i < 10000; ++i)
+        co_await func();   
+    ::std::cout << toc(b) << ::std::endl;
 }
 
 int main()
@@ -59,8 +29,8 @@ try
 {
     koios::runtime_init(1);
 
-    starter().run();
-    bs.acquire();
+    auto f = starter().run_and_get_future();
+    f.get();
 
     koios::runtime_exit();
     return 0;

@@ -49,6 +49,7 @@ void thread_pool::consumer(::std::stop_token token) noexcept
 {
     while (!done(token))
     {
+        before_each_task();
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             if (done(token)) break;

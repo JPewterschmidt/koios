@@ -1,4 +1,6 @@
 #include "koios/runtime.h"
+#include "koios/timer.h"
+#include "koios/event_loop.h"
 #include "koios/task_scheduler.h"
 #include "spdlog/spdlog.h"
 #include "toolpex/exceptions.h"
@@ -7,6 +9,7 @@
 #include <atomic>
 #include <exception>
 #include <signal.h>
+#include <memory>
 
 KOIOS_NAMESPACE_BEG
 
@@ -55,7 +58,7 @@ namespace
  *
  *  \warning You has to call the `runtime_init()` function first.
  */
-task_scheduler& get_task_scheduler(::std::source_location sl)
+task_scheduler& get_task_scheduler_impl(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
     {
@@ -76,7 +79,8 @@ void runtime_init(size_t numthr, manually_stop_type)
     logging_init();
     signal_handle_init();
 
-    g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
+    //g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
+    g_ts_p = ::std::make_unique<event_loop<timer_event_loop>>(numthr, manually_stop);
 }
 
 /*! \brief Initialize this koios runtime.
@@ -89,7 +93,8 @@ void runtime_init(size_t numthr)
 
     signal_handle_init();
 
-    g_ts_p.reset(new task_scheduler{ numthr });
+    //g_ts_p.reset(new task_scheduler{ numthr });
+    g_ts_p = ::std::make_unique<event_loop<timer_event_loop>>(numthr);
 }
 
 /*! \brief Clean the koios runtime, stop all of the resource needs `stop()` or `close()` etc.

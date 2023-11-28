@@ -14,7 +14,6 @@
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
-#include "koios/event_loop.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -52,7 +51,7 @@ public:
         init(numthr);
     }
 
-    ~thread_pool() noexcept;
+    virtual ~thread_pool() noexcept;
           
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
      *  \param func The functor.
@@ -141,6 +140,12 @@ protected:
         m_cond.notify_one();
 
         return result;
+    }
+
+    virtual void before_each_task() noexcept { }
+    virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
+    { 
+        return ::std::chrono::nanoseconds::max(); 
     }
 
 private:

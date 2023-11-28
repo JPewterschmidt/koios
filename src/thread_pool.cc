@@ -49,11 +49,14 @@ void thread_pool::consumer(::std::stop_token token) noexcept
 {
     while (!done(token))
     {
+        before_each_task();
         if (auto task_opt = m_tasks.dequeue(); !task_opt)
         {
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };
-            m_cond.wait_for(lk, 3s);
+            const auto max_waiting_time = max_sleep_duration();
+            constexpr auto waiting_latch = 50ms;
+            m_cond.wait_for(lk, waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time);
         }
         else try 
         { 

@@ -9,9 +9,15 @@
 KOIOS_NAMESPACE_BEG
 
 template<::std::default_initializable... Loops>
-class event_loop : private task_scheduler, public Loops...                
+class event_loop : public task_scheduler, public Loops...                
 {
 public:
+    template<typename... Args>
+    event_loop(Args&&... args)
+        : task_scheduler(::std::forward<Args>(args)...)
+    {
+    }
+
     void do_occured_nonblk() noexcept
     {
         (Loops::do_occured_nonblk(), ...);
@@ -22,6 +28,8 @@ public:
     {
         SpecificLoop::add_event(::std::forward<decltype(data)>(data));
     }
+
+    virtual ~event_loop() noexcept {}
     
 private:
     void before_each_task() noexcept override

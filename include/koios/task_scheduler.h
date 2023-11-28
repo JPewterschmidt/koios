@@ -47,6 +47,8 @@ public:
 
     void stop() noexcept { thread_pool::stop(); }
     void quick_stop() noexcept { thread_pool::quick_stop(); }
+
+    virtual ~task_scheduler() noexcept {}
 };
 
 KOIOS_NAMESPACE_END

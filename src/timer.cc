@@ -9,7 +9,9 @@ KOIOS_NAMESPACE_BEG
 void timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
-    auto now = ::std::chrono::high_resolution_clock::now();
+    const auto now = ::std::chrono::high_resolution_clock::now();
+    if (m_timer_heap.empty()) return;
+
     auto& nearest = m_timer_heap.front();
     if (now < nearest.timeout_tp)
         return;

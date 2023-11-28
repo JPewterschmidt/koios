@@ -51,7 +51,7 @@ public:
         init(numthr);
     }
 
-    ~thread_pool() noexcept;
+    virtual ~thread_pool() noexcept;
           
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
      *  \param func The functor.

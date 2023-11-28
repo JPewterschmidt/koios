@@ -1,5 +1,6 @@
 #include <iostream>
 #include "koios/task.h"
+#include "koios/event_loop.h"
 #include "toolpex/tic_toc.h"
 
 #include <chrono>
@@ -36,11 +37,9 @@ task<void> tt()
 int main()
 try 
 {
-    koios::runtime_init(1);
+    
 
-    starter().run_and_get_future().get();
 
-    koios::runtime_exit();
     return 0;
 } 
 catch (...) 

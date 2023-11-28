@@ -55,7 +55,7 @@ namespace
  *
  *  \warning You has to call the `runtime_init()` function first.
  */
-task_scheduler& get_task_scheduler(::std::source_location sl)
+task_scheduler& get_task_scheduler_impl(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
     {

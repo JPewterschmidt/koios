@@ -44,6 +44,7 @@ target("test")
     add_packages(
         "gtest", "fmt", "spdlog"
     )
+    set_optimize("fastest")
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")

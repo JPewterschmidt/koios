@@ -6,6 +6,7 @@
 #include <source_location>
 #include <mutex>
 #include <concepts>
+#include <iostream>
 
 #include "fmt/format.h"
 

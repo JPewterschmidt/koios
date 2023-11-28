@@ -6,7 +6,9 @@
 #include "koios/runtime.h"
 #include "koios/task_scheduler_wrapper.h"
 #include "koios/task_on_the_fly.h"
-
+#include "koios/exceptions.h" // logging
+#include <sstream>            // logging
+ 
 KOIOS_NAMESPACE_BEG
 
 /*! \brief Coroutine which has been suspended by this awaitable class will be `destroy()`.

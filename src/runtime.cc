@@ -50,6 +50,7 @@ namespace
             throw koios::exception{};
         }
     }
+
 }
 
 /*! \brief Get the global task_scheduler.
@@ -58,14 +59,15 @@ namespace
  *
  *  \warning You has to call the `runtime_init()` function first.
  */
-task_scheduler& get_task_scheduler_impl(::std::source_location sl)
+::std::unique_ptr<task_scheduler>&
+get_task_scheduler_ptr(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
     {
         koios::log_error("koios: runtime has not been started! terminating...");
         ::std::terminate();
     }
-    return *g_ts_p;
+    return g_ts_p;
 }
 
 /*! \brief Initialize this koios runtime.
@@ -80,7 +82,7 @@ void runtime_init(size_t numthr, manually_stop_type)
     signal_handle_init();
 
     //g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
-    g_ts_p = ::std::make_unique<event_loop<timer_event_loop>>(numthr, manually_stop);
+    g_ts_p = ::std::make_unique<event_loop_t>(numthr, manually_stop);
 }
 
 /*! \brief Initialize this koios runtime.
@@ -94,7 +96,7 @@ void runtime_init(size_t numthr)
     signal_handle_init();
 
     //g_ts_p.reset(new task_scheduler{ numthr });
-    g_ts_p = ::std::make_unique<event_loop<timer_event_loop>>(numthr);
+    g_ts_p = ::std::make_unique<event_loop_t>(numthr);
 }
 
 /*! \brief Clean the koios runtime, stop all of the resource needs `stop()` or `close()` etc.

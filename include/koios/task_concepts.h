@@ -7,15 +7,17 @@
 
 #include "koios/macros.h"
 #include "toolpex/is_specialization_of.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
 template<typename T>
 concept task_concept = requires(T t)
 {
-    { t.move_out_coro_handle() } -> ::std::convertible_to<::std::coroutine_handle<>>;
+    //{ t.get_handler_to_schedule() } -> ::std::convertible_to<::std::coroutine_handle<>>;
+    { static_cast<task_on_the_fly>(t) };
     { t() };
-    { t.get_future() } -> toolpex::is_specialization_of<::std::future>;
+    { t.run_and_get_future() } -> toolpex::is_specialization_of<::std::future>;
 };
 
 KOIOS_NAMESPACE_END

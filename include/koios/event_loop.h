@@ -27,9 +27,9 @@ public:
     }
 
     template<typename SpecificLoop>
-    void add_event(auto&& data)
+    void add_event(auto&&... data)
     {
-        SpecificLoop::add_event(::std::forward<decltype(data)>(data));
+        SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
     virtual ~event_loop() noexcept {}

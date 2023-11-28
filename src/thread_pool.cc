@@ -54,7 +54,7 @@ void thread_pool::consumer(::std::stop_token token) noexcept
         {
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };
-            m_cond.wait_for(lk, 3s);
+            m_cond.wait_for(lk, 50ms);
         }
         else try 
         { 

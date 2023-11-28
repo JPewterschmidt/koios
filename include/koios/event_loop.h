@@ -4,11 +4,12 @@
 #include <concepts>
 
 #include "koios/macros.h"
+#include "koios/task_scheduler.h"
 
 KOIOS_NAMESPACE_BEG
 
 template<::std::default_initializable... Loops>
-class event_loop : private Loops...
+class event_loop : private task_scheduler, public Loops...                
 {
 public:
     void do_occured_nonblk() noexcept
@@ -17,15 +18,15 @@ public:
     }
 
     template<typename SpecificLoop>
-    auto& as() noexcept
-    {
-        return static_cast<SpecificLoop&>(*this);
-    }
-
-    template<typename SpecificLoop>
     void add_event(auto&& data)
     {
         SpecificLoop::add_event(::std::forward<decltype(data)>(data));
+    }
+    
+private:
+    void before_each_task() noexcept override
+    {
+        do_occured_nonblk();
     }
 
 protected:

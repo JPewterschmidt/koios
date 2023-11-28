@@ -17,6 +17,7 @@ add_includedirs(
 )
 
 set_languages("c++2b", "c17")
+set_policy("build.warning", true)
 
 target("koios")
     set_kind("shared")
@@ -26,6 +27,7 @@ target("koios")
         "concurrentqueue"
     )
     set_warnings("all", "error")
+    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_syslinks(
         "spdlog", 
         "uring"
@@ -35,6 +37,7 @@ target("koios")
 target("test")
     set_kind("binary")
     add_packages("concurrentqueue")
+    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
     set_warnings("all", "error")
     add_files("test/*.cc")
@@ -52,6 +55,7 @@ target("test")
 target("example")
     set_kind("binary")
     add_packages("")
+    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
     add_files("example/*.cc")
     add_syslinks("spdlog")

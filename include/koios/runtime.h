@@ -1,5 +1,6 @@
-#ifndef KOIOS_GLOBAL_TASK_SCHEDULER_H
-#define KOIOS_GLOBAL_TASK_SCHEDULER_H
+#pragma once
+#ifndef KOIOS_RUNTIME_H
+#define KOIOS_RUNTIME_H
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"

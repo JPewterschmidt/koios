@@ -24,13 +24,21 @@ task<void> starter()
     ::std::cout << toc(b) << ::std::endl;
 }
 
+task<void> tt()
+{
+    auto b = tic();
+    for (size_t i = 0; i < 100000; ++i)
+        ::std::this_thread::sleep_for(5ms);
+    ::std::cout << toc(b) << ::std::endl;
+    co_return;
+}
+
 int main()
 try 
 {
     koios::runtime_init(1);
 
-    auto f = starter().run_and_get_future();
-    f.get();
+    starter().run_and_get_future().get();
 
     koios::runtime_exit();
     return 0;

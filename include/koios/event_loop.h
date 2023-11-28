@@ -2,6 +2,9 @@
 #define KOIOS_EVENT_LOOP_H
 
 #include <concepts>
+#include <chrono>
+#include <tuple>
+#include <algorithm>
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
@@ -37,6 +40,14 @@ private:
         do_occured_nonblk();
     }
 
+    ::std::chrono::nanoseconds
+    max_sleep_duration() noexcept override
+    {
+        return ::std::min({
+            (::std::chrono::duration_cast<::std::chrono::nanoseconds>(Loops::max_sleep_duration()), ...)
+        });
+    }
+    
 protected:
     event_loop(event_loop&&) noexcept = default;
     event_loop& operator=(event_loop&&) noexcept = default;

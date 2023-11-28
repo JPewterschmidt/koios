@@ -26,6 +26,13 @@ public:
     void do_occured_nonblk() noexcept;
     void add_event(timer_event te) noexcept;
 
+    auto max_sleep_duration() noexcept
+    {
+        const auto now = ::std::chrono::high_resolution_clock::now();
+        if (m_timer_heap.empty()) return ::std::chrono::nanoseconds::max();
+        return m_timer_heap.front().timeout_tp - now;
+    }
+
 private:
     ::std::vector<timer_event> m_timer_heap;
 };
@@ -43,6 +50,11 @@ public:
 
     void add_event(timer_event event) noexcept 
         { m_impl_ptr->add_event(::std::move(event)); } 
+
+    auto max_sleep_duration() noexcept
+    {
+        return m_impl_ptr->max_sleep_duration();
+    }
 
 private:    
     ::std::shared_ptr<timer_event_loop_impl> m_impl_ptr;

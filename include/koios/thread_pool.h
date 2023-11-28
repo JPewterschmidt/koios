@@ -143,6 +143,10 @@ protected:
     }
 
     virtual void before_each_task() noexcept { }
+    virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
+    { 
+        return ::std::chrono::nanoseconds::max(); 
+    }
 
 private:
     void consumer(::std::stop_token token) noexcept;

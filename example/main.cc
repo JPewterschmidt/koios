@@ -4,6 +4,7 @@
 #include "toolpex/tic_toc.h"
 #include "koios/timer.h"
 #include "koios/this_task.h"
+#include "koios/generator.h"
 
 #include <chrono>
 
@@ -13,11 +14,19 @@ using namespace ::std::chrono_literals;
 
 ::std::binary_semaphore bs{0};
 
+generator<int> gen_func()
+{
+    for (int i{}; i < 10; ++i)
+    {
+        co_yield i;
+    }
+}
+
 task<void> func()
 {
-    ::std::cout << "before sleep" << ::std::endl;
-    co_await this_task::sleep_await(500ms);
-    ::std::cout << "after sleep" << ::std::endl;
+    for (auto i : gen_func())
+        ;
+    co_return;
 }
 
 int main()
@@ -30,8 +39,8 @@ try
 
     return 0;
 } 
-catch (...) 
+catch (const ::std::exception& e) 
 {
-    ::std::cout << "catched" << ::std::endl;
+    koios::log_error(e.what());
     return 1;
 }

@@ -45,7 +45,7 @@ public:
         thread_pool::enqueue_no_future_without_checking([h = ::std::move(h)] mutable { h(); });
     }
 
-    void stop() noexcept { thread_pool::stop(); }
+    virtual void stop() noexcept { thread_pool::stop(); }
     void quick_stop() noexcept { thread_pool::quick_stop(); }
 
     virtual ~task_scheduler() noexcept {}

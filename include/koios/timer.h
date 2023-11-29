@@ -15,25 +15,51 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief timepoint and callback aggregate object stored in the MinHeap
+ *  Only used by `class timer_event_loop_impl`
+ */
 struct timer_event
 {
     ::std::chrono::time_point<::std::chrono::high_resolution_clock> timeout_tp;
     task_on_the_fly task;
+
+    /*! \brief Forward this compration to the 3-way compration
+     *         of `std::chrono::duration`.
+     */
     friend ::std::strong_ordering 
     operator<=>(const timer_event& lhs, const timer_event& rhs) noexcept;
 };
 
+/*! \brief The implementation class of timer eventloop. 
+ *  And it's thread safe.
+ *
+ *  \see `event_loop`
+ */
 class timer_event_loop_impl
 {
 public:
+    /*! \brief Satisfy the requirement of `event_loop`
+     *
+     *  It will schedule all the expired time event callback 
+     *  coroutine at each calling of this function.
+     *  Basically this function would be called by `event_loop`
+     */
     void do_occured_nonblk() noexcept;
 
+    /*! \brief Adding a timer event.
+     *  \param dura The expire time duration.
+     *  \param f The callback coroutine when expired.
+     */
     void add_event(auto dura, task_on_the_fly f) noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
         add_event_impl({ now + dura, ::std::move(f) });
     }
 
+    /*! \brief Adding a timer event.
+     *  \param dura The expire time duration.
+     *  \param f The callback coroutine when expired.
+     */
     void add_event(auto dura, task_concept auto t) noexcept
     {
         auto to_tof = [](auto t){ 
@@ -43,6 +69,10 @@ public:
         add_event(dura, to_tof(::std::move(t)));
     }
 
+    /*! \brief returning the maximum sleep duration of the `thread_pool`
+     *         which acceptable to timer event loop to ensure
+     *         the timer accuracy.
+     */
     auto max_sleep_duration() noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
@@ -61,6 +91,13 @@ private:
     mutable ::std::mutex m_lk;
 };
 
+/*! \brief A wrap class of timer event.
+ *  
+ *  This class is used to implement per thread timer,
+ *  which would increase the performance.
+ *
+ *  \todo Implement the per-thread timer.
+ */
 class timer_event_loop
 {
 public:
@@ -81,6 +118,11 @@ public:
 
     void stop() noexcept { m_impl_ptr->stop(); }
 
+    /*! \brief Satisfy the requirement of `event_loop`
+     *
+     *  Which prevent the UB called "heap-used-after-free" 
+     *  after the object which implement pointer pointed destructed.
+     */
     void thread_specific_preparation()
     {
         thread_local auto prevent_heap_used_after_free = m_impl_ptr;

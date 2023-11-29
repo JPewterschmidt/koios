@@ -149,10 +149,11 @@ protected:
         return ::std::chrono::nanoseconds::max(); 
     }
 
+    bool need_stop_now() const noexcept;
+
 private:
     void consumer(::std::stop_token token) noexcept;
     [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
-    bool need_stop_now() const noexcept;
     void init(size_t numthr);
 
 private:

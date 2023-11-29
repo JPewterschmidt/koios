@@ -7,6 +7,7 @@
 #include <utility>
 #include <compare>
 #include <mutex>
+#include <cassert>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
@@ -81,7 +82,7 @@ public:
         return m_timer_heap.front().timeout_tp - now;
     }
     
-    void stop() noexcept { m_timer_heap.clear(); }
+    void quick_stop() noexcept { m_timer_heap.clear(); }
 
     // This function should be called by th eventloop during it's
     // destruction phase which the event_loop would prevent further 
@@ -116,16 +117,35 @@ public:
     }
 
     void do_occured_nonblk() noexcept 
-        { m_impl_ptr->do_occured_nonblk(); }
+    { 
+        m_impl_ptr->do_occured_nonblk(); 
+    }
 
     template<typename... Args>
     void add_event(Args&&... args) noexcept 
-        { m_impl_ptr->add_event(::std::forward<Args>(args)...); } 
+    { 
+        if (is_cleanning()) 
+        {
+            koios::log_error(
+                "event loop has started cleaning! "
+                "you can't add event any more."
+            );
+            return;
+        }
+        m_impl_ptr->add_event(::std::forward<Args>(args)...); 
+    }
 
-    auto max_sleep_duration() noexcept
-        { return m_impl_ptr->max_sleep_duration(); }
+    ::std::chrono::nanoseconds max_sleep_duration() noexcept
+    { 
+        return m_impl_ptr->max_sleep_duration(); 
+        return ::std::chrono::nanoseconds::max();
+    }
 
-    void stop() noexcept { m_impl_ptr->stop(); }
+    void quick_stop() noexcept;
+    void stop();
+
+    /*! \attention should only be called by `event_loop`.*/
+    void until_done();
 
     /*! \brief Satisfy the requirement of `event_loop`
      *
@@ -135,10 +155,14 @@ public:
     void thread_specific_preparation()
     {
         thread_local auto prevent_heap_used_after_free = m_impl_ptr;
-        (void)prevent_heap_used_after_free;
+        assert(prevent_heap_used_after_free != nullptr);
     }
 
+    bool is_cleanning() const;
+    bool done() { return m_impl_ptr->done(); }   
+
 private:    
+    ::std::atomic_bool m_cleanning{ false };
     ::std::shared_ptr<timer_event_loop_impl> m_impl_ptr;
 };
 

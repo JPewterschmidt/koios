@@ -36,18 +36,19 @@ public:
     template<typename SpecificLoop>
     void add_event(auto&&... data)
     {
-        //if (m_stop_requested.value()) [[unlikely]]
-        //{
-        //    throw koios::thread_pool_stopped_exception{ 
-        //        "event_loop has gotten into destruction phase, "
-        //        "refuse further add_event operation!"
-        //    };
-        //}
+        if (m_cleanning.load()) [[unlikely]]
+        {
+            throw koios::thread_pool_stopped_exception{ 
+                "event_loop has gotten into destruction phase, "
+                "refuse further add_event operation!"
+            };
+        }
         SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
     virtual void stop() noexcept override
     {
+        m_cleanning = true;
         (Loops::stop(), ...);
         task_scheduler::stop();
     }
@@ -57,6 +58,11 @@ public:
         // TODO Prevent some event_loop destructed 
         // when control follow run out of the domain of main function
         // while runtime has been configured as manually_stop.
+        
+        m_cleanning = true;
+        if (need_stop_now()) (Loops::quick_stop(), ...);
+        else                 (Loops::stop(), ...);
+        (Loops::until_done(), ...);
     }
     
 private:
@@ -72,13 +78,13 @@ private:
             (::std::chrono::duration_cast<::std::chrono::nanoseconds>(Loops::max_sleep_duration()), ...)
         });
     }
-    
+
 protected:
     event_loop(event_loop&&) noexcept = default;
     event_loop& operator=(event_loop&&) noexcept = default;
 
 private:
-    //::std::atomic_bool m_stop_requested{false};
+    ::std::atomic_bool m_cleanning{false};
 };
 
 KOIOS_NAMESPACE_END

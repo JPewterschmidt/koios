@@ -3,8 +3,18 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
+#include <condition_variable>
 
 KOIOS_NAMESPACE_BEG
+
+namespace
+{
+    ::std::mutex g_cond_mutex;
+    ::std::condition_variable g_done_cond;
+    ::std::atomic_bool g_cleanning{ false };
+    ::std::atomic_bool g_done{ false };
+}
 
 void timer_event_loop_impl::
 do_occured_nonblk() noexcept
@@ -31,6 +41,12 @@ do_occured_nonblk() noexcept
         schr.enqueue(::std::move(i->task));
     }
     m_timer_heap.erase(heap_end, m_timer_heap.end());
+
+    if (m_timer_heap.empty() && g_cleanning.load()) 
+    {
+        g_done_cond.notify_all();
+        g_done = true;
+    }
 }
 
 void timer_event_loop_impl::
@@ -40,6 +56,32 @@ add_event_impl(timer_event te) noexcept
     m_timer_heap.emplace_back(::std::move(te));
     ::std::push_heap(m_timer_heap.begin(), m_timer_heap.end(), 
             ::std::greater<timer_event>{});
+}
+
+void timer_event_loop::
+until_done()
+{
+    ::std::unique_lock lk{ g_cond_mutex };
+    g_done_cond.wait(lk, [this] { return done(); });
+}
+
+void timer_event_loop::
+quick_stop() noexcept
+{
+    m_impl_ptr->quick_stop();
+    stop();
+}
+
+bool timer_event_loop::
+is_cleanning() const
+{
+    return g_cleanning.load();
+}
+
+void timer_event_loop::
+stop()
+{
+    g_cleanning = true;
 }
 
 ::std::strong_ordering 

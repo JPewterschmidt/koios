@@ -38,13 +38,15 @@ task<void> func3()
 int main()
 try 
 {
-    runtime_init(1);
+    runtime_init(11);
 
     get_task_scheduler().add_event<timer_event_loop>(1s, func1());
     get_task_scheduler().add_event<timer_event_loop>(2s, func2());
     get_task_scheduler().add_event<timer_event_loop>(3s, func3());
 
     bs.acquire();
+    
+    runtime_exit();
 
     return 0;
 } 

@@ -83,6 +83,15 @@ public:
     
     void stop() noexcept { m_timer_heap.clear(); }
 
+    // This function should be called by th eventloop during it's
+    // destruction phase which the event_loop would prevent further 
+    // `add_event` operation.
+    [[nodiscard]] bool done() const noexcept
+    {
+        ::std::unique_lock lk{ m_lk };
+        return m_timer_heap.empty();
+    }
+
 private:
     void add_event_impl(timer_event te) noexcept;
 

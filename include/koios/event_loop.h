@@ -5,6 +5,7 @@
 #include <chrono>
 #include <tuple>
 #include <algorithm>
+#include <atomic>
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
@@ -35,6 +36,13 @@ public:
     template<typename SpecificLoop>
     void add_event(auto&&... data)
     {
+        //if (m_stop_requested.value()) [[unlikely]]
+        //{
+        //    throw koios::thread_pool_stopped_exception{ 
+        //        "event_loop has gotten into destruction phase, "
+        //        "refuse further add_event operation!"
+        //    };
+        //}
         SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
@@ -44,7 +52,12 @@ public:
         task_scheduler::stop();
     }
 
-    virtual ~event_loop() noexcept {}
+    virtual ~event_loop() noexcept 
+    {
+        // TODO Prevent some event_loop destructed 
+        // when control follow run out of the domain of main function
+        // while runtime has been configured as manually_stop.
+    }
     
 private:
     virtual void before_each_task() noexcept override
@@ -63,6 +76,9 @@ private:
 protected:
     event_loop(event_loop&&) noexcept = default;
     event_loop& operator=(event_loop&&) noexcept = default;
+
+private:
+    //::std::atomic_bool m_stop_requested{false};
 };
 
 KOIOS_NAMESPACE_END

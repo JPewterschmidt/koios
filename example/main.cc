@@ -14,28 +14,37 @@ using namespace ::std::chrono_literals;
 
 ::std::binary_semaphore bs{0};
 
-generator<int> gen_func()
+task<void> func1()
 {
-    for (int i{}; i < 10; ++i)
-    {
-        co_yield i;
-    }
-}
-
-task<void> func()
-{
-    for (auto i : gen_func())
-        ;
+    ::std::cout << ("1") << ::std::endl;
     co_return;
 }
+
+task<void> func2()
+{
+    ::std::cout << ("2") << ::std::endl;
+    co_return;
+}
+
+task<void> func3()
+{
+    ::std::cout << ("3") << ::std::endl;
+    bs.release();
+    co_return;
+}
+
+
 
 int main()
 try 
 {
-    //runtime_init(1, manually_stop);
     runtime_init(1);
 
-    func().result();
+    get_task_scheduler().add_event<timer_event_loop>(1s, func1());
+    get_task_scheduler().add_event<timer_event_loop>(2s, func2());
+    get_task_scheduler().add_event<timer_event_loop>(3s, func3());
+
+    bs.acquire();
 
     return 0;
 } 

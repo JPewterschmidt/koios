@@ -11,24 +11,26 @@ do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
     ::std::unique_lock lk{ m_lk };
-    if (m_timer_heap.empty()) return;
 
-    auto& nearest = m_timer_heap.front();
-    if (now < nearest.timeout_tp)
-        return;
-
-    auto it = prev(m_timer_heap.end());
-    for (;it >= m_timer_heap.begin() && now >= it->timeout_tp; --it)
+    if (m_timer_heap.empty() 
+        || now < m_timer_heap.front().timeout_tp)
     {
-        ::std::pop_heap(m_timer_heap.begin(), it,
-                ::std::greater<timer_event>{});
+        return;
+    }
+
+    auto heap_end = m_timer_heap.end();
+    while (now >= m_timer_heap.front().timeout_tp)
+    {
+        ::std::pop_heap(m_timer_heap.begin(), heap_end, 
+                        ::std::greater<timer_event>{});
+        if (--heap_end == m_timer_heap.begin()) break;
     }
     auto& schr = get_task_scheduler();
-    for (auto cur = next(it); cur < m_timer_heap.end(); ++cur)
+    for (auto i{ heap_end }; i < m_timer_heap.end(); ++i)
     {
-        schr.enqueue(::std::move(cur->task));
+        schr.enqueue(::std::move(i->task));
     }
-    m_timer_heap.erase(next(it), m_timer_heap.end());
+    m_timer_heap.erase(heap_end, m_timer_heap.end());
 }
 
 void timer_event_loop_impl::

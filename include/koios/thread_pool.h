@@ -142,6 +142,7 @@ protected:
         return result;
     }
 
+    virtual void thread_specific_preparation() {}
     virtual void before_each_task() noexcept { }
     virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
     { 

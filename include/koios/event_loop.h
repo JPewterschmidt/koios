@@ -8,6 +8,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
+#include "toolpex/is_specialization_of.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -21,6 +22,11 @@ public:
     {
     }
 
+    virtual void thread_specific_preparation() override
+    {
+        (Loops::thread_specific_preparation(), ...);
+    }
+
     void do_occured_nonblk() noexcept
     {
         (Loops::do_occured_nonblk(), ...);
@@ -32,15 +38,21 @@ public:
         SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
+    virtual void stop() noexcept override
+    {
+        (Loops::stop(), ...);
+        task_scheduler::stop();
+    }
+
     virtual ~event_loop() noexcept {}
     
 private:
-    void before_each_task() noexcept override
+    virtual void before_each_task() noexcept override
     {
         do_occured_nonblk();
     }
 
-    ::std::chrono::nanoseconds
+    virtual ::std::chrono::nanoseconds
     max_sleep_duration() noexcept override
     {
         return ::std::min({

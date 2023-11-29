@@ -11,6 +11,7 @@
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/task_concepts.h"
+#include "koios/exceptions.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -49,6 +50,8 @@ public:
         if (m_timer_heap.empty()) return ::std::chrono::nanoseconds::max();
         return m_timer_heap.front().timeout_tp - now;
     }
+    
+    void stop() noexcept { m_timer_heap.clear(); }
 
 private:
     void add_event_impl(timer_event te) noexcept;
@@ -75,6 +78,14 @@ public:
 
     auto max_sleep_duration() noexcept
         { return m_impl_ptr->max_sleep_duration(); }
+
+    void stop() noexcept { m_impl_ptr->stop(); }
+
+    void thread_specific_preparation()
+    {
+        thread_local auto prevent_heap_used_after_free = m_impl_ptr;
+        (void)prevent_heap_used_after_free;
+    }
 
 private:    
     ::std::shared_ptr<timer_event_loop_impl> m_impl_ptr;

@@ -7,6 +7,9 @@
 #include "koios/generator.h"
 
 #include <chrono>
+#include <algorithm>
+#include <numeric>
+#include <coroutine>
 
 using namespace koios;
 using namespace toolpex;
@@ -14,39 +17,31 @@ using namespace ::std::chrono_literals;
 
 ::std::binary_semaphore bs{0};
 
-task<void> func1()
+task<void> func()
 {
-    ::std::cout << ("1") << ::std::endl;
+    throw ::std::runtime_error{""};
     co_return;
 }
 
-task<void> func2()
+task<void> receiver()
 {
-    ::std::cout << ("2") << ::std::endl;
+    try
+    {
+        co_await func();
+    }
+    catch (...)
+    {
+        ::std::cout << "ok" << ::std::endl;
+    }
     co_return;
 }
-
-task<void> func3()
-{
-    ::std::cout << ("3") << ::std::endl;
-    bs.release();
-    co_return;
-}
-
-
 
 int main()
 try 
 {
-    runtime_init(11);
+    runtime_init(1);
 
-    get_task_scheduler().add_event<timer_event_loop>(1s, func1());
-    get_task_scheduler().add_event<timer_event_loop>(2s, func2());
-    get_task_scheduler().add_event<timer_event_loop>(3s, func3());
-
-    bs.acquire();
-    
-    runtime_exit();
+    receiver().result();
 
     return 0;
 } 

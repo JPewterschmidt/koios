@@ -13,6 +13,7 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/task_concepts.h"
 #include "koios/exceptions.h"
+#include "toolpex/concepts_and_traits.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -51,7 +52,7 @@ public:
      *  \param dura The expire time duration.
      *  \param f The callback coroutine when expired.
      */
-    void add_event(auto dura, task_on_the_fly f) noexcept
+    void add_event(toolpex::is_std_chrono_duration auto dura, task_on_the_fly f) noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
         add_event_impl({ now + dura, ::std::move(f) });
@@ -61,7 +62,7 @@ public:
      *  \param dura The expire time duration.
      *  \param f The callback coroutine when expired.
      */
-    void add_event(auto dura, task_concept auto t) noexcept
+    void add_event(toolpex::is_std_chrono_duration auto dura, task_concept auto t) noexcept
     {
         auto to_tof = [](auto t){ 
             task_on_the_fly result = t;
@@ -147,16 +148,7 @@ public:
     /*! \attention should only be called by `event_loop`.*/
     void until_done();
 
-    /*! \brief Satisfy the requirement of `event_loop`
-     *
-     *  Which prevent the UB called "heap-used-after-free" 
-     *  after the object which implement pointer pointed destructed.
-     */
-    void thread_specific_preparation()
-    {
-        thread_local auto prevent_heap_used_after_free = m_impl_ptr;
-        assert(prevent_heap_used_after_free != nullptr);
-    }
+    constexpr void thread_specific_preparation() noexcept { }
 
     bool is_cleanning() const;
     bool done() { return m_impl_ptr->done(); }   

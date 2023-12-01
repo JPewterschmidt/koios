@@ -88,7 +88,7 @@ public:
     {
     }
 
-    constexpr void await_resume() const noexcept {}
+    void await_resume() { get_result_aw_base<void, Task, DriverPolicy>::m_future.get(); }
 };
 
 KOIOS_NAMESPACE_END

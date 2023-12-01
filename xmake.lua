@@ -60,6 +60,7 @@ target("example")
     add_deps("koios")
     add_files("example/*.cc")
     add_syslinks("spdlog")
+    set_policy("build.warning", true)
     add_packages(
         "fmt", "gflags", 
         "concurrentqueue"

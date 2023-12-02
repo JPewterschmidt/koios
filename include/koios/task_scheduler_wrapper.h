@@ -6,6 +6,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/task_scheduler_concept.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -23,7 +24,7 @@ public:
     /*! \param scheduler The `task_scheduler` you want wrap.
      *  This woun't take the ownership of the `task_scheduler`.
      */
-    template<typename Schr>
+    template<task_scheduler_concept Schr>
     task_scheduler_wrapper(Schr& scheduler) noexcept
         : m_enqueue_impl { 
             [](void* schr, task_on_the_fly h) mutable { 
@@ -40,7 +41,7 @@ public:
     /*! \brief Call the underlying `task_scheduler::enqueue()`
      *  The behavior based on the referd instance.
      */
-    void enqueue(task_on_the_fly h) 
+    void enqueue(task_on_the_fly h) const
     {
         m_enqueue_impl(m_schr, ::std::move(h));
     }
@@ -62,7 +63,7 @@ public:
 
 public:
     /*! \brief Allocate enough memory then construct the scheduler on it. */
-    template<typename Schr>
+    template<task_scheduler_concept Schr>
     task_scheduler_owned_wrapper(Schr&& scheduler) noexcept
         : m_enqueue_impl { 
             [](void* schr, task_on_the_fly h) mutable { 

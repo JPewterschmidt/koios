@@ -3,32 +3,50 @@
 
 #include <algorithm>
 #include <functional>
+#include <mutex>
+#include <condition_variable>
 
 KOIOS_NAMESPACE_BEG
+
+namespace
+{
+    ::std::mutex g_cond_mutex;
+    ::std::condition_variable g_done_cond;
+    ::std::atomic_bool g_cleanning{ false };
+    ::std::atomic_bool g_done{ false };
+}
 
 void timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
     ::std::unique_lock lk{ m_lk };
-    if (m_timer_heap.empty()) return;
 
-    auto& nearest = m_timer_heap.front();
-    if (now < nearest.timeout_tp)
-        return;
-
-    auto it = prev(m_timer_heap.end());
-    for (;it >= m_timer_heap.begin() && now >= it->timeout_tp; --it)
+    if (m_timer_heap.empty() 
+        || now < m_timer_heap.front().timeout_tp)
     {
-        ::std::pop_heap(m_timer_heap.begin(), it,
-                ::std::greater<timer_event>{});
+        return;
+    }
+
+    auto heap_end = m_timer_heap.end();
+    while (now >= m_timer_heap.front().timeout_tp)
+    {
+        ::std::pop_heap(m_timer_heap.begin(), heap_end, 
+                        ::std::greater<timer_event>{});
+        if (--heap_end == m_timer_heap.begin()) break;
     }
     auto& schr = get_task_scheduler();
-    for (auto cur = next(it); cur < m_timer_heap.end(); ++cur)
+    for (auto i{ heap_end }; i < m_timer_heap.end(); ++i)
     {
-        schr.enqueue(::std::move(cur->task));
+        schr.enqueue(::std::move(i->task));
     }
-    m_timer_heap.erase(next(it), m_timer_heap.end());
+    m_timer_heap.erase(heap_end, m_timer_heap.end());
+
+    if (m_timer_heap.empty() && g_cleanning.load()) 
+    {
+        g_done_cond.notify_all();
+        g_done = true;
+    }
 }
 
 void timer_event_loop_impl::
@@ -38,6 +56,32 @@ add_event_impl(timer_event te) noexcept
     m_timer_heap.emplace_back(::std::move(te));
     ::std::push_heap(m_timer_heap.begin(), m_timer_heap.end(), 
             ::std::greater<timer_event>{});
+}
+
+void timer_event_loop::
+until_done()
+{
+    ::std::unique_lock lk{ g_cond_mutex };
+    g_done_cond.wait(lk, [this] { return done(); });
+}
+
+void timer_event_loop::
+quick_stop() noexcept
+{
+    m_impl_ptr->quick_stop();
+    stop();
+}
+
+bool timer_event_loop::
+is_cleanning() const
+{
+    return g_cleanning.load();
+}
+
+void timer_event_loop::
+stop()
+{
+    g_cleanning = true;
 }
 
 ::std::strong_ordering 

@@ -6,13 +6,15 @@
 #include <type_traits>
 
 #include "koios/macros.h"
+#include "koios/task_on_the_fly.h"
 
 KOIOS_NAMESPACE_BEG
 
 template<typename TS>
 concept task_scheduler_concept = requires(TS ts)
 {
-    { ts.enqueue(::std::declval<::std::coroutine_handle<>>()) };
+    //{ ts.enqueue(::std::declval<::std::coroutine_handle<>>()) };
+    { ts.enqueue(::std::declval<koios::task_on_the_fly>()) };
 };
 
 template<typename TS>

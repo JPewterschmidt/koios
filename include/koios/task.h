@@ -131,10 +131,16 @@ public:
      */
     void run()
     {
+        auto schr = DriverPolicy{}.scheduler();
+        run_on(schr);
+    }
+
+    void run_on(const task_scheduler_wrapper& schr)
+    {
         static_assert(is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        DriverPolicy{}.scheduler().enqueue(get_handler_to_schedule());
+        schr.enqueue(get_handler_to_schedule());
     }
 
     /*! \brief Run the task.
@@ -147,19 +153,31 @@ public:
      */
     [[nodiscard]] future_type run_and_get_future()
     {
+        auto schr = DriverPolicy{}.scheduler();
+        return run_and_get_future_on(schr);
+    }
+
+    [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
+    {
         auto result = get_future();
         if (!has_scheduled())
         {   
-            DriverPolicy{}.scheduler().enqueue(get_handler_to_schedule());
+            schr.enqueue(get_handler_to_schedule());
         }
         return result;
     }
 
     [[nodiscard]] auto result()
     {
+        auto schr = DriverPolicy{}.scheduler();
+        return result_on(schr);
+    }
+
+    [[nodiscard]] auto result_on(const task_scheduler_wrapper& schr)
+    {
         if constexpr (is_return_void())
-            run_and_get_future().get();
-        else return run_and_get_future().get();
+            run_and_get_future_on(schr).get();
+        else return run_and_get_future_on(schr).get();
     }
 
     /*! \retval true This task is a discardable task. You could ignore the return value.

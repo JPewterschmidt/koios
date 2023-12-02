@@ -19,7 +19,7 @@ namespace
 
     void logging_init()
     {
-        spdlog::set_level(spdlog::level::info);
+        spdlog::set_level(spdlog::level::debug);
     }
 
     void signal_handler(int signum)
@@ -50,7 +50,6 @@ namespace
             throw koios::exception{};
         }
     }
-
 }
 
 /*! \brief Get the global task_scheduler.

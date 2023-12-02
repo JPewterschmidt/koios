@@ -23,7 +23,7 @@ namespace this_task
             return m_dura == Duration{};
         }
 
-        void await_suspend(task_on_the_fly h) const noexcept
+        void await_suspend(task_on_the_fly h) const 
         {
             get_task_scheduler().add_event<timer_event_loop>(m_dura, ::std::move(h));
         }

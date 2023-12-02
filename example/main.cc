@@ -5,8 +5,12 @@
 #include "koios/timer.h"
 #include "koios/this_task.h"
 #include "koios/generator.h"
+#include "koios/delayed_scheduler.h"
 
 #include <chrono>
+#include <algorithm>
+#include <numeric>
+#include <coroutine>
 
 using namespace koios;
 using namespace toolpex;
@@ -14,28 +18,35 @@ using namespace ::std::chrono_literals;
 
 ::std::binary_semaphore bs{0};
 
-generator<int> gen_func()
-{
-    for (int i{}; i < 10; ++i)
-    {
-        co_yield i;
-    }
-}
-
 task<void> func()
 {
-    for (auto i : gen_func())
-        ;
+    throw ::std::runtime_error{""};
+    co_return;
+}
+
+task<void> receiver()
+{
+    try
+    {
+        co_await func();
+    }
+    catch (...)
+    {
+        ::std::cout << "ok" << ::std::endl;
+    }
+
     co_return;
 }
 
 int main()
 try 
 {
-    //runtime_init(1, manually_stop);
     runtime_init(1);
 
-    func().result();
+    auto t = tic();
+    delayed_scheduler ds(3s);
+    receiver().result_on(ds);
+    ::std::cout << toc(t);
 
     return 0;
 } 

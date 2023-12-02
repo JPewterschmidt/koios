@@ -5,6 +5,7 @@
 #include "koios/timer.h"
 #include "koios/this_task.h"
 #include "koios/generator.h"
+#include "koios/delayed_scheduler.h"
 
 #include <chrono>
 #include <algorithm>
@@ -33,6 +34,7 @@ task<void> receiver()
     {
         ::std::cout << "ok" << ::std::endl;
     }
+
     co_return;
 }
 
@@ -41,7 +43,10 @@ try
 {
     runtime_init(1);
 
-    receiver().result();
+    auto t = tic();
+    delayed_scheduler ds(3s);
+    receiver().result_on(ds);
+    ::std::cout << toc(t);
 
     return 0;
 } 

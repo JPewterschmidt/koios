@@ -135,9 +135,10 @@ public:
         run_on(schr);
     }
 
-    void run_on(const task_scheduler_wrapper& schr)
+    void 
+    run_on(const task_scheduler_wrapper& schr)
     {
-        static_assert(is_discardable(), 
+        static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
         schr.enqueue(get_handler_to_schedule());

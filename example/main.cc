@@ -1,57 +1,51 @@
+#include "koios/future.h"
 #include <iostream>
-#include "koios/task.h"
-#include "koios/event_loop.h"
-#include "toolpex/tic_toc.h"
-#include "koios/timer.h"
-#include "koios/this_task.h"
-#include "koios/generator.h"
-#include "koios/delayed_scheduler.h"
 
-#include <chrono>
-#include <algorithm>
-#include <numeric>
-#include <coroutine>
-
-using namespace koios;
-using namespace toolpex;
-using namespace ::std::chrono_literals;
-
-::std::binary_semaphore bs{0};
-
-task<void> func()
-{
-    throw ::std::runtime_error{""};
-    co_return;
-}
-
-task<void> receiver()
-{
-    try
-    {
-        co_await func();
-    }
-    catch (...)
-    {
-        ::std::cout << "ok" << ::std::endl;
+class lifetime {
+public:
+    // Constructor
+    lifetime() {
+        std::cout << "constructor called. " << std::endl;
     }
 
-    co_return;
+    // Copy Constructor
+    lifetime(const lifetime& other) {
+        std::cout << "copy_constructor called." << std::endl;
+    }
+
+    // Move Constructor
+    lifetime(lifetime&& other) noexcept {
+        std::cout << "move_constructor called." << std::endl;
+    }
+
+    // Copy Assignment Operator
+    lifetime& operator=(const lifetime& other) {
+        std::cout << "copy_assignment_operator called." << std::endl;
+        return *this;
+    }
+
+    // Move Assignment Operator
+    lifetime& operator=(lifetime&& other) noexcept {
+        std::cout << "move_assignment_operator called." << std::endl;
+        return *this;
+    }
+
+    // Destructor
+    ~lifetime() {
+        std::cout << "destructor called." << std::endl;
+    }
+};
+
+void func(koios::promise<lifetime> i)
+{
+    i.set_value(lifetime{});
+    i.send();
 }
 
 int main()
-try 
 {
-    runtime_init(1);
-
-    auto t = tic();
-    delayed_scheduler ds(3s);
-    receiver().result_on(ds);
-    ::std::cout << toc(t);
-
-    return 0;
-} 
-catch (const ::std::exception& e) 
-{
-    koios::log_error(e.what());
-    return 1;
+    koios::promise<lifetime> ip{};
+    auto f = ip.get_future();
+    func(::std::move(ip));
+    auto val = f.get();
 }

@@ -67,9 +67,8 @@ public:
     requires (::std::constructible_from<T, TT>)
     void return_value(TT&& val)
     {
-        return_value_or_void_base<T, Promise, DriverPolicy>::
-            m_promise_p->set_value(::std::forward<TT>(val));
-        return_value_or_void_base<T, Promise, DriverPolicy>::wake_caller();
+        this->m_promise_p->set_value(::std::forward<TT>(val));
+        this->wake_caller();
     }
 };
 
@@ -82,8 +81,8 @@ public:
     /*! \brief Just wake the caller. */
     void return_void() 
     { 
-        return_value_or_void_base<void, Promise, DriverPolicy>::m_promise_p->set_value(); 
-        return_value_or_void_base<void, Promise, DriverPolicy>::wake_caller(); 
+        this->m_promise_p->set_value(); 
+        this->wake_caller(); 
     }
 };
 

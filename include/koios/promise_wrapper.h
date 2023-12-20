@@ -7,6 +7,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -29,7 +30,7 @@ public:
         m_caller_set = true;
     }
     
-    ::std::future<T> get_future()
+    koios::future<T> get_future()
     {
         return m_get_future_impl(m_promise);
     }
@@ -39,7 +40,7 @@ public:
 private:
     void* const m_promise;
     void (* const m_set_caller_impl)(void*, task_on_the_fly);
-    ::std::future<T> (* const m_get_future_impl)(void*);
+    koios::future<T> (* const m_get_future_impl)(void*);
     bool m_caller_set{};
 };
 

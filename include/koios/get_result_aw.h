@@ -9,6 +9,7 @@
 #include "koios/local_thread_scheduler.h"
 #include "koios/task_scheduler_wrapper.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -62,7 +63,7 @@ public:
 
 protected:
     promise_wrapper<value_type> m_promise;
-    ::std::future<T> m_future;
+    koios::future<T> m_future;
 };
 
 template<typename T, typename Task, typename DriverPolicy>

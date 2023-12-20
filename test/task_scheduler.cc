@@ -38,7 +38,7 @@ task<void> starter()
 TEST(task_scheduler, basic)
 {
     constexpr size_t loop_size{ 10 };
-    ::std::vector<::std::future<void>> fvec{};
+    ::std::vector<koios::future<void>> fvec{};
     for (size_t i{}; i < loop_size; ++i)
         fvec.emplace_back(starter().run_and_get_future());
 

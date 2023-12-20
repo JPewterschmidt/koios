@@ -18,6 +18,7 @@
 #include "koios/get_result_aw.h"
 #include "koios/driver_policy.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -58,7 +59,7 @@ class _task<T, DriverPolicy, Discardable>::_type
 {
 public:
     using value_type = T;
-    using future_type = ::std::future<value_type>;
+    using future_type = koios::future<value_type>;
 
     class promise_type 
         : public promise_base<destroy_aw>, 
@@ -72,7 +73,7 @@ public:
 
         void unhandled_exception()
         {
-            return_value_or_void<T, promise_type, DriverPolicy>::deal_exception(::std::current_exception());
+            this->deal_exception(::std::current_exception());
         }
     };
 
@@ -215,7 +216,8 @@ private:
 
 private:
     task_on_the_fly m_coro_handle;
-    ::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
+    //::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
+    ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 
 template<typename T>

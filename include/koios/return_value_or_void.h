@@ -8,6 +8,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -29,7 +30,7 @@ public:
     auto get_std_promise_pointer() { return m_promise_p; }
 
 protected:
-    ::std::shared_ptr<::std::promise<T>> m_promise_p{ ::std::make_shared<::std::promise<T>>() };
+    ::std::shared_ptr<koios::promise<T>> m_promise_p{ ::std::make_shared<koios::promise<T>>() };
     task_on_the_fly m_caller{};
 
     /*! \brief Wake the caller coroutine, if this task has been called with `co_await`.
@@ -67,9 +68,8 @@ public:
     requires (::std::constructible_from<T, TT>)
     void return_value(TT&& val)
     {
-        return_value_or_void_base<T, Promise, DriverPolicy>::
-            m_promise_p->set_value(::std::forward<TT>(val));
-        return_value_or_void_base<T, Promise, DriverPolicy>::wake_caller();
+        this->m_promise_p->set_value(::std::forward<TT>(val));
+        this->wake_caller();
     }
 };
 
@@ -82,8 +82,8 @@ public:
     /*! \brief Just wake the caller. */
     void return_void() 
     { 
-        return_value_or_void_base<void, Promise, DriverPolicy>::m_promise_p->set_value(); 
-        return_value_or_void_base<void, Promise, DriverPolicy>::wake_caller(); 
+        this->m_promise_p->set_value(); 
+        this->wake_caller(); 
     }
 };
 

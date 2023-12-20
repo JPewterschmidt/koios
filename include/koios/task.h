@@ -18,6 +18,7 @@
 #include "koios/get_result_aw.h"
 #include "koios/driver_policy.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/std_future_extension.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -58,7 +59,7 @@ class _task<T, DriverPolicy, Discardable>::_type
 {
 public:
     using value_type = T;
-    using future_type = ::std::future<value_type>;
+    using future_type = koios::future_extension<value_type>;
 
     class promise_type 
         : public promise_base<destroy_aw>, 

@@ -10,10 +10,11 @@
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
 #include "toolpex/is_specialization_of.h"
+#include "koios/event_loop_concepts.h"
 
 KOIOS_NAMESPACE_BEG
 
-template<::std::default_initializable... Loops>
+template<event_loop_concept... Loops>
 class event_loop : public task_scheduler, public Loops...                
 {
 public:

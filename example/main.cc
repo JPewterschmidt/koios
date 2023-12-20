@@ -38,15 +38,12 @@ task<void> receiver()
     co_return;
 }
 
+#include "koios/event_loop_concepts.h"
+
 int main()
 try 
 {
-    runtime_init(1);
-
-    auto t = tic();
-    delayed_scheduler ds(3s);
-    receiver().result_on(ds);
-    ::std::cout << toc(t);
+    ::std::cout << koios::event_loop_concept<timer_event_loop> << ::std::endl;
 
     return 0;
 } 

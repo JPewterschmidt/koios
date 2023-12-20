@@ -80,6 +80,13 @@ public:
     }
 };
 
+class future_exception : public koios::exception
+{
+public:
+    future_exception() = default;
+    const char* what() const noexcept override { return "nothing to get."; }   
+};
+
 void log_info(::std::string msg);
 void log_error(::std::string msg);
 void log_debug(::std::string msg);

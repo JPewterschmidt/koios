@@ -2,14 +2,16 @@
 #define KOIOS_EVENT_LOOP_CONCEPTS_H
 
 #include "koios/macros.h"
+#include "koios/per_consumer_attr.h"
 #include <concepts>
+#include <utility>
 
 KOIOS_NAMESPACE_BEG
 
 template<typename EL>
 concept event_loop_concept = requires(EL e)
 {
-    e.thread_specific_preparation();
+    { &EL::thread_specific_preparation };
     e.do_occured_nonblk();
     //{ &EL::add_event };
     e.stop();

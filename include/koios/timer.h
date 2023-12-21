@@ -13,6 +13,7 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/task_concepts.h"
 #include "koios/exceptions.h"
+#include "koios/per_consumer_attr.h"
 #include "toolpex/concepts_and_traits.h"
 
 KOIOS_NAMESPACE_BEG
@@ -148,7 +149,7 @@ public:
     /*! \attention should only be called by `event_loop`.*/
     void until_done();
 
-    constexpr void thread_specific_preparation() noexcept { }
+    constexpr void thread_specific_preparation([[maybe_unused]] const per_consumer_attr&) noexcept { }
 
     bool is_cleanning() const;
     bool done() { return m_impl_ptr->done(); }   

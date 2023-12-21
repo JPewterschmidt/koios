@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "koios/thread_pool.h"
 #include "koios/runtime.h"
+#include "koios/delayed_scheduler.h"
 #include "koios/task_scheduler_concept.h"
 #include "koios/delayed_scheduler.h"
 #include "koios/task.h"

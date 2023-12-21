@@ -6,6 +6,8 @@
 #include <memory>
 #include <cassert>
 #include <optional>
+#include <condition_variable> 
+#include <mutex>
 
 #include "koios/macros.h"
 #include "koios/exceptions.h"
@@ -89,7 +91,9 @@ namespace fp_detials
     protected:
         void send() noexcept
         {
-            this->f_ptr_ref()->set_storage_ptr(storage());
+            auto& f_ptr_r = this->f_ptr_ref();
+            f_ptr_r->set_storage_ptr(storage());
+            f_ptr_r->cond_notify();
         }
 
         auto& storage() { return m_storage; }
@@ -173,7 +177,13 @@ namespace fp_detials
         auto get()
         {
             auto s = m_storage_ptr.load();
-            assert(s);
+            if (!s)
+            {
+                ::std::unique_lock lk{ m_cond_lock };
+                m_cond.wait(lk, [this]{ return ready(); });
+                s = m_storage_ptr.load();
+            }
+
             if (auto& ex = s->exception_ptr(); ex)
             {
                 ::std::rethrow_exception(ex);
@@ -200,9 +210,17 @@ namespace fp_detials
             m_storage_ptr.store(::std::move(ptr));
         }
 
+        void cond_notify()
+        {
+            m_cond.notify_all(); 
+        }
+
     private:
         ::std::atomic<::std::shared_ptr<fp_detials::promise_storage<value_type>>> m_storage_ptr;
         ::std::weak_ptr<promise_impl<value_type>> m_promise_wptr;
+
+        ::std::condition_variable m_cond;
+        ::std::mutex m_cond_lock;
     };
 
     template<typename Result>
@@ -234,9 +252,8 @@ namespace fp_detials
 
         auto get() 
         { 
-            if (!ready()) throw future_exception{};
             if constexpr (::std::same_as<value_type, void>) 
-                return;
+                m_impl_ptr->get();
             else return m_impl_ptr->get();
         }
 
@@ -392,7 +409,10 @@ class promise<void> : public fp_detials::promise_base<void>
 {
 public:
     using value_type = void;
-    constexpr void set_value() const noexcept {}
+    void set_value() const noexcept 
+    {
+        this->m_impl_ptr->set_value();
+    }
 };
 
 KOIOS_NAMESPACE_END

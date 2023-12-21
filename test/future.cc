@@ -19,19 +19,19 @@ TEST(future, basic)
     ASSERT_EQ(f.get(), 666);
 }
 
-TEST(future, nothing_to_get)
-{
-    try
-    {
-        promise<int> p;
-        auto f = p.get_future();
-        f.get();
-    } 
-    catch (const ::std::exception& ex)
-    {
-        ASSERT_STREQ(ex.what(), "nothing to get.");
-    }
-}
+//TEST(future, nothing_to_get)
+//{
+//    try
+//    {
+//        promise<int> p;
+//        auto f = p.get_future();
+//        f.get();
+//    } 
+//    catch (const ::std::exception& ex)
+//    {
+//        ASSERT_STREQ(ex.what(), "nothing to get.");
+//    }
+//}
 
 TEST(future, regular_exception)
 {

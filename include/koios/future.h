@@ -185,13 +185,14 @@ namespace fp_detials
                 s = m_storage_ptr.load();
             }
 
-            if (auto& ex = s->exception_ptr(); ex)
-            {
-                ::std::rethrow_exception(ex);
-            }
-            if constexpr (::std::same_as<value_type, void>)
-                return;
-            else return s->move_out();
+            return get_nonblk(s);
+        }
+
+        auto get_nonblk()
+        {
+            auto s = m_storage_ptr.load();
+            if (!s) throw koios::future_exception{};
+            return get_nonblk(s);
         }
 
         bool valid() const noexcept
@@ -219,6 +220,17 @@ namespace fp_detials
         auto get_unique_lock()
         {
             return ::std::unique_lock{ m_cond_lock };
+        }
+
+        auto get_nonblk(::std::shared_ptr<fp_detials::promise_storage<value_type>>& s)
+        {
+            if (auto& ex = s->exception_ptr(); ex)
+            {
+                ::std::rethrow_exception(ex);
+            }
+            if constexpr (::std::same_as<value_type, void>)
+                return;
+            else return s->move_out();
         }
 
     private:
@@ -263,6 +275,13 @@ namespace fp_detials
             else return m_impl_ptr->get();
         }
 
+        auto get_nonblk()
+        {
+            if constexpr (::std::same_as<value_type, void>) 
+                m_impl_ptr->get_nonblk();
+            else return m_impl_ptr->get_nonblk();
+        }
+
         bool valid() const noexcept 
         { 
             if (!m_impl_ptr) return false;
@@ -305,6 +324,11 @@ public:
     reference_type get() 
     { 
         return *fp_detials::future_base<pointer_type>::get();
+    }
+
+    reference_type get_nonblk()
+    {
+        return *fp_detials::future_base<pointer_type>::get_nonblk();
     }
 };
 
@@ -381,7 +405,6 @@ namespace fp_detials
     protected:
         ::std::shared_ptr<fp_detials::promise_impl<pointer_type>> m_impl_ptr;
     };
-
 }
 
 template<typename Result>

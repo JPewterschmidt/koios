@@ -80,7 +80,7 @@ public:
     {
     }
     
-    decltype(auto) await_resume() { return get_result_aw_base<T, Task, DriverPolicy>::m_future.get(); }
+    decltype(auto) await_resume() { return this->m_future.get_nonblk(); }
 };
 
 template<typename Task, typename DriverPolicy>
@@ -92,7 +92,7 @@ public:
     {
     }
 
-    void await_resume() { get_result_aw_base<void, Task, DriverPolicy>::m_future.get(); }
+    void await_resume() { this->m_future.get_nonblk(); }
 };
 
 KOIOS_NAMESPACE_END

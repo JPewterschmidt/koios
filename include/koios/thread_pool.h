@@ -105,6 +105,10 @@ public:
      */
     size_t number_remain_tasks() const noexcept { return m_tasks.size(); }
 
+    /*! \return the number of threads this pool managing.
+     */
+    size_t number_of_threads() const noexcept { return m_thrs.size(); }
+
 protected:
     template<typename F, typename... Args>
     void enqueue_no_future_without_checking(F&& func, Args&&... args) noexcept

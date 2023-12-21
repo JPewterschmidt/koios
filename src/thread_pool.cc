@@ -47,7 +47,9 @@ void thread_pool::quick_stop() noexcept
 
 void thread_pool::consumer(::std::stop_token token) noexcept
 {
-    const per_consumer_attr cattr{};
+    const per_consumer_attr cattr{ 
+        .number_of_threads = number_of_threads(),
+    };
     thread_specific_preparation(cattr);
     while (!done(token))
     {

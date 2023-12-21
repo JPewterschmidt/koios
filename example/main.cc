@@ -1,8 +1,6 @@
 #include "koios/thread_pool.h"
 #include "koios/runtime.h"
-#include "koios/delayed_scheduler.h"
 #include "koios/task_scheduler_concept.h"
-#include "koios/delayed_scheduler.h"
 #include "koios/task.h"
 #include <chrono>
 #include <iostream>
@@ -50,15 +48,18 @@ namespace
     }
 }
 
+constinit size_t test_size{ 10000 };
+constinit size_t pool_size{ 10 };
+
+task<bool> test_main()
+{
+    co_return true;
+}
+
 int main()
 {
     koios::runtime_init(10);
-
-    delayed_scheduler ds{ 50ms };
-    const auto now = ::std::chrono::high_resolution_clock::now();
-    const auto ret_tp = func().result_on(ds);
-
-    koios::runtime_exit();
+    auto x = test_main().result();
 
     return 0;
 }

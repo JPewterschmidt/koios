@@ -9,14 +9,16 @@ KOIOS_NAMESPACE_BEG
 
 manually_stop_type manually_stop{};
 
-void thread_pool::init(size_t numthr)
+void thread_pool::start()
 {
-    for (size_t i = 0; i < numthr; ++i)
+    const auto main_thread_id = ::std::this_thread::get_id();
+    for (size_t i = 0; i < m_num_thrs; ++i)
     {
-        m_thrs.emplace_back([this]() noexcept { 
-            this->consumer(m_stop_source.get_token()); 
+        m_thrs.emplace_back([this, main_thread_id]() noexcept { 
+            this->consumer(m_stop_source.get_token(), main_thread_id); 
         });
     }
+    m_start_working.wait();
 }
 
 thread_pool::~thread_pool() noexcept
@@ -45,12 +47,17 @@ void thread_pool::quick_stop() noexcept
     stop();
 }
 
-void thread_pool::consumer(::std::stop_token token) noexcept
+void thread_pool::consumer(
+    ::std::stop_token token, 
+    const ::std::thread::id mt_id) noexcept
 {
     const per_consumer_attr cattr{ 
+        .main_thread_id = mt_id,
         .number_of_threads = number_of_threads(),
     };
     thread_specific_preparation(cattr);
+    if (::std::this_thread::get_id() != mt_id)
+        m_start_working.count_down();
     while (!done(token))
     {
         before_each_task();

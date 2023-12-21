@@ -78,10 +78,12 @@ get_task_scheduler_ptr(::std::source_location sl)
 void runtime_init(size_t numthr, manually_stop_type)
 {
     logging_init();
+    koios::log_info("runtime initializing (manually_stop_type)");
     signal_handle_init();
 
     //g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
     g_ts_p = ::std::make_unique<event_loop_t>(numthr, manually_stop);
+    g_ts_p->start();
 }
 
 /*! \brief Initialize this koios runtime.
@@ -96,6 +98,7 @@ void runtime_init(size_t numthr)
 
     //g_ts_p.reset(new task_scheduler{ numthr });
     g_ts_p = ::std::make_unique<event_loop_t>(numthr);
+    g_ts_p->start();
 }
 
 /*! \brief Clean the koios runtime, stop all of the resource needs `stop()` or `close()` etc.

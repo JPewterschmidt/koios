@@ -5,6 +5,7 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+#include <thread>
 
 KOIOS_NAMESPACE_BEG
 
@@ -20,14 +21,16 @@ void timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
-    ::std::unique_lock lk{ m_lk };
 
+    ::std::shared_lock lk{ m_lk };
     if (m_timer_heap.empty() 
         || now < m_timer_heap.front().timeout_tp)
     {
         return;
     }
+    lk.unlock();
 
+    ::std::unique_lock ulk{ m_lk };
     auto heap_end = m_timer_heap.end();
     while (now >= m_timer_heap.front().timeout_tp)
     {
@@ -54,8 +57,11 @@ add_event_impl(timer_event te) noexcept
 {
     ::std::unique_lock lk{ m_lk };
     m_timer_heap.emplace_back(::std::move(te));
-    ::std::push_heap(m_timer_heap.begin(), m_timer_heap.end(), 
-            ::std::greater<timer_event>{});
+    ::std::push_heap(
+        m_timer_heap.begin(), 
+        m_timer_heap.end(), 
+        ::std::greater<timer_event>{}
+    );
 }
 
 void timer_event_loop::
@@ -68,7 +74,11 @@ until_done()
 void timer_event_loop::
 quick_stop() noexcept
 {
-    m_impl_ptr->quick_stop();
+    ::std::unique_lock lk{ m_ptrs_lock };
+    for (auto& [k, ptrs] : m_impl_ptrs)
+    {
+        ptrs->quick_stop();
+    }
     stop();
 }
 
@@ -82,6 +92,18 @@ void timer_event_loop::
 stop()
 {
     g_cleanning = true;
+}
+
+bool timer_event_loop::
+done()
+{
+    ::std::shared_lock lk{ m_ptrs_lock };
+    for (auto& [k, ptr] : m_impl_ptrs)
+    {
+        if (!ptr->done()) 
+            return false;
+    }
+    return true;
 }
 
 ::std::strong_ordering 

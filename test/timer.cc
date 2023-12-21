@@ -35,13 +35,6 @@ task<void> fuckyou()
     co_return;
 }
 
-TEST(timer, basic)
-{
-    get_task_scheduler().add_event<timer_event_loop>(5ms, fuckyou());
-    bs.acquire();
-    ASSERT_EQ(flag3, 3);
-}
-
 TEST(timer, awaitable)
 {
     func().result();
@@ -89,12 +82,18 @@ task<void> func3()
     co_return;
 }
 
-TEST(timer, several_events)
+task<void> mainfunc()
 {
+    // add_event should never be called in main thread.
     get_task_scheduler().add_event<timer_event_loop>(20ms, func1());
     get_task_scheduler().add_event<timer_event_loop>(40ms, func2());
     get_task_scheduler().add_event<timer_event_loop>(60ms, func3());
+    co_return;
+}
 
+TEST(timer, several_events)
+{
+    mainfunc().run();
     bs.acquire();
     ::std::vector correct_result{1,2,3,4,5,6};
     EXPECT_EQ(ivec, correct_result);

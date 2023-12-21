@@ -10,6 +10,7 @@
 #include <stop_token>
 #include <functional>
 #include <condition_variable>
+#include <latch>
 
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
@@ -24,6 +25,8 @@ extern manually_stop_type manually_stop;
 /*! \brief The most fundamental native thread level management.
  *
  *  You could chouse the underlying queue which contains the invocable objects.
+ *
+ *  \attention Remeber to call `start()` after initialization !
  */
 class thread_pool
 {
@@ -33,10 +36,12 @@ public:
      *
      *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
      */
-    explicit thread_pool(size_t numthr, invocable_queue_wrapper q)
-        : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
+    thread_pool(size_t numthr, invocable_queue_wrapper q)
+        : m_tasks{ ::std::move(q) }, 
+          m_manully_stop{ false }, 
+          m_num_thrs{ numthr },
+          m_start_working{ static_cast<long int>(numthr) }
     {
-        init(numthr);
     }
 
     /*! \param numthr The number of threads this `thread_pool` hold.
@@ -47,10 +52,15 @@ public:
      *  Or the destructor will blocked.
      */
     thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
-        : m_tasks{ ::std::move(q) }, m_manully_stop{ true }
+        : thread_pool(numthr, ::std::move(q))
     { 
-        init(numthr);
+        m_manully_stop = true;
     }
+
+    /*! Make all the consumer working.
+     *  You HAVE TO call this function after initialization.
+     */
+    void start();
 
     virtual ~thread_pool() noexcept;
           
@@ -157,19 +167,20 @@ protected:
     bool need_stop_now() const noexcept;
 
 private:
-    void consumer(::std::stop_token token) noexcept;
+    void consumer(::std::stop_token token, const ::std::thread::id main_thread_id) noexcept;
     [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
-    void init(size_t numthr);
 
 private:
     ::std::atomic_bool              m_stop_now{ false };
     ::std::stop_source              m_stop_source;
     invocable_queue_wrapper         m_tasks;
-    const bool                      m_manully_stop{ true };
+    bool                            m_manully_stop{ true };
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;
     ::std::once_flag                m_stop_once_flag;
     ::std::vector<::std::jthread>   m_thrs;
+    size_t                          m_num_thrs{};
+    ::std::latch                    m_start_working;
 };
 
 KOIOS_NAMESPACE_END

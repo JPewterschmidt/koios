@@ -92,6 +92,7 @@ namespace fp_detials
         void send() noexcept
         {
             auto& f_ptr_r = this->f_ptr_ref();
+            auto lk = f_ptr_r->get_unique_lock();
             f_ptr_r->set_storage_ptr(storage());
             f_ptr_r->cond_notify();
         }
@@ -179,7 +180,7 @@ namespace fp_detials
             auto s = m_storage_ptr.load();
             if (!s)
             {
-                ::std::unique_lock lk{ m_cond_lock };
+                auto lk = get_unique_lock();
                 m_cond.wait(lk, [this]{ return ready(); });
                 s = m_storage_ptr.load();
             }
@@ -213,6 +214,11 @@ namespace fp_detials
         void cond_notify()
         {
             m_cond.notify_all(); 
+        }
+
+        auto get_unique_lock()
+        {
+            return ::std::unique_lock{ m_cond_lock };
         }
 
     private:

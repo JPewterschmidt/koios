@@ -34,7 +34,10 @@ public:
     {
     }
 
-    constexpr bool await_ready() const noexcept { return false; }
+    bool await_ready() const noexcept 
+    { 
+        return m_future.ready();
+    }
 
     /*! This function will record the caller coroutine for resuming it.
      *  It will also schedule this current task with `DriverPolicy`.

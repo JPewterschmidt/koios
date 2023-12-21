@@ -52,7 +52,7 @@ namespace
 
 int main()
 {
-    koios::runtime_init(1);
+    koios::runtime_init(10);
 
     delayed_scheduler ds{ 50ms };
     const auto now = ::std::chrono::high_resolution_clock::now();

@@ -8,7 +8,6 @@ namespace
     void func(promise<int> p)
     {
         p.set_value(666);
-        p.send();
     }
 }
 
@@ -26,7 +25,7 @@ TEST(future, nothing_to_get)
     {
         promise<int> p;
         auto f = p.get_future();
-        f.get();
+        f.get_nonblk();
     } 
     catch (const ::std::exception& ex)
     {
@@ -43,7 +42,6 @@ TEST(future, regular_exception)
         p.set_exception(
             ::std::make_exception_ptr(::std::logic_error{"xxx888xxx"})
         );
-        p.send();
     } 
     catch (const ::std::exception& ex)
     {

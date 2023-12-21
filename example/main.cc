@@ -1,51 +1,64 @@
-#include "koios/future.h"
+#include "koios/thread_pool.h"
+#include "koios/runtime.h"
+#include "koios/delayed_scheduler.h"
+#include "koios/task_scheduler_concept.h"
+#include "koios/delayed_scheduler.h"
+#include "koios/task.h"
+#include <chrono>
 #include <iostream>
 
-class lifetime {
-public:
-    // Constructor
-    lifetime() {
-        std::cout << "constructor called. " << std::endl;
-    }
+using namespace koios;
+using namespace ::std::chrono_literals;
 
-    // Copy Constructor
-    lifetime(const lifetime& other) {
-        std::cout << "copy_constructor called." << std::endl;
-    }
 
-    // Move Constructor
-    lifetime(lifetime&& other) noexcept {
-        std::cout << "move_constructor called." << std::endl;
-    }
+using namespace koios;
 
-    // Copy Assignment Operator
-    lifetime& operator=(const lifetime& other) {
-        std::cout << "copy_assignment_operator called." << std::endl;
-        return *this;
-    }
-
-    // Move Assignment Operator
-    lifetime& operator=(lifetime&& other) noexcept {
-        std::cout << "move_assignment_operator called." << std::endl;
-        return *this;
-    }
-
-    // Destructor
-    ~lifetime() {
-        std::cout << "destructor called." << std::endl;
-    }
-};
-
-void func(koios::promise<lifetime> i)
+namespace 
 {
-    i.set_value(lifetime{});
-    i.send();
+    int flag{};
+    int referd_obj{};
+
+    task<void> for_basic_test()
+    {
+        flag = 1;
+        co_return;
+    }
+
+    task<int> for_basic_test2()
+    {
+        co_return 2;
+    }
+
+    task<int&> for_basic_test3()
+    {
+        co_return referd_obj;
+    }
+
+    sync_task<int> for_sync_task()
+    {
+        co_return 1;
+    }
+    
+    nodiscard_task<int> for_nodiscard()
+    {
+        co_return 1;
+    }
+
+    task<::std::chrono::high_resolution_clock::time_point> func()
+    {
+        co_return ::std::chrono::high_resolution_clock::now();
+    }
 }
 
 int main()
 {
-    koios::promise<lifetime> ip{};
-    auto f = ip.get_future();
-    func(::std::move(ip));
-    auto val = f.get();
+    koios::runtime_init(1);
+
+    delayed_scheduler ds{ 50ms };
+    const auto now = ::std::chrono::high_resolution_clock::now();
+    const auto ret_tp = func().result_on(ds);
+
+    koios::runtime_exit();
+
+    return 0;
 }

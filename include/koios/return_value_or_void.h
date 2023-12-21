@@ -8,6 +8,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -29,7 +30,7 @@ public:
     auto get_std_promise_pointer() { return m_promise_p; }
 
 protected:
-    ::std::shared_ptr<::std::promise<T>> m_promise_p{ ::std::make_shared<::std::promise<T>>() };
+    ::std::shared_ptr<koios::promise<T>> m_promise_p{ ::std::make_shared<koios::promise<T>>() };
     task_on_the_fly m_caller{};
 
     /*! \brief Wake the caller coroutine, if this task has been called with `co_await`.

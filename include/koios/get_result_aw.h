@@ -9,6 +9,7 @@
 #include "koios/local_thread_scheduler.h"
 #include "koios/task_scheduler_wrapper.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/future.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -33,7 +34,10 @@ public:
     {
     }
 
-    constexpr bool await_ready() const noexcept { return false; }
+    bool await_ready() const noexcept 
+    { 
+        return m_future.ready();
+    }
 
     /*! This function will record the caller coroutine for resuming it.
      *  It will also schedule this current task with `DriverPolicy`.
@@ -62,7 +66,7 @@ public:
 
 protected:
     promise_wrapper<value_type> m_promise;
-    ::std::future<T> m_future;
+    koios::future<T> m_future;
 };
 
 template<typename T, typename Task, typename DriverPolicy>
@@ -76,7 +80,7 @@ public:
     {
     }
     
-    decltype(auto) await_resume() { return this->m_future.get(); }
+    decltype(auto) await_resume() { return this->m_future.get_nonblk(); }
 };
 
 template<typename Task, typename DriverPolicy>
@@ -88,7 +92,7 @@ public:
     {
     }
 
-    void await_resume() { this->m_future.get(); }
+    void await_resume() { this->m_future.get_nonblk(); }
 };
 
 KOIOS_NAMESPACE_END

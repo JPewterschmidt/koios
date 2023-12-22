@@ -23,6 +23,13 @@ public:
     using invocable_type = typename LockFreeInvocableQueue::invocable_type;
 
 public:
+    work_stealing_queue() = default;
+    work_stealing_queue(work_stealing_queue&& q) noexcept
+        : m_queues{ ::std::move(q.m_queues) },
+          m_consumers{ ::std::move(q.m_consumers) }
+    {
+    }
+
     ::std::optional<invocable_type> 
     dequeue(const per_consumer_attr& attr)
     {
@@ -66,6 +73,12 @@ public:
 
     bool empty() const noexcept { return size() == 0; }
 
+    void thread_specific_preparation(const per_consumer_attr& attr)
+    {
+        add_consumer_thread_id(attr);
+    }
+
+private:
     void add_consumer_thread_id(::std::thread::id tid)
     {
         ::std::unique_lock lk{ m_queues_lk };

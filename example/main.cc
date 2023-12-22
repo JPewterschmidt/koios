@@ -6,61 +6,16 @@
 #include <iostream>
 #include <cassert>
 
+#include "koios/work_stealing_queue.h"
+#include "koios/moodycamel_queue_wrapper.h"
+
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-
-using namespace koios;
-
-namespace 
-{
-    int flag{};
-    int referd_obj{};
-
-    task<void> for_basic_test()
-    {
-        flag = 1;
-        co_return;
-    }
-
-    task<int> for_basic_test2()
-    {
-        co_return 2;
-    }
-
-    task<int&> for_basic_test3()
-    {
-        co_return referd_obj;
-    }
-
-    sync_task<int> for_sync_task()
-    {
-        co_return 1;
-    }
-    
-    nodiscard_task<int> for_nodiscard()
-    {
-        co_return 1;
-    }
-
-    task<::std::chrono::high_resolution_clock::time_point> func()
-    {
-        co_return ::std::chrono::high_resolution_clock::now();
-    }
-}
-
-constinit size_t test_size{ 10000 };
-constinit size_t pool_size{ 10 };
-
-task<bool> test_main()
-{
-    co_await for_basic_test();
-    int i = co_await for_basic_test2();
-    co_return i == 2;
-}
-
 int main()
 {
+    work_stealing_queue<moodycamel_queue_wrapper> q;
 
+    
     return 0;
 }

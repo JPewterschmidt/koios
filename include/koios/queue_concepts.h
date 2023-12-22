@@ -25,10 +25,15 @@ concept thread_specific_queue = requires(Queue q)
 template<typename Queue>
 concept queue_concept = requires(Queue q)
 {
-    { &Queue::q     };
+    { &Queue::enqueue };
     { q.empty()     } -> ::std::same_as<bool>;
     { q.size()      } -> ::std::integral;
 } && (normal_queue<Queue> || thread_specific_queue<Queue>);
+
+template<typename Queue>
+concept invocable_queue_concept = 
+       ::std::invocable<typename Queue::invocable_type> 
+    && queue_concept<Queue>;
 
 KOIOS_NAMESPACE_END
 

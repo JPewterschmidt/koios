@@ -17,7 +17,8 @@ invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept
       m_empty_impl  { other.m_empty_impl                        },
       m_enqueue_impl{ other.m_enqueue_impl                      }, 
       m_dequeue_impl{ other.m_dequeue_impl                      }, 
-      m_size_impl   { other.m_size_impl                         }
+      m_size_impl   { other.m_size_impl                         }, 
+      m_thread_specific_preparation{ other.m_thread_specific_preparation }
 {
 }
 
@@ -37,9 +38,9 @@ enqueue(invocable_type&& func) const
 
 ::std::optional<typename invocable_queue_wrapper::invocable_type> 
 invocable_queue_wrapper::
-dequeue() const
+dequeue(const per_consumer_attr& attr) const
 { 
-    return m_dequeue_impl(m_storage.get()); 
+    return m_dequeue_impl(m_storage.get(), attr); 
 }
 
 KOIOS_NAMESPACE_END

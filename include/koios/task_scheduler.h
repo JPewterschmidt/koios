@@ -10,6 +10,7 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/std_queue_wrapper.h"
 #include "koios/moodycamel_queue_wrapper.h"
+#include "koios/work_stealing_queue.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -17,7 +18,7 @@ KOIOS_NAMESPACE_BEG
 class task_scheduler : public thread_pool
 {
 public:
-    using queue_type = moodycamel_queue_wrapper;
+    using queue_type = work_stealing_queue<moodycamel_queue_wrapper>;
 
 public:
     /*! \param thr_cnt the number of thread you want.

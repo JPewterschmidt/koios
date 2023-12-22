@@ -8,6 +8,7 @@
 
 #include "koios/macros.h"
 #include "koios/traits.h"
+#include "koios/queue_concepts.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -37,16 +38,41 @@ public:
           m_dtor        { +[](void* p) noexcept { CAST(p)->~Queue(); } }, 
           m_empty_impl  { +[](void* q) { return CAST(q)->empty(); } },
           m_enqueue_impl{ +[](void* q, invocable_type&& func) { CAST(q)->enqueue(::std::move(func)); } }, 
-          m_dequeue_impl{ +[](void* q) { return CAST(q)->dequeue(); } }, 
-          m_size_impl   { +[](void* q) { return CAST(q)->size(); } }
+          m_dequeue_impl{ init_dq<Queue>() }, 
+          m_size_impl   { +[](void* q) { return CAST(q)->size(); } }, 
+          m_thread_specific_preparation{ init_tsp<Queue>() }
+    {
+        ::std::construct_at(CAST(m_storage.get()), ::std::forward<Queue>(q));
+    }
+
+private:
+    template<typename Queue>
+    auto init_dq()
+    {
+        if constexpr (thread_specific_queue_concept<Queue>)
+        {
+            return +[](void* q, const per_consumer_attr& attr) {
+                return CAST(q)->dequeue(attr);
+            };
+        }
+        else 
+        {
+            return +[](void* q, [[maybe_unused]] const per_consumer_attr&) {
+                return CAST(q)->dequeue();
+            };
+        }
+    }
+
+    template<typename Queue>
+    auto init_tsp()
     {
         if constexpr (has_thread_specific_preparation<Queue>)
         {
-            m_thread_specific_preparation = +[](void* q, const per_consumer_attr& attr) {
+            return +[](void* q, const per_consumer_attr& attr) {
                 CAST(q)->thread_specific_preparation(attr);
             };
         }
-        ::std::construct_at(CAST(m_storage.get()), ::std::forward<Queue>(q));
+        else return nullptr;
     }
 
 #undef CAST
@@ -56,7 +82,7 @@ public:
     invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept;
 
     void enqueue(invocable_type&& func) const;
-    ::std::optional<invocable_type> dequeue() const;
+    ::std::optional<invocable_type> dequeue(const per_consumer_attr& attr) const;
     bool empty() const;
     size_t size() const noexcept { return m_size_impl(m_storage.get()); }
     void thread_specific_preparation(const per_consumer_attr& attr)
@@ -70,9 +96,9 @@ private:
     void (*m_dtor) (void*);
     bool (*const m_empty_impl) (void*);
     void (*const m_enqueue_impl) (void*, invocable_type&&);
-    ::std::optional<invocable_type> (*const m_dequeue_impl) (void*);
+    ::std::optional<invocable_type> (*m_dequeue_impl) (void*, const per_consumer_attr&);
     size_t (*const m_size_impl) (void*);
-    void (*m_thread_specific_preparation) (void*, const per_consumer_attr&) = nullptr;
+    void (*m_thread_specific_preparation) (void*, const per_consumer_attr&);
 };
 
 KOIOS_NAMESPACE_END

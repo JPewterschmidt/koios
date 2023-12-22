@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/std_queue_wrapper.h"
+#include "koios/per_consumer_attr.h"
 #include "toolpex/unique_resource.h"
 
 namespace
@@ -24,7 +25,7 @@ TEST(invocable_queue_wrapper, special_member_func)
 
         for (size_t i{}; i < 5; ++i)
         {
-            auto ret = iqw2.dequeue();
+            auto ret = iqw2.dequeue(per_consumer_attr{});
             if (ret) (*ret)();
         }
     }
@@ -40,7 +41,7 @@ TEST(invocable_queue_wrapper, basic)
 
     for (size_t i{}; i < 10; ++i)
     {
-        auto ret = iqw.dequeue();
+        auto ret = iqw.dequeue(per_consumer_attr{});
         if (ret) (*ret)();
     }
 

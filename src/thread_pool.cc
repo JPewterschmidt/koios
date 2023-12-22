@@ -61,7 +61,7 @@ void thread_pool::consumer(
     while (!done(token))
     {
         before_each_task();
-        if (auto task_opt = m_tasks.dequeue(); !task_opt)
+        if (auto task_opt = m_tasks.dequeue(cattr); !task_opt)
         {
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };

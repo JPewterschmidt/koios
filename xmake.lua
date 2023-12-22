@@ -33,6 +33,7 @@ target("koios")
         "uring"
     )
     add_files("src/*.cc")
+    set_policy("build.optimization.lto", true)
 
 target("test")
     set_kind("binary")
@@ -52,6 +53,7 @@ target("test")
     on_run(function (target)
         --nothing
     end)
+    set_policy("build.optimization.lto", true)
     
 target("example")
     set_kind("binary")
@@ -65,6 +67,7 @@ target("example")
         "fmt", "gflags", 
         "concurrentqueue"
     )
+    set_policy("build.optimization.lto", true)
     
 
 --

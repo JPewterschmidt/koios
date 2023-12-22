@@ -143,6 +143,8 @@ public:
 
     ::std::chrono::nanoseconds max_sleep_duration() noexcept
     { 
+        if (is_cleanning()) 
+            return ::std::chrono::nanoseconds::max();
         auto [lk, ptr] = cur_thread_ptr();
         return ptr->max_sleep_duration();
     } 

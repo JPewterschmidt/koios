@@ -4,6 +4,7 @@
 #include "koios/task.h"
 #include <chrono>
 #include <iostream>
+#include <cassert>
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -53,13 +54,13 @@ constinit size_t pool_size{ 10 };
 
 task<bool> test_main()
 {
-    co_return true;
+    co_await for_basic_test();
+    int i = co_await for_basic_test2();
+    co_return i == 2;
 }
 
 int main()
 {
-    koios::runtime_init(10);
-    auto x = test_main().result();
 
     return 0;
 }

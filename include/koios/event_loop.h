@@ -27,8 +27,8 @@ public:
 
     virtual void thread_specific_preparation(const per_consumer_attr& attr) override
     {
-        (Loops::thread_specific_preparation(attr), ...);
         task_scheduler::thread_specific_preparation(attr);
+        (Loops::thread_specific_preparation(attr), ...);
     }
 
     void do_occured_nonblk() noexcept

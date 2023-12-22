@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "koios/macros.h"
+#include "koios/traits.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -39,11 +40,18 @@ public:
           m_dequeue_impl{ +[](void* q) { return CAST(q)->dequeue(); } }, 
           m_size_impl   { +[](void* q) { return CAST(q)->size(); } }
     {
+        if constexpr (has_thread_specific_preparation<Queue>)
+        {
+            m_thread_specific_preparation = +[](void* q, const per_consumer_attr& attr) {
+                CAST(q)->thread_specific_preparation(attr);
+            };
+        }
         ::std::construct_at(CAST(m_storage.get()), ::std::forward<Queue>(q));
     }
 
 #undef CAST
 
+public:
     ~invocable_queue_wrapper() noexcept;
     invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept;
 
@@ -51,6 +59,11 @@ public:
     ::std::optional<invocable_type> dequeue() const;
     bool empty() const;
     size_t size() const noexcept { return m_size_impl(m_storage.get()); }
+    void thread_specific_preparation(const per_consumer_attr& attr)
+    {
+        if (m_thread_specific_preparation)
+            m_thread_specific_preparation(m_storage.get(), attr);
+    }
 
 private:
     ::std::unique_ptr<unsigned char[]> m_storage;
@@ -59,6 +72,7 @@ private:
     void (*const m_enqueue_impl) (void*, invocable_type&&);
     ::std::optional<invocable_type> (*const m_dequeue_impl) (void*);
     size_t (*const m_size_impl) (void*);
+    void (*m_thread_specific_preparation) (void*, const per_consumer_attr&) = nullptr;
 };
 
 KOIOS_NAMESPACE_END

@@ -16,6 +16,7 @@
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
 #include "koios/per_consumer_attr.h" 
+#include "koios/queue_concepts.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -157,7 +158,11 @@ protected:
         return result;
     }
 
-    virtual void thread_specific_preparation([[maybe_unused]] const per_consumer_attr&) {}
+    virtual void thread_specific_preparation(const per_consumer_attr& attr)
+    {
+        m_tasks.thread_specific_preparation(attr);
+    }
+
     virtual void before_each_task() noexcept { }
     virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
     { 

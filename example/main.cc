@@ -1,11 +1,10 @@
 #include "koios/thread_pool.h"
 #include "koios/runtime.h"
-#include "koios/delayed_scheduler.h"
 #include "koios/task_scheduler_concept.h"
-#include "koios/delayed_scheduler.h"
 #include "koios/task.h"
 #include <chrono>
 #include <iostream>
+#include <cassert>
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -50,15 +49,18 @@ namespace
     }
 }
 
+constinit size_t test_size{ 10000 };
+constinit size_t pool_size{ 10 };
+
+task<bool> test_main()
+{
+    co_await for_basic_test();
+    int i = co_await for_basic_test2();
+    co_return i == 2;
+}
+
 int main()
 {
-    koios::runtime_init(1);
-
-    delayed_scheduler ds{ 50ms };
-    const auto now = ::std::chrono::high_resolution_clock::now();
-    const auto ret_tp = func().result_on(ds);
-
-    koios::runtime_exit();
 
     return 0;
 }

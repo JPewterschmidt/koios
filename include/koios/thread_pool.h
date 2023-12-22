@@ -10,10 +10,12 @@
 #include <stop_token>
 #include <functional>
 #include <condition_variable>
+#include <latch>
 
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
+#include "koios/per_consumer_attr.h" 
 
 KOIOS_NAMESPACE_BEG
 
@@ -23,6 +25,8 @@ extern manually_stop_type manually_stop;
 /*! \brief The most fundamental native thread level management.
  *
  *  You could chouse the underlying queue which contains the invocable objects.
+ *
+ *  \attention Remeber to call `start()` after initialization !
  */
 class thread_pool
 {
@@ -32,10 +36,12 @@ public:
      *
      *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
      */
-    explicit thread_pool(size_t numthr, invocable_queue_wrapper q)
-        : m_tasks{ ::std::move(q) }, m_manully_stop{ false }
+    thread_pool(size_t numthr, invocable_queue_wrapper q)
+        : m_tasks{ ::std::move(q) }, 
+          m_manully_stop{ false }, 
+          m_num_thrs{ numthr },
+          m_start_working{ static_cast<long int>(numthr) }
     {
-        init(numthr);
     }
 
     /*! \param numthr The number of threads this `thread_pool` hold.
@@ -46,10 +52,15 @@ public:
      *  Or the destructor will blocked.
      */
     thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
-        : m_tasks{ ::std::move(q) }, m_manully_stop{ true }
+        : thread_pool(numthr, ::std::move(q))
     { 
-        init(numthr);
+        m_manully_stop = true;
     }
+
+    /*! Make all the consumer working.
+     *  You HAVE TO call this function after initialization.
+     */
+    void start();
 
     virtual ~thread_pool() noexcept;
           
@@ -104,6 +115,10 @@ public:
      */
     size_t number_remain_tasks() const noexcept { return m_tasks.size(); }
 
+    /*! \return the number of threads this pool managing.
+     */
+    size_t number_of_threads() const noexcept { return m_thrs.size(); }
+
 protected:
     template<typename F, typename... Args>
     void enqueue_no_future_without_checking(F&& func, Args&&... args) noexcept
@@ -142,7 +157,7 @@ protected:
         return result;
     }
 
-    virtual void thread_specific_preparation() {}
+    virtual void thread_specific_preparation([[maybe_unused]] const per_consumer_attr&) {}
     virtual void before_each_task() noexcept { }
     virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
     { 
@@ -152,19 +167,20 @@ protected:
     bool need_stop_now() const noexcept;
 
 private:
-    void consumer(::std::stop_token token) noexcept;
+    void consumer(::std::stop_token token, const ::std::thread::id main_thread_id) noexcept;
     [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
-    void init(size_t numthr);
 
 private:
     ::std::atomic_bool              m_stop_now{ false };
     ::std::stop_source              m_stop_source;
     invocable_queue_wrapper         m_tasks;
-    const bool                      m_manully_stop{ true };
+    bool                            m_manully_stop{ true };
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;
     ::std::once_flag                m_stop_once_flag;
     ::std::vector<::std::jthread>   m_thrs;
+    size_t                          m_num_thrs{};
+    ::std::latch                    m_start_working;
 };
 
 KOIOS_NAMESPACE_END

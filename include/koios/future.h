@@ -238,7 +238,7 @@ namespace fp_detials
         ::std::weak_ptr<promise_impl<value_type>> m_promise_wptr;
 
         ::std::condition_variable m_cond;
-        ::std::mutex m_cond_lock;
+        mutable ::std::mutex m_cond_lock;
     };
 
     template<typename Result>

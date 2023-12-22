@@ -8,11 +8,14 @@
 #include <compare>
 #include <mutex>
 #include <cassert>
+#include <thread>
+#include <shared_mutex>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/task_concepts.h"
 #include "koios/exceptions.h"
+#include "koios/per_consumer_attr.h"
 #include "toolpex/concepts_and_traits.h"
 
 KOIOS_NAMESPACE_BEG
@@ -75,10 +78,10 @@ public:
      *         which acceptable to timer event loop to ensure
      *         the timer accuracy.
      */
-    auto max_sleep_duration() noexcept
+    auto max_sleep_duration() const noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
-        ::std::unique_lock lk{ m_lk };
+        ::std::shared_lock lk{ m_lk };
         if (m_timer_heap.empty()) return ::std::chrono::nanoseconds::max();
         return m_timer_heap.front().timeout_tp - now;
     }
@@ -90,7 +93,7 @@ public:
     // `add_event` operation.
     [[nodiscard]] bool done() const noexcept
     {
-        ::std::unique_lock lk{ m_lk };
+        ::std::shared_lock lk{ m_lk };
         return m_timer_heap.empty();
     }
 
@@ -99,7 +102,7 @@ private:
 
 private:
     ::std::vector<timer_event> m_timer_heap;
-    mutable ::std::mutex m_lk;
+    mutable ::std::shared_mutex m_lk;
 };
 
 /*! \brief A wrap class of timer event.
@@ -113,13 +116,13 @@ class timer_event_loop
 {
 public:
     timer_event_loop()
-        : m_impl_ptr { ::std::make_shared<timer_event_loop_impl>() }
     {
     }
 
     void do_occured_nonblk() noexcept 
     { 
-        m_impl_ptr->do_occured_nonblk(); 
+        auto [lk, ptr] = cur_thread_ptr();
+        ptr->do_occured_nonblk(); 
     }
 
     template<typename... Args>
@@ -133,14 +136,18 @@ public:
             );
             return;
         }
-        m_impl_ptr->add_event(::std::forward<Args>(args)...); 
+        
+        auto [lk, ptr] = cur_thread_ptr();
+        ptr->add_event(::std::forward<Args>(args)...); 
     }
 
     ::std::chrono::nanoseconds max_sleep_duration() noexcept
     { 
-        return m_impl_ptr->max_sleep_duration(); 
-        return ::std::chrono::nanoseconds::max();
-    }
+        if (is_cleanning()) 
+            return ::std::chrono::nanoseconds::max();
+        auto [lk, ptr] = cur_thread_ptr();
+        return ptr->max_sleep_duration();
+    } 
 
     void quick_stop() noexcept;
     void stop();
@@ -148,14 +155,34 @@ public:
     /*! \attention should only be called by `event_loop`.*/
     void until_done();
 
-    constexpr void thread_specific_preparation() noexcept { }
+    void thread_specific_preparation(const per_consumer_attr& attr)  
+    { 
+        ::std::unique_lock lk{ m_ptrs_lock };
+        m_impl_ptrs[attr.thread_id] = ::std::make_shared<timer_event_loop_impl>();
+    }
 
     bool is_cleanning() const;
-    bool done() { return m_impl_ptr->done(); }   
+    bool done();
+
+private:
+    ::std::pair<
+        ::std::shared_lock<::std::shared_mutex>, 
+        ::std::shared_ptr<timer_event_loop_impl>> 
+    cur_thread_ptr()
+    {
+        ::std::shared_lock lk{ m_ptrs_lock };
+        auto id = ::std::this_thread::get_id();
+        assert(m_impl_ptrs.contains(id));
+        return { 
+            ::std::move(lk), 
+            m_impl_ptrs[id]
+        };
+    }
 
 private:    
     ::std::atomic_bool m_cleanning{ false };
-    ::std::shared_ptr<timer_event_loop_impl> m_impl_ptr;
+    ::std::unordered_map<::std::thread::id, ::std::shared_ptr<timer_event_loop_impl>> m_impl_ptrs;
+    mutable ::std::shared_mutex m_ptrs_lock;
 };
 
 KOIOS_NAMESPACE_END

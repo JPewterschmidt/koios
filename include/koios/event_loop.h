@@ -11,6 +11,7 @@
 #include "koios/task_scheduler.h"
 #include "toolpex/is_specialization_of.h"
 #include "koios/event_loop_concepts.h"
+#include "koios/per_consumer_attr.h" 
 
 KOIOS_NAMESPACE_BEG
 
@@ -24,9 +25,9 @@ public:
     {
     }
 
-    virtual void thread_specific_preparation() override
+    virtual void thread_specific_preparation(const per_consumer_attr& attr) override
     {
-        (Loops::thread_specific_preparation(), ...);
+        (Loops::thread_specific_preparation(attr), ...);
     }
 
     void do_occured_nonblk() noexcept

@@ -11,6 +11,7 @@ constinit size_t pool_size{ 10 };
 TEST(thread_pool, basic)
 {
     thread_pool tp{ pool_size, moodycamel_queue_wrapper{} };
+    tp.start();
     ::std::atomic_size_t count{ test_size };
 
     for (size_t i = 0; i < test_size / 10; ++i)

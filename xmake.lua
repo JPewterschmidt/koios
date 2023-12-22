@@ -18,6 +18,7 @@ add_includedirs(
 
 set_languages("c++2b", "c17")
 set_policy("build.warning", true)
+set_policy("build.optimization.lto", true)
 
 target("koios")
     set_kind("shared")
@@ -27,6 +28,7 @@ target("koios")
         "concurrentqueue"
     )
     set_warnings("all", "error")
+    set_optimize("fastest")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_syslinks(
         "spdlog", 
@@ -39,12 +41,12 @@ target("test")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
+    set_optimize("fastest")
     set_warnings("all", "error")
     add_files("test/*.cc")
     add_packages(
         "gtest", "fmt", "spdlog"
     )
-    set_optimize("fastest")
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")
@@ -58,6 +60,7 @@ target("example")
     add_packages("")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
+    set_optimize("fastest")
     add_files("example/*.cc")
     add_syslinks("spdlog")
     set_policy("build.warning", true)

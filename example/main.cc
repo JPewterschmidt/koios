@@ -10,15 +10,16 @@
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/this_task.h"
 
+#include "toolpex/tic_toc.h"
+
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<size_t> func2()
+task<size_t> func2(size_t count = 0)
 {
-    static size_t count{};
-    if (count++ > 100)
+    if (count > 100)
         co_return 1;
-    co_return 1 + co_await func2();
+    co_return 1 + co_await func2(count + 1);
 }
 
 task<size_t> func()
@@ -27,7 +28,7 @@ task<size_t> func()
 
     ::std::vector<koios::future<size_t>> fvec{};
 
-    for (size_t i{}; i < 100000; ++i)
+    for (size_t i{}; i < 10000; ++i)
     {
         fvec.emplace_back(func2().run_and_get_future());
         fvec.emplace_back(func2().run_and_get_future());
@@ -51,8 +52,10 @@ task<size_t> func()
 
 int main()
 {
-    koios::runtime_init(30);
+    koios::runtime_init(20);
+    auto t = toolpex::tic();
     (void)func().result();
+    ::std::cout << toolpex::toc(t) << ::std::endl;
     koios::runtime_exit();
     
     return 0;

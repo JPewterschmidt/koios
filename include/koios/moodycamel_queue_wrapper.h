@@ -4,7 +4,8 @@
 #include <functional>
 #include <optional>
 
-#include "macros.h"
+#include "koios/macros.h"
+#include "koios/per_consumer_attr.h"
 
 #include "concurrentqueue/concurrentqueue.h"
 

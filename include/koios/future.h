@@ -172,12 +172,12 @@ namespace fp_detials
     public:
         bool ready() const noexcept
         {
-            return m_storage_ptr.load() != nullptr;
+            return m_storage_ptr.load(::std::memory_order_acquire) != nullptr;
         }
 
         auto get()
         {
-            auto s = m_storage_ptr.load();
+            auto s = m_storage_ptr.load(::std::memory_order_acquire);
             if (!s)
             {
                 auto lk = get_unique_lock();

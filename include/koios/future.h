@@ -91,10 +91,7 @@ namespace fp_detials
     protected:
         void send() noexcept
         {
-            auto& f_ptr_r = this->f_ptr_ref();
-            auto lk = f_ptr_r->get_unique_lock();
-            f_ptr_r->set_storage_ptr(storage());
-            f_ptr_r->cond_notify();
+            this->f_ptr_ref()->set_storage_ptr(storage());
         }
 
         auto& storage() { return m_storage; }
@@ -143,7 +140,6 @@ namespace fp_detials
 
         void weak_link_to_counterpart_future()
         {
-            this->f_ptr_ref()->set_counterpart_promise_ptr(this->shared_from_this());
         }
 
         promise_impl(promise_impl&& other) noexcept = default;
@@ -172,73 +168,59 @@ namespace fp_detials
     public:
         bool ready() const noexcept
         {
-            return m_storage_ptr.load(::std::memory_order_acquire) != nullptr;
+            ::std::lock_guard lk{ m_lock };
+            return ready_nolock();
         }
 
         auto get()
         {
-            auto s = m_storage_ptr.load(::std::memory_order_acquire);
-            if (!s)
-            {
-                auto lk = get_unique_lock();
-                m_cond.wait(lk, [this]{ return ready(); });
-                s = m_storage_ptr.load();
-            }
+            auto lk = get_unique_lock();
+            if (!m_storage_ptr) 
+                m_cond.wait(lk, [this]{ return ready_nolock(); });
 
-            return get_nonblk(s);
+            return get_nonblk(::std::move(lk));
         }
 
         auto get_nonblk()
         {
-            auto s = m_storage_ptr.load();
-            if (!s) throw koios::future_exception{};
-            return get_nonblk(s);
-        }
-
-        bool valid() const noexcept
-        {
-            auto s = m_storage_ptr.load();
-            return s || !m_promise_wptr.expired();
+            if (!m_storage_ptr) [[unlikely]]
+                throw koios::future_exception{};
+            return get_nonblk(get_unique_lock());
         }
 
     private:
-        void set_counterpart_promise_ptr(::std::weak_ptr<promise_impl<value_type>> wpl)
-        {
-            m_promise_wptr = ::std::move(wpl);
-        }
-
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
         {
-            m_storage_ptr.store(::std::move(ptr));
+            ::std::lock_guard lk{ m_lock };
+            m_storage_ptr = ::std::move(ptr);
+            m_cond.notify_all(); 
         }
 
-        void cond_notify()
+        bool ready_nolock() const noexcept
         {
-            m_cond.notify_all(); 
+            return !!m_storage_ptr;
         }
 
         auto get_unique_lock()
         {
-            return ::std::unique_lock{ m_cond_lock };
+            return ::std::unique_lock{ m_lock };
         }
 
-        auto get_nonblk(::std::shared_ptr<fp_detials::promise_storage<value_type>>& s)
+        auto get_nonblk(::std::unique_lock<::std::mutex> lk)
         {
-            if (auto& ex = s->exception_ptr(); ex)
+            if (auto& ex = m_storage_ptr->exception_ptr(); ex)
             {
                 ::std::rethrow_exception(ex);
             }
             if constexpr (::std::same_as<value_type, void>)
                 return;
-            else return s->move_out();
+            else return m_storage_ptr->move_out();
         }
 
     private:
-        ::std::atomic<::std::shared_ptr<fp_detials::promise_storage<value_type>>> m_storage_ptr;
-        ::std::weak_ptr<promise_impl<value_type>> m_promise_wptr;
-
+        ::std::shared_ptr<fp_detials::promise_storage<value_type>> m_storage_ptr;
         ::std::condition_variable m_cond;
-        mutable ::std::mutex m_cond_lock;
+        mutable ::std::mutex m_lock;
     };
 
     template<typename Result>

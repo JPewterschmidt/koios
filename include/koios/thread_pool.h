@@ -77,7 +77,8 @@ public:
     template<typename F, typename... Args>
     [[nodiscard]] auto enqueue(F&& func, Args&&... args)
     {
-        if (m_stop_now) [[unlikely]] throw thread_pool_stopped_exception{};
+        if (need_stop_now()) [[unlikely]] 
+            throw thread_pool_stopped_exception{};
         return enqueue_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
@@ -91,7 +92,8 @@ public:
     template<typename F, typename... Args>
     void enqueue_no_future(F&& func, Args&&... args)
     {
-        if (m_stop_now) [[unlikely]] throw thread_pool_stopped_exception{};
+        if (need_stop_now()) [[unlikely]] 
+            throw thread_pool_stopped_exception{};
         enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
     

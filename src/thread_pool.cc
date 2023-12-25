@@ -43,7 +43,7 @@ void thread_pool::stop() noexcept
 
 void thread_pool::quick_stop() noexcept
 {
-    m_stop_now.store(true, ::std::memory_order::release); // TODO
+    m_stop_now.store(true, ::std::memory_order::release);
     stop();
 }
 
@@ -99,7 +99,7 @@ bool thread_pool::done(::std::stop_token& tk) const noexcept
 
 bool thread_pool::need_stop_now() const noexcept
 {
-    return m_stop_now.load(::std::memory_order::acquire); // TODO
+    return m_stop_now.load(::std::memory_order_acquire);
 }
 
 KOIOS_NAMESPACE_END

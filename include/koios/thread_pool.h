@@ -96,7 +96,7 @@ public:
             throw thread_pool_stopped_exception{};
         enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
-    
+
     /*! \brief Wake up all sleeping threads and join all threads.
      * 
      *  The awakened thread will not go to sleep again, 
@@ -141,6 +141,14 @@ protected:
     }
 
     template<typename F, typename... Args>
+    void enqueue_no_future_without_checking(const per_consumer_attr& ca, F&& func, Args&&... args) noexcept
+    {
+        auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
+        m_tasks.enqueue(ca, [task = ::std::move(task)] mutable { task(); });
+        m_cond.notify_all();
+    }
+
+    template<typename F, typename... Args>
     [[nodiscard]] auto enqueue_without_checking(F&& func, Args&&... args) noexcept
     {
         // Dear developers: 
@@ -155,6 +163,26 @@ protected:
         );
         future_type result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
+        m_cond.notify_all();
+
+        return result;
+    }
+
+    template<typename F, typename... Args>
+    [[nodiscard]] auto enqueue_without_checking(const per_consumer_attr& ca, F&& func, Args&&... args) noexcept
+    {
+        // Dear developers: 
+        // Do NOT try to throw anything in this function.
+        // See the comments of `enqueue_no_future`.
+
+        using return_type = typename std::result_of<F(Args...)>::type;
+        using future_type = ::std::future<return_type>;
+
+        auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
+            ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
+        );
+        future_type result = task->get_future();
+        m_tasks.enqueue(ca, [task] mutable { (*task)(); });
         m_cond.notify_all();
 
         return result;

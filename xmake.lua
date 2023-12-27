@@ -28,7 +28,6 @@ target("koios")
         "concurrentqueue"
     )
     set_warnings("all", "error")
-    set_optimize("fastest")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_syslinks(
         "spdlog", 
@@ -41,7 +40,6 @@ target("test")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
-    set_optimize("fastest")
     set_warnings("all", "error")
     add_files("test/*.cc")
     add_packages(
@@ -60,7 +58,6 @@ target("example")
     add_packages("")
     add_cxflags("-Wconversion", "-Wpedantic", { force = true })
     add_deps("koios")
-    set_optimize("fastest")
     add_files("example/*.cc")
     add_syslinks("spdlog")
     set_policy("build.warning", true)

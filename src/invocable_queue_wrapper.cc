@@ -33,7 +33,14 @@ void
 invocable_queue_wrapper::
 enqueue(invocable_type&& func) const
 { 
-    m_enqueue_impl(m_storage.get(), ::std::move(func)); 
+    m_enqueue_impl(m_storage.get(), nullptr, ::std::move(func)); 
+}
+
+void 
+invocable_queue_wrapper::
+enqueue(const per_consumer_attr& ca, invocable_type&& func) const
+{ 
+    m_enqueue_impl(m_storage.get(), &ca, ::std::move(func)); 
 }
 
 ::std::optional<typename invocable_queue_wrapper::invocable_type> 

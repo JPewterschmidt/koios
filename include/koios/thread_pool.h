@@ -97,6 +97,22 @@ public:
         enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
+    template<typename F, typename... Args>
+    [[nodiscard]] auto enqueue(const per_consumer_attr& ca, F&& func, Args&&... args)
+    {
+        if (need_stop_now()) [[unlikely]] 
+            throw thread_pool_stopped_exception{};
+        return enqueue_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
+    }
+
+    template<typename F, typename... Args>
+    void enqueue_no_future(const per_consumer_attr& ca, F&& func, Args&&... args)
+    {
+        if (need_stop_now()) [[unlikely]] 
+            throw thread_pool_stopped_exception{};
+        enqueue_no_future_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
+    }
+
     /*! \brief Wake up all sleeping threads and join all threads.
      * 
      *  The awakened thread will not go to sleep again, 

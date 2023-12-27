@@ -14,7 +14,6 @@ namespace
     ::std::mutex g_cond_mutex;
     ::std::condition_variable g_done_cond;
     ::std::atomic_bool g_cleanning{ false };
-    ::std::atomic_bool g_done{ false };
 }
 
 void timer_event_loop_impl::
@@ -45,10 +44,9 @@ do_occured_nonblk() noexcept
     }
     m_timer_heap.erase(heap_end, m_timer_heap.end());
 
-    if (m_timer_heap.empty() && g_cleanning.load()) 
+    if (m_timer_heap.empty() && g_cleanning.load(::std::memory_order_release)) 
     {
         g_done_cond.notify_all();
-        g_done = true;
     }
 }
 
@@ -85,13 +83,13 @@ quick_stop() noexcept
 bool timer_event_loop::
 is_cleanning() const
 {
-    return g_cleanning.load();
+    return g_cleanning.load(::std::memory_order_release);
 }
 
 void timer_event_loop::
 stop()
 {
-    g_cleanning = true;
+    g_cleanning.store(true, ::std::memory_order_acquire);
 }
 
 bool timer_event_loop::

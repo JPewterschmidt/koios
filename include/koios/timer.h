@@ -115,9 +115,7 @@ private:
 class timer_event_loop
 {
 public:
-    timer_event_loop()
-    {
-    }
+    timer_event_loop() = default;
 
     void do_occured_nonblk() noexcept 
     { 
@@ -180,7 +178,6 @@ private:
     }
 
 private:    
-    ::std::atomic_bool m_cleanning{ false };
     ::std::unordered_map<::std::thread::id, ::std::shared_ptr<timer_event_loop_impl>> m_impl_ptrs;
     mutable ::std::shared_mutex m_ptrs_lock;
 };

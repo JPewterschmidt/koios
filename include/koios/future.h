@@ -22,6 +22,12 @@ namespace fp_detials
     template<typename>
     class future_impl;
 
+    template<typename> 
+    class promise_base;
+
+    template<typename> 
+    class future_base;
+
     class promise_storage_base
     {
     public:
@@ -135,7 +141,8 @@ namespace fp_detials
     public:
         promise_impl()
         {
-            this->m_future_ptr = ::std::make_shared<future_impl<value_type>>();
+            //this->m_future_ptr = ::std::make_shared<future_impl<value_type>>();
+            this->m_future_ptr.reset(new future_impl<value_type>{});
         }
 
         void weak_link_to_counterpart_future()
@@ -162,8 +169,9 @@ namespace fp_detials
     {
     public:
         using value_type = Result;
-        template<typename> friend class promise_impl;
-        template<typename> friend class storage_deliver;
+        template<typename> friend class fp_detials::promise_impl;
+        template<typename> friend class fp_detials::promise_base;
+        template<typename> friend class fp_detials::storage_deliver;
 
     public:
         bool ready() const noexcept
@@ -223,6 +231,12 @@ namespace fp_detials
         mutable ::std::mutex m_lock;
     };
 
+    /*! \brief The base class of future object of koios future/promise pattern 
+     *
+     *  Because those specializations exist, 
+     *  this class provide several common operations 
+     *  specilalizations could inherited from.
+     */
     template<typename Result>
     class future_base
     {
@@ -244,30 +258,55 @@ namespace fp_detials
         }
 
     public:
+        /*! \return Wether the corresponding promise has set the return value or not.
+         *  You can call this function when the future object was default initialzed
+         *  (not be genereted from a promise object.)
+         */
         bool ready() const noexcept 
         { 
             if (!m_impl_ptr) return false;
             return m_impl_ptr->ready(); 
         }
 
+        /*! \return the return value the corresponding promise object set.
+         *
+         *  If the corresponding promise object is not set the return value, 
+         *  when this member function be called, it will wait for it.
+         *
+         *  Or, if the return value type set as `void`, this call will 
+         *  wait until the promise call `set_value`.
+         *
+         *  \attention You can NOT call this function when the future object was default initialzed
+         *             (not be genereted from a promise object.)
+         *             There's a assertion checking this bad behaviour.
+         */
         auto get() 
         { 
+            assert(m_impl_ptr);
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get();
             else return m_impl_ptr->get();
         }
 
+        /*! \return the return value the corresponding promise object set.
+         *
+         *  If the corresponding promise object is not set the return value, 
+         *  when this member function be called, it will wait for it.
+         *
+         *  You are not suppose to call this function when the promise object is not ready.
+         *  or, you will receive a `future_exception`.
+         *  You can call the `ready()` function to check wether you can call this safely.
+         *
+         *  \attention You can NOT call this function when the future object was default initialzed
+         *             (not be genereted from a promise object.)
+         *             There's a assertion checking this bad behaviour.
+         */
         auto get_nonblk()
         {
+            assert(m_impl_ptr);
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get_nonblk();
             else return m_impl_ptr->get_nonblk();
-        }
-
-        bool valid() const noexcept 
-        { 
-            if (!m_impl_ptr) return false;
-            return m_impl_ptr->valid(); 
         }
 
     private:
@@ -275,19 +314,25 @@ namespace fp_detials
     };
 }
 
+/*! \brief The future object of koios future/promise pattern */
 template<typename T> 
 class future : public fp_detials::future_base<T> 
 { 
+    template<typename> friend class fp_detials::promise_impl;
+    template<typename> friend class fp_detials::promise_base;
 public:
     using value_type = T;
 
-public:
+    constexpr future() = default;
+
+private:
     future(::std::shared_ptr<fp_detials::future_impl<value_type>> fip)
         : fp_detials::future_base<value_type>{ ::std::move(fip) }
     {
     }
 };
 
+/*! \brief The future object of koios future/promise pattern (reference specilalization) */
 template<typename T>
 class future<T&> : public fp_detials::future_base<T*>
 {
@@ -295,6 +340,9 @@ public:
     using value_type = T;
     using reference_type = T&;
     using pointer_type = T*;
+
+    template<typename> friend class fp_detials::promise_impl;
+    template<typename> friend class fp_detials::promise_base;
 
 public:
     future(::std::shared_ptr<fp_detials::future_impl<pointer_type>> fip)
@@ -389,12 +437,18 @@ namespace fp_detials
     };
 }
 
+/*! \brief  The promise class of koios future/promise pattern. */
 template<typename Result>
 class promise : public fp_detials::promise_base<Result>
 {
 public:
     using value_type = Result;
 
+    /*! \brief Deliver the async task reuslt to corresponding future object.
+     *
+     *  If the future object was blocked for waiting result value, 
+     *  this function call will wake up the clocked future object.
+     */
     template<typename T>
     void set_value(T&& val)
     {
@@ -420,6 +474,10 @@ class promise<void> : public fp_detials::promise_base<void>
 {
 public:
     using value_type = void;
+
+    /*! \brief Do nothing but tell the future object: I'm ready.
+     *  \see `promise`
+     */
     void set_value() const noexcept 
     {
         this->m_impl_ptr->set_value();

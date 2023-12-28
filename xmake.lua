@@ -21,6 +21,7 @@ set_policy("build.warning", true)
 set_policy("build.optimization.lto", true)
 
 target("koios")
+    set_optimize("fastest")
     set_kind("shared")
     add_packages(
         "fmt", 

@@ -15,7 +15,8 @@ namespace iel_detials
     {
         assert(cqep);
         
-        auto it = m_suspended.find(cqep->user_data);
+        const uint64_t key = cqep->user_data;
+        auto it = m_suspended.find(key);
         assert(it != m_suspended.end());
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
@@ -32,15 +33,16 @@ namespace iel_detials
         m_shot_record <<= 1u;
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
+        if (left == 0) m_shot_record |= 1u;
         for (size_t i{}; i < left; ++i)
         {
             int e = ::io_uring_peek_cqe(&m_ring, &cqep);
-            if (e == - EAGAIN) // no any CQE available
+            if (e == - EAGAIN) [[unlikely]] // no any CQE available
             {
-                m_shot_record |= 1u;
                 break;
             }
             dealwith_cqe(cqep);
+            ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
         }
     }
 
@@ -51,6 +53,7 @@ namespace iel_detials
         ::io_uring_sqe sqe)
     {
         const uint64_t addr = reinterpret_cast<uint64_t>(h.address());
+        sqe.user_data = addr;
         auto lk = get_lk();
         ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
         m_suspended.insert({
@@ -78,6 +81,27 @@ namespace iel_detials
         auto lk = get_lk();
         return static_cast<int>(mask & m_shot_record) * 50ms;
     }
+}
+
+void iouring_event_loop::
+thread_specific_preparation(const per_consumer_attr& attr)
+{
+    auto unilk = get_unilk();
+    m_impls.insert({
+        attr.thread_id, 
+        ::std::make_shared<
+            iel_detials::iouring_event_loop_perthr
+        >()
+    });
+}
+
+auto iouring_event_loop::
+shrlk_and_curthr_ptr()
+{
+    const auto id = ::std::this_thread::get_id();
+    auto lk = get_shrlk();
+    assert(m_impls.contains(id));
+    return ::std::make_pair(::std::move(lk), m_impls[id]);
 }
 
 void iouring_event_loop::

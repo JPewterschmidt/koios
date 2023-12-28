@@ -4,7 +4,7 @@
 
 using namespace koios;
 
-ioret_for_reading::
+io::ioret_for_reading::
 ioret_for_reading(ioret r) noexcept 
     : ioret{ ::std::move(r) } 
 {
@@ -14,7 +14,7 @@ ioret_for_reading(ioret r) noexcept
     }
 }
 
-::std::error_code ioret_for_reading::
+::std::error_code io::ioret_for_reading::
 error_code() const noexcept
 {
     if (ret >= 0) [[likely]]
@@ -37,11 +37,18 @@ init_helper(const toolpex::unique_posix_fd& fd,
     return result;
 }
 
-iouring_read_aw::
-iouring_read_aw(const toolpex::unique_posix_fd& fd, 
+io::read::
+read(const toolpex::unique_posix_fd& fd, 
                 ::std::span<unsigned char> buffer, 
                 uint64_t offset)
     : iouring_aw{ init_helper(fd, buffer, offset) }
 {
     errno = 0;
+}
+
+io::ioret_for_reading
+io::read::
+await_resume() 
+{
+    return { iouring_aw::await_resume() };
 }

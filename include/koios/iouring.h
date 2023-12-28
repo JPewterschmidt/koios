@@ -92,17 +92,7 @@ private:
 
 public:
     iouring_event_loop() = default;
-    void thread_specific_preparation(const per_consumer_attr& attr)
-    {
-        auto unilk = get_unilk();
-        m_impls.insert({
-            attr.thread_id, 
-            ::std::make_shared<
-                iel_detials::iouring_event_loop_perthr
-            >()
-        });
-    }
-
+    void thread_specific_preparation(const per_consumer_attr& attr);
     void stop() { stop(get_unilk()); }
     void quick_stop();
     void do_occured_nonblk();
@@ -119,13 +109,7 @@ public:
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);
-    auto shrlk_and_curthr_ptr()
-    {
-        const auto id = ::std::this_thread::get_id();
-        auto lk = get_shrlk();
-        assert(m_impls.contains(id));
-        return ::std::make_pair(::std::move(lk), m_impls[id]);
-    }
+    auto shrlk_and_curthr_ptr();
 
 private:
     ::std::unordered_map<

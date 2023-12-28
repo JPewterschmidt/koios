@@ -12,29 +12,34 @@
 
 KOIOS_NAMESPACE_BEG
 
-class ioret_for_reading : public ioret
+namespace io
 {
-public:
-    ioret_for_reading(ioret r) noexcept;
-
-    size_t nbytes_read() const noexcept
+    class ioret_for_reading : public ioret
     {
-        return ret >= 0 ? static_cast<size_t>(ret) : 0;
-    }
+    public:
+        ioret_for_reading(ioret r) noexcept;
 
-    ::std::error_code error_code() const noexcept;
+        size_t nbytes_read() const noexcept
+        {
+            return ret >= 0 ? static_cast<size_t>(ret) : 0;
+        }
 
-private:
-    int m_errno{};
-};
+        ::std::error_code error_code() const noexcept;
 
-class iouring_read_aw : public iouring_aw
-{
-public:
-    iouring_read_aw(const toolpex::unique_posix_fd& fd, 
-                    ::std::span<unsigned char> buffer, 
-                    uint64_t offset = 0);
-};
+    private:
+        int m_errno{};
+    };
+
+    class read : public iouring_aw
+    {
+    public:
+        read(const toolpex::unique_posix_fd& fd, 
+                        ::std::span<unsigned char> buffer, 
+                        uint64_t offset = 0);
+
+        ioret_for_reading await_resume();
+    };
+}
 
 KOIOS_NAMESPACE_END
 

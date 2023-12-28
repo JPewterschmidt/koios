@@ -5,12 +5,15 @@
 #include <chrono>
 #include <iostream>
 #include <cassert>
+#include <fcntl.h>
+#include <fstream>
 
 #include "koios/work_stealing_queue.h"
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/this_task.h"
 
 #include "toolpex/tic_toc.h"
+#include "toolpex/unique_posix_fd.h"
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -50,24 +53,50 @@ task<size_t> func()
     co_return result;
 }
 
-task<void> nop2()
+#include "koios/iouring_read_aw.h"
+
+task<void> test_read()
 {
+    ::std::string_view name{ "testfile1.txt" };
+    toolpex::unique_posix_fd fd{ ::open(name.data(), 0) };
+
+    ::std::array<unsigned char, 1024> bf{};
+    auto ret = co_await io::read(fd, bf);
+
     co_return;
 }
 
-task<void> nop()
+task<void> emitter()
 {
-    co_await nop2();
-    co_await nop2();
-    co_await nop2();
-    co_await nop2();
+    ::std::vector<koios::future<void>> fvec;
+
+    for (size_t i{}; i < 100; ++i)
+    {
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+        fvec.push_back(test_read().run_and_get_future());
+    }
+
+    for (auto& f : fvec)
+    {
+        f.get();
+    }
+
+    co_return;
 }
 
 int main()
 {
-    koios::runtime_init(1);
+    koios::runtime_init(10);
 
-    nop().result();
+    emitter().result();
 
     koios::runtime_exit();
     

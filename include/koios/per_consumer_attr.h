@@ -4,7 +4,6 @@
 #include <thread>
 
 #include "koios/macros.h"
-#include "concurrentqueue/concurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG
 

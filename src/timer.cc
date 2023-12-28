@@ -44,7 +44,7 @@ do_occured_nonblk() noexcept
     }
     m_timer_heap.erase(heap_end, m_timer_heap.end());
 
-    if (m_timer_heap.empty() && g_cleanning.load(::std::memory_order_release)) 
+    if (m_timer_heap.empty() && g_cleanning.load()) 
     {
         g_done_cond.notify_all();
     }
@@ -83,13 +83,13 @@ quick_stop() noexcept
 bool timer_event_loop::
 is_cleanning() const
 {
-    return g_cleanning.load(::std::memory_order_release);
+    return g_cleanning.load();
 }
 
 void timer_event_loop::
 stop()
 {
-    g_cleanning.store(true, ::std::memory_order_acquire);
+    g_cleanning.store(true);
 }
 
 bool timer_event_loop::

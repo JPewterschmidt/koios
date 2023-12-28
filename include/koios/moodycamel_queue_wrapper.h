@@ -7,6 +7,7 @@
 #include "koios/macros.h"
 #include "koios/per_consumer_attr.h"
 
+#undef BLOCK_SIZE
 #include "concurrentqueue/concurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG

@@ -6,6 +6,7 @@
 #include <tuple>
 #include <algorithm>
 #include <atomic>
+#include <ranges>
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
@@ -77,9 +78,14 @@ private:
     virtual ::std::chrono::nanoseconds
     max_sleep_duration(const per_consumer_attr& cattr) noexcept override
     {
-        return ::std::min({
-            (::std::chrono::duration_cast<::std::chrono::nanoseconds>(Loops::max_sleep_duration(cattr)), ...)
-        });
+        ::std::vector<::std::chrono::nanoseconds> duras(sizeof...(Loops));
+        (duras.push_back(
+            ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+                Loops::max_sleep_duration(cattr))), 
+        ...);
+        auto it = ::std::ranges::min_element(duras);
+        if (it == duras.end()) [[unlikely]] return ::std::chrono::nanoseconds::max();
+        return *it;
     }
 
 protected:

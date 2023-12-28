@@ -10,7 +10,6 @@
 #include <system_error>
 #include <memory>
 #include <chrono>
-#include <cstdint>
 #include <unordered_map>
 
 #include "koios/macros.h"

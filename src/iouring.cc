@@ -53,7 +53,13 @@ namespace iel_detials
         const uint64_t addr = reinterpret_cast<uint64_t>(h.address());
         auto lk = get_lk();
         ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
-        m_suspended[addr] = ioret_task{ ::std::move(retslot), ::std::move(h) };
+        m_suspended.insert({
+            addr, 
+            ioret_task(
+                ::std::move(retslot), 
+                ::std::move(h)
+            )
+        });
         *sqep = sqe;
         ::io_uring_submit(&m_ring);
     }

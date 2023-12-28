@@ -17,14 +17,9 @@
 #include "toolpex/posix_err_thrower.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/per_consumer_attr.h"
+#include "koios/iouring_ioret.h"
 
 KOIOS_NAMESPACE_BEG
-
-struct ioret
-{
-    int32_t ret{};
-    uint32_t flags{};
-};
 
 namespace iel_detials
 {

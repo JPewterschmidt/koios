@@ -46,6 +46,17 @@ public:
         thread_pool::enqueue_no_future_without_checking([h = ::std::move(h)] mutable { h(); });
     }
 
+    void enqueue(const per_consumer_attr& ca, task_concept auto t)
+    {
+        enqueue(ca, t.move_out_coro_handle());
+    }
+
+    void enqueue(const per_consumer_attr& ca, task_on_the_fly h)
+    {
+        if (!h) [[unlikely]] return;
+        thread_pool::enqueue_no_future_without_checking(ca, [h = ::std::move(h)] mutable { h(); });
+    }
+
     virtual void stop() noexcept { thread_pool::stop(); }
     void quick_stop() noexcept { thread_pool::quick_stop(); }
 

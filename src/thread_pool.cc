@@ -43,7 +43,7 @@ void thread_pool::stop() noexcept
 
 void thread_pool::quick_stop() noexcept
 {
-    m_stop_now.store(true, ::std::memory_order::release); // TODO
+    m_stop_now.store(true, ::std::memory_order::release);
     stop();
 }
 
@@ -65,7 +65,7 @@ void thread_pool::consumer(
         {
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };
-            const auto max_waiting_time = max_sleep_duration();
+            const auto max_waiting_time = max_sleep_duration(cattr);
             constexpr auto waiting_latch = 50ms;
             m_cond.wait_for(lk, waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time);
         }
@@ -99,7 +99,7 @@ bool thread_pool::done(::std::stop_token& tk) const noexcept
 
 bool thread_pool::need_stop_now() const noexcept
 {
-    return m_stop_now.load(::std::memory_order::acquire); // TODO
+    return m_stop_now.load(::std::memory_order_acquire);
 }
 
 KOIOS_NAMESPACE_END

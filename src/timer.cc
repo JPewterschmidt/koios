@@ -14,7 +14,6 @@ namespace
     ::std::mutex g_cond_mutex;
     ::std::condition_variable g_done_cond;
     ::std::atomic_bool g_cleanning{ false };
-    ::std::atomic_bool g_done{ false };
 }
 
 void timer_event_loop_impl::
@@ -48,7 +47,6 @@ do_occured_nonblk() noexcept
     if (m_timer_heap.empty() && g_cleanning.load()) 
     {
         g_done_cond.notify_all();
-        g_done = true;
     }
 }
 
@@ -91,7 +89,7 @@ is_cleanning() const
 void timer_event_loop::
 stop()
 {
-    g_cleanning = true;
+    g_cleanning.store(true);
 }
 
 bool timer_event_loop::

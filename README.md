@@ -6,6 +6,7 @@ A c++ async runtime library
 ```c++
 #include <iostream>
 #include "koios/task.h"
+#include "koios/runtime.h"
 
 koios::task<void> coro_task3()
 {
@@ -30,7 +31,7 @@ int main()
 {
     koios::runtime_init(12);
 
-    int val = coro_task().run_and_get_future().get();
+    int val = coro_task().result();
 
     return koios::runtime_exit();
 }

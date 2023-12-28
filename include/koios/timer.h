@@ -115,9 +115,7 @@ private:
 class timer_event_loop
 {
 public:
-    timer_event_loop()
-    {
-    }
+    timer_event_loop() = default;
 
     void do_occured_nonblk() noexcept 
     { 
@@ -141,12 +139,13 @@ public:
         ptr->add_event(::std::forward<Args>(args)...); 
     }
 
-    ::std::chrono::nanoseconds max_sleep_duration() noexcept
+    ::std::chrono::nanoseconds
+    max_sleep_duration(const per_consumer_attr& cattr) noexcept
     { 
         if (is_cleanning()) 
             return ::std::chrono::nanoseconds::max();
-        auto [lk, ptr] = cur_thread_ptr();
-        return ptr->max_sleep_duration();
+        auto lk = ::std::shared_lock{ m_ptrs_lock };
+        return m_impl_ptrs[cattr.thread_id]->max_sleep_duration();
     } 
 
     void quick_stop() noexcept;
@@ -158,7 +157,10 @@ public:
     void thread_specific_preparation(const per_consumer_attr& attr)  
     { 
         ::std::unique_lock lk{ m_ptrs_lock };
-        m_impl_ptrs[attr.thread_id] = ::std::make_shared<timer_event_loop_impl>();
+        m_impl_ptrs.insert({
+            attr.thread_id, 
+            ::std::make_shared<timer_event_loop_impl>()
+        });
     }
 
     bool is_cleanning() const;
@@ -180,8 +182,10 @@ private:
     }
 
 private:    
-    ::std::atomic_bool m_cleanning{ false };
-    ::std::unordered_map<::std::thread::id, ::std::shared_ptr<timer_event_loop_impl>> m_impl_ptrs;
+    ::std::unordered_map<
+        ::std::thread::id, 
+        ::std::shared_ptr<timer_event_loop_impl>
+    > m_impl_ptrs;
     mutable ::std::shared_mutex m_ptrs_lock;
 };
 

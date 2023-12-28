@@ -18,6 +18,7 @@ add_includedirs(
 
 set_languages("c++2b", "c17")
 set_policy("build.warning", true)
+set_policy("build.optimization.lto", false)
 
 target("koios")
     set_kind("shared")
@@ -27,25 +28,23 @@ target("koios")
         "concurrentqueue"
     )
     set_warnings("all", "error")
-    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
+    add_cxflags("-Wconversion", { force = true })
     add_syslinks(
         "spdlog", 
         "uring"
     )
     add_files("src/*.cc")
-    set_policy("build.optimization.lto", true)
 
 target("test")
     set_kind("binary")
     add_packages("concurrentqueue")
-    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
+    add_cxflags("-Wconversion", { force = true })
     add_deps("koios")
     set_warnings("all", "error")
     add_files("test/*.cc")
     add_packages(
         "gtest", "fmt", "spdlog"
     )
-    set_optimize("fastest")
     after_build(function (target)
         os.exec(target:targetfile())
         print("xmake: unittest complete.")
@@ -53,12 +52,11 @@ target("test")
     on_run(function (target)
         --nothing
     end)
-    set_policy("build.optimization.lto", true)
     
 target("example")
     set_kind("binary")
     add_packages("")
-    add_cxflags("-Wconversion", "-Wpedantic", { force = true })
+    add_cxflags("-Wconversion", { force = true })
     add_deps("koios")
     add_files("example/*.cc")
     add_syslinks("spdlog")
@@ -67,7 +65,6 @@ target("example")
         "fmt", "gflags", 
         "concurrentqueue"
     )
-    set_policy("build.optimization.lto", true)
     
 
 --

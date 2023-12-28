@@ -26,8 +26,10 @@ namespace iel_detials
     class ioret_task
     {
     public:
-        ioret_task(::std::shared_ptr<ioret> retslot, task_on_the_fly h) noexcept
-            : m_ret{ ::std::move(retslot) }, m_task{ ::std::move(h) }
+        ioret_task(::std::shared_ptr<ioret> retslot, 
+                   task_on_the_fly h) noexcept
+            : m_ret{ ::std::move(retslot) }, 
+              m_task{ ::std::move(h) }
         {
         }
 
@@ -93,14 +95,21 @@ public:
     void thread_specific_preparation(const per_consumer_attr& attr)
     {
         auto unilk = get_unilk();
-        m_impls[attr.thread_id] = ::std::make_shared<iel_detials::iouring_event_loop_perthr>();
+        m_impls.insert({
+            attr.thread_id, 
+            ::std::make_shared<
+                iel_detials::iouring_event_loop_perthr
+            >()
+        });
     }
 
     void stop() { stop(get_unilk()); }
     void quick_stop();
     void do_occured_nonblk();
     constexpr void until_done() const noexcept {}
-    ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr&) const;   
+
+    ::std::chrono::milliseconds 
+    max_sleep_duration(const per_consumer_attr&) const;   
 
     void add_event(
         task_on_the_fly h, 

@@ -50,12 +50,25 @@ task<size_t> func()
     co_return result;
 }
 
+task<void> nop2()
+{
+    co_return;
+}
+
+task<void> nop()
+{
+    co_await nop2();
+    co_await nop2();
+    co_await nop2();
+    co_await nop2();
+}
+
 int main()
 {
-    koios::runtime_init(20);
-    auto t = toolpex::tic();
-    (void)func().result();
-    ::std::cout << toolpex::toc(t) << ::std::endl;
+    koios::runtime_init(1);
+
+    nop().result();
+
     koios::runtime_exit();
     
     return 0;

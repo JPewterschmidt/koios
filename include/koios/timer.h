@@ -139,7 +139,8 @@ public:
         ptr->add_event(::std::forward<Args>(args)...); 
     }
 
-    ::std::chrono::nanoseconds max_sleep_duration(const per_consumer_attr& cattr) noexcept
+    ::std::chrono::nanoseconds
+    max_sleep_duration(const per_consumer_attr& cattr) noexcept
     { 
         if (is_cleanning()) 
             return ::std::chrono::nanoseconds::max();
@@ -156,7 +157,10 @@ public:
     void thread_specific_preparation(const per_consumer_attr& attr)  
     { 
         ::std::unique_lock lk{ m_ptrs_lock };
-        m_impl_ptrs[attr.thread_id] = ::std::make_shared<timer_event_loop_impl>();
+        m_impl_ptrs.insert({
+            attr.thread_id, 
+            ::std::make_shared<timer_event_loop_impl>()
+        });
     }
 
     bool is_cleanning() const;
@@ -178,7 +182,10 @@ private:
     }
 
 private:    
-    ::std::unordered_map<::std::thread::id, ::std::shared_ptr<timer_event_loop_impl>> m_impl_ptrs;
+    ::std::unordered_map<
+        ::std::thread::id, 
+        ::std::shared_ptr<timer_event_loop_impl>
+    > m_impl_ptrs;
     mutable ::std::shared_mutex m_ptrs_lock;
 };
 

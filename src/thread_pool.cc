@@ -65,7 +65,7 @@ void thread_pool::consumer(
         {
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };
-            const auto max_waiting_time = max_sleep_duration();
+            const auto max_waiting_time = max_sleep_duration(cattr);
             constexpr auto waiting_latch = 50ms;
             m_cond.wait_for(lk, waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time);
         }

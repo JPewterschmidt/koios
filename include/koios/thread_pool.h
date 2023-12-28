@@ -210,7 +210,7 @@ protected:
     }
 
     virtual void before_each_task() noexcept { }
-    virtual ::std::chrono::nanoseconds max_sleep_duration() noexcept 
+    virtual ::std::chrono::nanoseconds max_sleep_duration([[maybe_unused]] const per_consumer_attr&) noexcept 
     { 
         return ::std::chrono::nanoseconds::max(); 
     }

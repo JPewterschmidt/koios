@@ -75,10 +75,10 @@ private:
     }
 
     virtual ::std::chrono::nanoseconds
-    max_sleep_duration() noexcept override
+    max_sleep_duration(const per_consumer_attr& cattr) noexcept override
     {
         return ::std::min({
-            (::std::chrono::duration_cast<::std::chrono::nanoseconds>(Loops::max_sleep_duration()), ...)
+            (::std::chrono::duration_cast<::std::chrono::nanoseconds>(Loops::max_sleep_duration(cattr)), ...)
         });
     }
 

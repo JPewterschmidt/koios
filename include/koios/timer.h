@@ -139,12 +139,12 @@ public:
         ptr->add_event(::std::forward<Args>(args)...); 
     }
 
-    ::std::chrono::nanoseconds max_sleep_duration() noexcept
+    ::std::chrono::nanoseconds max_sleep_duration(const per_consumer_attr& cattr) noexcept
     { 
         if (is_cleanning()) 
             return ::std::chrono::nanoseconds::max();
-        auto [lk, ptr] = cur_thread_ptr();
-        return ptr->max_sleep_duration();
+        auto lk = ::std::shared_lock{ m_ptrs_lock };
+        return m_impl_ptrs[cattr.thread_id]->max_sleep_duration();
     } 
 
     void quick_stop() noexcept;

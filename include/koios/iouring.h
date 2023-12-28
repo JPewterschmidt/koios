@@ -1,20 +1,23 @@
 #ifndef KOIOS_IOURING_H
 #define KOIOS_IOURING_H
 
-#include <unordered_map>
 #include <mutex>
 #include <shared_mutex>
 #include <liburing.h>
 #include <cassert>
 #include <cstdint>
 #include <condition_variable>
-#include <error_code>
 #include <system_error>
+#include <memory>
+#include <chrono>
+#include <cstdint>
+#include <unordered_map>
 
 #include "koios/macros.h"
 #include "toolpex/move_only.h"
 #include "toolpex/posix_err_thrower.h"
-#include "koios/runtime.h"
+#include "koios/task_on_the_fly.h"
+#include "koios/per_consumer_attr.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -24,29 +27,12 @@ struct ioret
     uint32_t flags{};
 };
 
-class ioret_result : public ioret
-{
-public:
-    ioret_result(ioret r)
-        : ioret{ ::std::move(r) }
-    {
-        m_ec = ::std::error_code{
-            this->ret, ::std::system_error()
-        };
-    }
-
-    ioret_result() = default; // TODO
-
-private:
-    ::std::error_code m_ec;
-};
-
 namespace iel_detials
 {
     class ioret_task
     {
     public:
-        ioret_task(::std:;shared_ptr<ioret> retslot, task_on_the_fly h) noexcept
+        ioret_task(::std::shared_ptr<ioret> retslot, task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, m_task{ ::std::move(h) }
         {
         }
@@ -57,10 +43,7 @@ namespace iel_detials
             m_ret->flags = flags;
         }
 
-        void wakeup()
-        {
-            get_task_scheduler().enqueue(::std::move(m_task));
-        }
+        void wakeup();
 
     private:
         ::std::shared_ptr<ioret> m_ret;
@@ -70,7 +53,7 @@ namespace iel_detials
     class iouring_event_loop_perthr : public toolpex::move_only
     {
     public:
-        iouring_event_loop_perthr(size_t entries = 1024)
+        iouring_event_loop_perthr(unsigned entries = 1024)
         {
             toolpex::pet e{ ::io_uring_queue_init(entries, &m_ring, 0) };
         }
@@ -80,31 +63,50 @@ namespace iel_detials
             ::io_uring_queue_exit(&m_ring);
         }
 
+        iouring_event_loop_perthr(iouring_event_loop_perthr&&) noexcept = default;
+        iouring_event_loop_perthr& operator=(iouring_event_loop_perthr&&) noexcept = default;
+
         void do_occured_nonblk() noexcept;
 
+        void add_event(
+            task_on_the_fly h, 
+            ::std::shared_ptr<ioret> retslot, 
+            ::io_uring_sqe sqe
+        );
+            
+        ::std::chrono::milliseconds max_sleep_duration() const;
+
     private:
-        auto get_lk() { return ::std::unique_lock{ m_lk }; }
+        auto get_lk() const { return ::std::unique_lock{ m_lk }; }
+        void dealwith_cqe(const ::io_uring_cqe* cqep);
 
     private:
         ::io_uring m_ring;
         ::std::unordered_map<uint64_t, ioret_task> m_suspended;
         mutable ::std::mutex m_lk;
+        uint8_t m_shot_record{};
     };
 }
 
-class iouring_event_loop
+class iouring_event_loop : public toolpex::move_only
 {
+private:
+    auto get_unilk() const { return ::std::unique_lock{ m_impls_lock }; }
+    auto get_shrlk() const { return ::std::shared_lock{ m_impls_lock }; }
+
 public:
+    iouring_event_loop() = default;
     void thread_specific_preparation(const per_consumer_attr& attr)
     {
         auto unilk = get_unilk();
-        m_impls[attr.thread_id] = iel_detials::iouring_event_loop_perthr{};
+        m_impls[attr.thread_id] = ::std::make_shared<iel_detials::iouring_event_loop_perthr>();
     }
 
     void stop() { stop(get_unilk()); }
     void quick_stop();
-    void until_done();
     void do_occured_nonblk();
+    constexpr void until_done() const noexcept {}
+    ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr&) const;   
 
     void add_event(
         task_on_the_fly h, 
@@ -113,9 +115,7 @@ public:
     );
 
 private:
-    void stop(::std::unique_lock<::std::mutex> lk);
-    auto get_unilk() { return ::std::unique_lock{ m_impls_lock }; }
-    auto get_shrlk() { return ::std::shared_lock{ m_impls_lock }; }
+    void stop(::std::unique_lock<::std::shared_mutex> lk);
     auto shrlk_and_curthr_ptr()
     {
         const auto id = ::std::this_thread::get_id();
@@ -127,44 +127,10 @@ private:
 private:
     ::std::unordered_map<
         ::std::thread::id, 
-        ::std::shared_ptr<iel_detials::iouring_event_loop_perthr
+        ::std::shared_ptr<iel_detials::iouring_event_loop_perthr>
     > m_impls;
     bool m_cleaning{ false };
-    ::std::condition_variable m_stop_cond;
     mutable ::std::shared_mutex m_impls_lock;
-};
-
-class iouring_aw
-{
-public:
-    io_uring_aw(::io_uring_sqe sqe) 
-        : m_ret{ ::std::make_shared<ioret>() }, 
-          m_sqe{ sqe }
-    {
-    }
-
-    bool await_ready() const noexcept 
-    { 
-        return !get_task_scheduler().is_cleanning(); // TODO
-                                                     // this function call are not implemented yet, 
-                                                     // please implement it!
-    }
-
-    void await_suspend(task_on_the_fly h) 
-    {
-        get_task_scheduler().add_event<iouring_event_loop>(
-            ::std::move(h), m_ret, m_seq
-        );
-    }
-
-    ioret_result await_resume() 
-    { 
-        return { *m_ret };
-    }
-
-private:
-    ::std::shared_ptr<ioret> m_ret;
-    ::io_uring_sqe m_sqe{};
 };
 
 KOIOS_NAMESPACE_END

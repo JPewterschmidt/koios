@@ -7,6 +7,7 @@
 KOIOS_NAMESPACE_BEG
 
 using namespace ::std::chrono_literals;
+using namespace koios::io;
 
 namespace iel_detials
 {

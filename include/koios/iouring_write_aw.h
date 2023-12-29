@@ -7,7 +7,7 @@
 
 #include "koios/macros.h"
 #include "koios/iouring_aw.h"
-#include "koios/iouring_ioret.h"
+#include "koios/iouring_detials.h"
 
 #include "toolpex/unique_posix_fd.h"
 
@@ -15,30 +15,12 @@ KOIOS_NAMESPACE_BEG
 
 namespace io
 {
-    class ioret_for_writing : public ioret
-    {
-    public:
-        ioret_for_writing(ioret r) noexcept;
-
-        size_t nbytes_wrote() const noexcept
-        {
-            return ret >= 0 ? static_cast<size_t>(ret) : 0;
-        }
-
-        ::std::error_code error_code() const noexcept;
-
-    private:
-        int m_errno{};
-    };
-
-    class write : public iouring_aw
+    class write : public detials::iouring_aw_for_data_deliver
     {
     public:
         write(const toolpex::unique_posix_fd& fd, 
               ::std::span<const unsigned char> buffer, 
               uint64_t offset = 0);
-
-        ioret_for_writing await_resume();
     };
 }
 

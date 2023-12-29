@@ -1,8 +1,9 @@
-#ifndef KOIOS_IOURING_READ_AW_H
-#define KOIOS_IOURING_READ_AW_H
+#ifndef KOIOS_IOURING_WRITE_AW_H
+#define KOIOS_IOURING_WRITE_AW_H
 
 #include <system_error>
 #include <cerrno>
+#include <string_view>
 
 #include "koios/macros.h"
 #include "koios/iouring_aw.h"
@@ -14,12 +15,12 @@ KOIOS_NAMESPACE_BEG
 
 namespace io
 {
-    class ioret_for_reading : public ioret
+    class ioret_for_writing : public ioret
     {
     public:
-        ioret_for_reading(ioret r) noexcept;
+        ioret_for_writing(ioret r) noexcept;
 
-        size_t nbytes_read() const noexcept
+        size_t nbytes_wrote() const noexcept
         {
             return ret >= 0 ? static_cast<size_t>(ret) : 0;
         }
@@ -30,14 +31,14 @@ namespace io
         int m_errno{};
     };
 
-    class read : public iouring_aw
+    class write : public iouring_aw
     {
     public:
-        read(const toolpex::unique_posix_fd& fd, 
-             ::std::span<unsigned char> buffer, 
-             uint64_t offset = 0);
+        write(const toolpex::unique_posix_fd& fd, 
+              ::std::span<const unsigned char> buffer, 
+              uint64_t offset = 0);
 
-        ioret_for_reading await_resume();
+        ioret_for_writing await_resume();
     };
 }
 

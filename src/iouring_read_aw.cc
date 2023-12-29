@@ -37,10 +37,9 @@ init_helper(const toolpex::unique_posix_fd& fd,
     return result;
 }
 
-io::read::
-read(const toolpex::unique_posix_fd& fd, 
-                ::std::span<unsigned char> buffer, 
-                uint64_t offset)
+io::read::read(const toolpex::unique_posix_fd& fd, 
+               ::std::span<unsigned char> buffer, 
+               uint64_t offset)
     : iouring_aw{ init_helper(fd, buffer, offset) }
 {
     errno = 0;

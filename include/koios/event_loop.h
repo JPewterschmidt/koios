@@ -78,7 +78,8 @@ private:
     virtual ::std::chrono::nanoseconds
     max_sleep_duration(const per_consumer_attr& cattr) noexcept override
     {
-        ::std::vector<::std::chrono::nanoseconds> duras(sizeof...(Loops));
+        static ::std::vector<::std::chrono::nanoseconds> duras(sizeof...(Loops));
+        duras.clear();
         (duras.push_back(
             ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
                 Loops::max_sleep_duration(cattr))), 

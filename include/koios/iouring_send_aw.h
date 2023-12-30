@@ -7,15 +7,14 @@
 
 #include "toolpex/unique_posix_fd.h"
 
-namespace koios::io
+namespace koios::uring
 {
-    class send : public iouring_aw
+    class send : public detials::iouring_aw_for_data_deliver
     {
     public:
         send(const toolpex::unique_posix_fd& fd, 
              ::std::span<const unsigned char> buffer, 
              int flags = 0);
-        ioret_for_data_deliver await_resume();
     };
 }
 

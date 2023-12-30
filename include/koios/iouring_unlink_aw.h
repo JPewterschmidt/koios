@@ -7,7 +7,7 @@
 #include "koios/macros.h"
 #include "koios/iouring_aw.h"
 
-namespace koios::io
+namespace koios::uring
 {
     class unlink : public iouring_aw
     {

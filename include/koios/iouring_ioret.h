@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace koios::io
+namespace koios::uring
 {
     struct ioret
     {

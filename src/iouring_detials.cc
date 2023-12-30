@@ -1,7 +1,7 @@
 #include "koios/iouring_detials.h"
 
-using namespace koios::io;
-using namespace koios::io::detials;
+using namespace koios::uring;
+using namespace koios::uring::detials;
 
 ioret_for_data_deliver::
 ioret_for_data_deliver(ioret r) noexcept 

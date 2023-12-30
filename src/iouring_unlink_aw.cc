@@ -1,7 +1,7 @@
 #include "koios/iouring_unlink_aw.h"
 #include <liburing.h>
 
-using namespace koios::io;
+using namespace koios::uring;
 
 static 
 ::io_uring_sqe 

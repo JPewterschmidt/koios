@@ -8,8 +8,9 @@
 #include <memory>
 #include <cstdint>
 #include <cstddef>
+#include <span>
 
-namespace koios::io
+namespace koios::uring
 {
     class iouring_aw
     {
@@ -29,6 +30,5 @@ namespace koios::io
         ::io_uring_sqe m_sqe{};
     };
 }
-#include "koios/iouring.h"
 
 #endif

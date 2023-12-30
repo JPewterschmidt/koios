@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <system_error>
 
-namespace koios::io
+namespace koios::uring
 {
     class ioret_for_data_deliver : public ioret
     {

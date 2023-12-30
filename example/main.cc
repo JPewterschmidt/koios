@@ -59,7 +59,7 @@ task<size_t> func()
 task<void> test_read()
 {
     ::std::string_view name{ "testfile1.txt" };
-    auto ret = co_await io::unlink(name);
+    auto ret = co_await uring::unlink(name);
 
     co_return;
 }

@@ -1,7 +1,7 @@
 #include <cerrno>
 #include "koios/iouring_write_aw.h"
 
-using namespace koios::io;
+using namespace koios::uring;
 
 static 
 ::io_uring_sqe

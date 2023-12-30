@@ -13,7 +13,7 @@
 
 KOIOS_NAMESPACE_BEG
 
-namespace io
+namespace uring
 {
     class write : public detials::iouring_aw_for_data_deliver
     {

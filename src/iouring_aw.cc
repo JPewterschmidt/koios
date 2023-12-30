@@ -2,7 +2,7 @@
 #include "koios/runtime.h"
 
 using namespace koios;
-using namespace koios::io;
+using namespace koios::uring;
 
 iouring_aw::iouring_aw(::io_uring_sqe sqe) 
     : m_ret{ ::std::make_shared<ioret>() }, 

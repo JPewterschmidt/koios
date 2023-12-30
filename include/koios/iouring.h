@@ -27,7 +27,7 @@ namespace iel_detials
     class ioret_task
     {
     public:
-        ioret_task(::std::shared_ptr<io::ioret> retslot, 
+        ioret_task(::std::shared_ptr<uring::ioret> retslot, 
                    task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, 
               m_task{ ::std::move(h) }
@@ -43,7 +43,7 @@ namespace iel_detials
         void wakeup();
 
     private:
-        ::std::shared_ptr<io::ioret> m_ret;
+        ::std::shared_ptr<uring::ioret> m_ret;
         task_on_the_fly m_task;
     };
 
@@ -67,7 +67,7 @@ namespace iel_detials
 
         void add_event(
             task_on_the_fly h, 
-            ::std::shared_ptr<io::ioret> retslot, 
+            ::std::shared_ptr<uring::ioret> retslot, 
             ::io_uring_sqe sqe
         );
             
@@ -104,7 +104,7 @@ public:
 
     void add_event(
         task_on_the_fly h, 
-        ::std::shared_ptr<io::ioret> retslot, 
+        ::std::shared_ptr<uring::ioret> retslot, 
         ::io_uring_sqe sqe
     );
 

@@ -4,26 +4,38 @@
 #include "koios/macros.h"
 #include "koios/iouring_aw.h"
 #include "koios/iouring_ioret.h"
+#include "toolpex/unique_posix_fd.h"
 #include <cstdint>
 #include <cstddef>
 #include <system_error>
 
 namespace koios::uring
 {
-    class ioret_for_data_deliver : public ioret
+    namespace detials
+    {
+        class ioret_for_any_base : public ioret
+        {
+        public:
+            ioret_for_any_base(ioret r) noexcept;
+            ::std::error_code error_code() const noexcept;
+
+        private:
+            int m_errno{};
+        };
+    }
+
+    class ioret_for_data_deliver : public detials::ioret_for_any_base
     {
     public:
         ioret_for_data_deliver(ioret r) noexcept;
+        size_t nbytes_delivered() const noexcept;
+    };
 
-        size_t nbytes_delivered() const noexcept
-        {
-            return ret >= 0 ? static_cast<size_t>(ret) : 0;
-        }
-
-        ::std::error_code error_code() const noexcept;
-
-    private:
-        int m_errno{};
+    class ioret_for_socket : public detials::ioret_for_any_base
+    {
+    public:
+        ioret_for_socket(ioret r) noexcept;
+        ::toolpex::unique_posix_fd get_socket_fd();       
     };
 
     namespace detials
@@ -38,6 +50,18 @@ namespace koios::uring
             }
 
             ioret_for_data_deliver await_resume();
+        };
+
+        class iouring_aw_for_socket : public iouring_aw
+        {
+        public:
+            template<typename... Args>
+            iouring_aw_for_socket(Args&&... args)
+                : iouring_aw(::std::forward<Args>(args)...)
+            {
+            }
+            
+            ioret_for_socket await_resume();
         };
     }
 }

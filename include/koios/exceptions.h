@@ -5,6 +5,7 @@
 #include <exception>
 #include <source_location>
 #include <cstring>
+#include <string>
 
 #include "fmt/core.h"
 
@@ -69,13 +70,18 @@ class uring_exception : public koios::exception
 public:
     uring_exception() = default;
 
-    uring_exception(auto&& msg)
+    uring_exception(auto&& msg) noexcept
         : koios::exception{ ::std::forward<decltype(msg)>(msg) }
     {
     }
 
-    uring_exception(int errno)
+    uring_exception(int errno) noexcept
         : uring_exception{ ::strerror(errno) }
+    {
+    }
+
+    uring_exception(::std::error_code ec) noexcept
+        : uring_exception{ ec.message() }
     {
     }
 };
@@ -85,6 +91,15 @@ class future_exception : public koios::exception
 public:
     future_exception() = default;
     const char* what() const noexcept override { return "nothing to get."; }   
+};
+
+class socket_exception : public koios::uring_exception
+{
+public:
+    socket_exception(::std::error_code ec) noexcept
+        : koios::uring_exception{ ::std::move(ec) }
+    {
+    }
 };
 
 void log_info(::std::string msg);

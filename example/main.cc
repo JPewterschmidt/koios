@@ -54,14 +54,12 @@ task<size_t> func()
 }
 
 #include "koios/iouring_read_aw.h"
+#include "koios/iouring_unlink_aw.h"
 
 task<void> test_read()
 {
     ::std::string_view name{ "testfile1.txt" };
-    toolpex::unique_posix_fd fd{ ::open(name.data(), 0) };
-
-    ::std::array<unsigned char, 1024> bf{};
-    auto ret = co_await uring::read(fd, bf);
+    auto ret = co_await uring::unlink(name);
 
     co_return;
 }

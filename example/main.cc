@@ -61,7 +61,7 @@ task<void> test_read()
     toolpex::unique_posix_fd fd{ ::open(name.data(), 0) };
 
     ::std::array<unsigned char, 1024> bf{};
-    auto ret = co_await io::read(fd, bf);
+    auto ret = co_await uring::read(fd, bf);
 
     co_return;
 }

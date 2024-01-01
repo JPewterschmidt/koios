@@ -1,7 +1,7 @@
 #include "koios/iouring_unlink_aw.h"
 #include <liburing.h>
 
-using namespace koios::uring;
+namespace koios::uring { 
 
 static 
 ::io_uring_sqe 
@@ -22,3 +22,5 @@ unlink::unlink(::std::filesystem::path path, int flags)
     : iouring_aw{ init_helper(path.string(), flags) }
 {
 }
+
+} // namespace koios::uring

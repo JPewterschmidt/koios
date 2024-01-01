@@ -3,8 +3,7 @@
 #include <liburing.h>
 #include <cerrno>
 
-using namespace koios;
-using namespace uring;
+namespace koios::uring { 
 
 static ::io_uring_sqe
 init_helper(const toolpex::unique_posix_fd& fd, 
@@ -24,3 +23,5 @@ recvmsg::recvmsg(const toolpex::unique_posix_fd& fd,
 {
     errno = 0;
 }
+
+} // namespace koios::uring

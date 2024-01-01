@@ -1,7 +1,7 @@
 #include <cerrno>
 #include "koios/iouring_write_aw.h"
 
-using namespace koios::uring;
+namespace koios::uring { 
 
 static 
 ::io_uring_sqe
@@ -26,3 +26,5 @@ write::write(const toolpex::unique_posix_fd& fd,
 {
     errno = 0;
 }
+
+} // namespace koios::uring

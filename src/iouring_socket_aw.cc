@@ -1,7 +1,6 @@
 #include "koios/iouring_socket_aw.h"
 
-using namespace koios;
-using namespace uring;
+namespace koios::uring { 
 
 static 
 ::io_uring_sqe
@@ -17,3 +16,5 @@ uring::socket::socket(int domain, int type, int protocal, unsigned int flags)
 {
     errno = 0;
 }
+
+} // namespace koios::uring

@@ -2,10 +2,9 @@
 #include "koios/exceptions.h"
 #include "toolpex/unique_posix_fd.h"
 
-using namespace koios::uring;
-using namespace koios::uring::detials;
+namespace koios::uring { 
 
-ioret_for_any_base::
+detials::ioret_for_any_base::
 ioret_for_any_base(ioret r) noexcept 
     : ioret{ ::std::move(r) } 
 {
@@ -15,7 +14,7 @@ ioret_for_any_base(ioret r) noexcept
     }
 }
 
-::std::error_code ioret_for_any_base::
+::std::error_code detials::ioret_for_any_base::
 error_code() const noexcept
 {
     if (ret >= 0) [[likely]]
@@ -24,7 +23,7 @@ error_code() const noexcept
 }
 
 ioret_for_data_deliver
-iouring_aw_for_data_deliver::
+detials::iouring_aw_for_data_deliver::
 await_resume()
 {
     return { iouring_aw::await_resume() };
@@ -62,7 +61,7 @@ get_socket_fd()
 }
 
 ioret_for_socket 
-iouring_aw_for_socket::
+detials::iouring_aw_for_socket::
 await_resume()
 {
     return { iouring_aw::await_resume() };
@@ -88,14 +87,14 @@ init_helper_for_accept_aw(const toolpex::unique_posix_fd& fd, int flags,
     return result;
 }
 
-iouring_aw_for_accept::
+detials::iouring_aw_for_accept::
 iouring_aw_for_accept(const toolpex::unique_posix_fd& fd, int flags) noexcept
     : iouring_aw{ init_helper_for_accept_aw(fd, flags, &m_ss, &m_len) }
 {
 }
 
 ioret_for_accept
-iouring_aw_for_accept::
+detials::iouring_aw_for_accept::
 await_resume()
 {
     return { 
@@ -117,3 +116,4 @@ get_client()
     };
 }
 
+} // namespace koios::uring

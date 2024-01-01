@@ -7,7 +7,6 @@
 KOIOS_NAMESPACE_BEG
 
 using namespace ::std::chrono_literals;
-using namespace koios::uring;
 
 namespace iel_detials
 {
@@ -50,7 +49,7 @@ namespace iel_detials
     void iouring_event_loop_perthr::
     add_event(
         task_on_the_fly h, 
-        ::std::shared_ptr<ioret> retslot, 
+        ::std::shared_ptr<uring::ioret> retslot, 
         ::io_uring_sqe sqe)
     {
         const uint64_t addr = reinterpret_cast<uint64_t>(h.address());
@@ -115,7 +114,7 @@ do_occured_nonblk()
 void iouring_event_loop::
 add_event(
     task_on_the_fly h, 
-    ::std::shared_ptr<ioret> retslot, 
+    ::std::shared_ptr<uring::ioret> retslot, 
     ::io_uring_sqe sqe)
 {
     const auto tid = ::std::this_thread::get_id();

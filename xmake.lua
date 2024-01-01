@@ -11,9 +11,12 @@ add_requires(
     "benchmark"
 )
 
+includes("toolpex")
+
 add_includedirs(
-    "include",
-    "toolpex/include"
+    "include", 
+    --"toolpex/include", 
+    { public = true }
 )
 
 set_languages("c++2b", "c17")
@@ -22,6 +25,7 @@ set_policy("build.optimization.lto", false)
 
 target("koios")
     set_kind("shared")
+    add_deps("toolpex")
     add_packages(
         "fmt", 
         "gflags", 
@@ -33,15 +37,15 @@ target("koios")
         "spdlog", 
         "uring"
     )
-    add_files("src/*.cc")
+    add_files( "src/*.cc")
 
 target("test")
     set_kind("binary")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", { force = true })
-    add_deps("koios")
+    add_deps("koios", "toolpex")
     set_warnings("all", "error")
-    add_files("test/*.cc")
+    add_files( "test/*.cc")
     add_packages(
         "gtest", "fmt", "spdlog"
     )
@@ -57,8 +61,8 @@ target("example")
     set_kind("binary")
     add_packages("")
     add_cxflags("-Wconversion", { force = true })
-    add_deps("koios")
-    add_files("example/*.cc")
+    add_deps("koios", "toolpex")
+    add_files( "example/*.cc")
     add_syslinks("spdlog")
     set_policy("build.warning", true)
     add_packages(

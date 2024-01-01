@@ -81,7 +81,7 @@ namespace iel_detials
         ::io_uring m_ring;
         ::std::unordered_map<uint64_t, ioret_task> m_suspended;
         mutable ::std::mutex m_lk;
-        uint8_t m_shot_record{};
+        unsigned m_shot_record{};
     };
 }
 

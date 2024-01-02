@@ -8,7 +8,8 @@ add_requires(
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark"
+    "benchmark", 
+    "openssl"
 )
 
 includes("toolpex")
@@ -29,7 +30,8 @@ target("koios")
     add_packages(
         "fmt", 
         "gflags", 
-        "concurrentqueue"
+        "concurrentqueue", 
+        "openssl"
     )
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })
@@ -47,7 +49,7 @@ target("test")
     set_warnings("all", "error")
     add_files( "test/*.cc")
     add_packages(
-        "gtest", "fmt", "spdlog"
+        "gtest", "fmt", "spdlog", "openssl"
     )
     after_build(function (target)
         os.exec(target:targetfile())
@@ -67,7 +69,8 @@ target("example")
     set_policy("build.warning", true)
     add_packages(
         "fmt", "gflags", 
-        "concurrentqueue"
+        "concurrentqueue", 
+        "openssl"
     )
     
 

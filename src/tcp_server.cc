@@ -4,6 +4,7 @@
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
 #include <cassert>
+#include <netinet/in.h>
 
 KOIOS_NAMESPACE_BEG
 
@@ -66,6 +67,10 @@ task<void> tcp_server::bind()
     }
     m_sockfd = sockret.get_socket_fd();
     toolpex::errret_thrower et{};
+    const int true_value{ 1 };
+    const ::socklen_t vallen{ sizeof(true_value) };
+    et << ::setsockopt(m_sockfd, IPPROTO_TCP, SO_REUSEADDR, &true_value, vallen);
+    et << ::setsockopt(m_sockfd, IPPROTO_TCP, SO_REUSEPORT, &true_value, vallen);
     const auto addr = m_addr->to_sockaddr(m_port);
     et << ::bind(
         m_sockfd, 

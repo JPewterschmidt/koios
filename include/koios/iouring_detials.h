@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <system_error>
 #include <utility>
+#include <iostream>
 
 namespace koios::uring
 {
@@ -45,6 +46,8 @@ namespace koios::uring
         toolpex::unique_posix_fd fd;
         ::std::unique_ptr<toolpex::ip_address> ip;
     };
+
+    ::std::ostream& operator<<(::std::ostream& os, const accepted_client& client);
 
     class ioret_for_accept : public detials::ioret_for_any_base
     {

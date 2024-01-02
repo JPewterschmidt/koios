@@ -4,6 +4,14 @@
 
 namespace koios::uring { 
 
+::std::ostream& operator<<(
+    ::std::ostream& os, 
+    const accepted_client& client)
+{
+    os << "fd: " << client.fd << ", ip: " << client.ip->to_string();
+    return os;
+}
+
 detials::ioret_for_any_base::
 ioret_for_any_base(ioret r) noexcept 
     : ioret{ ::std::move(r) } 

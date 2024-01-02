@@ -14,79 +14,24 @@
 
 #include "toolpex/tic_toc.h"
 #include "toolpex/unique_posix_fd.h"
+#include "koios/tcp_server.h"
+#include "koios/iouring_awaitables.h"
 
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<size_t> func2(size_t count = 0)
+task<void> tcp_app(uring::accepted_client client)
 {
-    if (count > 100)
-        co_return 1;
-    co_return 1 + co_await func2(count + 1);
-}
-
-task<size_t> func()
-{
-    size_t result{};
-
-    ::std::vector<koios::future<size_t>> fvec{};
-
-    for (size_t i{}; i < 10000; ++i)
-    {
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-        fvec.emplace_back(func2().run_and_get_future());
-    }
-    
-    for (auto& i : fvec)
-    { 
-        result += i.get();
-    }
-
-    co_return result;
-}
-
-#include "koios/iouring_read_aw.h"
-#include "koios/iouring_unlink_aw.h"
-
-task<void> test_read()
-{
-    ::std::string_view name{ "testfile1.txt" };
-    auto ret = co_await uring::unlink(name);
+    ::std::cout << client << ::std::endl;   
 
     co_return;
 }
 
 task<void> emitter()
 {
-    ::std::vector<koios::future<void>> fvec;
-
-    for (size_t i{}; i < 100; ++i)
-    {
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-        fvec.push_back(test_read().run_and_get_future());
-    }
-
-    for (auto& f : fvec)
-    {
-        f.get();
-    }
-
+    using namespace toolpex;
+    tcp_server server{ "127.0.0.1"_ip, 8890, tcp_app };
+    co_await this_task::sleep_for(1min);
     co_return;
 }
 

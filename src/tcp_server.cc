@@ -5,10 +5,31 @@
 #include "koios/runtime.h"
 #include <cassert>
 #include <netinet/in.h>
+#include <thread>
 
 KOIOS_NAMESPACE_BEG
 
 using namespace toolpex;
+
+tcp_server_until_done_aw::
+tcp_server_until_done_aw(tcp_server& server)
+    : m_server{ server }
+{
+}
+
+bool 
+tcp_server_until_done_aw::
+await_ready() const noexcept 
+{ 
+    return m_server.is_stop(); 
+}
+
+void 
+tcp_server_until_done_aw::
+await_suspend(task_on_the_fly h)
+{
+    m_server.add_waiting(::std::move(h));
+}
 
 tcp_server::
 tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
@@ -31,7 +52,7 @@ tcp_server(::std::unique_ptr<toolpex::ip_address> addr,
 
 void
 tcp_server::
-until_stop()
+until_stop_blk()
 {
     ::std::lock_guard lk{ m_futures_lock };
     for (auto& f : m_futures)
@@ -49,12 +70,12 @@ tcp_loop(
     > userdefined)
 {
     assert(flag.stop_possible());
+    koios::log_debug("tcp_server start!");
     while (!flag.stop_requested())
     {
         auto accret = co_await uring::accept(m_sockfd);
         userdefined(accret.get_client()).run();
     }
-
     co_return;
 }
 
@@ -66,11 +87,14 @@ task<void> tcp_server::bind()
         throw toolpex::posix_exception{ ec };
     }
     m_sockfd = sockret.get_socket_fd();
+
     toolpex::errret_thrower et{};
+
     const int true_value{ 1 };
     const ::socklen_t vallen{ sizeof(true_value) };
-    et << ::setsockopt(m_sockfd, IPPROTO_TCP, SO_REUSEADDR, &true_value, vallen);
-    et << ::setsockopt(m_sockfd, IPPROTO_TCP, SO_REUSEPORT, &true_value, vallen);
+    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEPORT, &true_value, vallen);
+    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &true_value, vallen);
+
     const auto addr = m_addr->to_sockaddr(m_port);
     et << ::bind(
         m_sockfd, 
@@ -89,7 +113,14 @@ void tcp_server::listen()
 
 void tcp_server::stop()
 {
+    m_stop.store(true);
     m_sockfd = toolpex::unique_posix_fd{};
+
+    ::std::lock_guard lk{ m_waitings_lock };
+    for (auto& h : m_waitings)
+    {
+        get_task_scheduler().enqueue(::std::move(h));
+    }
 }
 
 KOIOS_NAMESPACE_END

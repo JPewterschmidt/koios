@@ -30,12 +30,14 @@ task<void> tcp_app(uring::accepted_client client)
 task<void> emitter()
 {
     using namespace toolpex;
-    tcp_server server{ "127.0.0.1"_ip, 8890, tcp_app };
-    co_await this_task::sleep_for(1min);
+    tcp_server server{ "127.0.0.1"_ip, 8889, tcp_app };
+    co_await server.until_stop_async();
+
     co_return;
 }
 
 int main()
+try
 {
     koios::runtime_init(10);
 
@@ -44,4 +46,9 @@ int main()
     koios::runtime_exit();
     
     return 0;
+}
+catch (const ::std::exception& e)
+{
+    ::std::cout << e.what() << ::std::endl;
+    koios::runtime_exit();
 }

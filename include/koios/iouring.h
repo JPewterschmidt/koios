@@ -17,6 +17,7 @@
 #include "toolpex/posix_err_thrower.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/per_consumer_attr.h"
+#include "koios/iouring_detials.h"
 #include "koios/iouring_ioret.h"
 
 KOIOS_NAMESPACE_BEG
@@ -26,7 +27,7 @@ namespace iel_detials
     class ioret_task
     {
     public:
-        ioret_task(::std::shared_ptr<ioret> retslot, 
+        ioret_task(::std::shared_ptr<uring::ioret> retslot, 
                    task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, 
               m_task{ ::std::move(h) }
@@ -42,7 +43,7 @@ namespace iel_detials
         void wakeup();
 
     private:
-        ::std::shared_ptr<ioret> m_ret;
+        ::std::shared_ptr<uring::ioret> m_ret;
         task_on_the_fly m_task;
     };
 
@@ -66,7 +67,7 @@ namespace iel_detials
 
         void add_event(
             task_on_the_fly h, 
-            ::std::shared_ptr<ioret> retslot, 
+            ::std::shared_ptr<uring::ioret> retslot, 
             ::io_uring_sqe sqe
         );
             
@@ -80,7 +81,7 @@ namespace iel_detials
         ::io_uring m_ring;
         ::std::unordered_map<uint64_t, ioret_task> m_suspended;
         mutable ::std::mutex m_lk;
-        uint8_t m_shot_record{};
+        unsigned m_shot_record{};
     };
 }
 
@@ -103,7 +104,7 @@ public:
 
     void add_event(
         task_on_the_fly h, 
-        ::std::shared_ptr<ioret> retslot, 
+        ::std::shared_ptr<uring::ioret> retslot, 
         ::io_uring_sqe sqe
     );
 

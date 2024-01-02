@@ -1,5 +1,5 @@
-#ifndef KOIOS_IOURING_READ_AW_H
-#define KOIOS_IOURING_READ_AW_H
+#ifndef KOIOS_IOURING_RECV_AW_H
+#define KOIOS_IOURING_RECV_AW_H
 
 #include <system_error>
 #include <cerrno>
@@ -11,19 +11,15 @@
 
 #include "toolpex/unique_posix_fd.h"
 
-KOIOS_NAMESPACE_BEG
-
-namespace uring
+namespace koios::uring
 {
-    class read : public detials::iouring_aw_for_data_deliver
+    class recv : public detials::iouring_aw_for_data_deliver
     {
     public:
-        read(const toolpex::unique_posix_fd& fd, 
+        recv(const toolpex::unique_posix_fd& fd, 
              ::std::span<unsigned char> buffer, 
-             uint64_t offset = 0);
+             int flags = 0);
     };
 }
-
-KOIOS_NAMESPACE_END
 
 #endif

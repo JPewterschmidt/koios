@@ -1,6 +1,9 @@
 #include "koios/iouring_aw.h"
+#include "koios/runtime.h"
 
-using namespace koios;
+KOIOS_NAMESPACE_BEG
+
+namespace uring { 
 
 iouring_aw::iouring_aw(::io_uring_sqe sqe) 
     : m_ret{ ::std::make_shared<ioret>() }, 
@@ -15,3 +18,7 @@ await_suspend(task_on_the_fly h)
         ::std::move(h), m_ret, m_sqe
     );
 }
+
+} // namespace uring
+
+KOIOS_NAMESPACE_END

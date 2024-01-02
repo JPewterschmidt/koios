@@ -19,6 +19,7 @@
 #include "koios/driver_policy.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
+#include "koios/per_consumer_attr.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -136,6 +137,12 @@ public:
         run_on(schr);
     }
 
+    void run(const per_consumer_attr& attr)
+    {
+        auto schr = DriverPolicy{}.scheduler();
+        run_on(attr, schr);
+    }
+
     void 
     run_on(const task_scheduler_wrapper& schr)
     {
@@ -143,6 +150,15 @@ public:
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
         schr.enqueue(get_handler_to_schedule());
+    }
+
+    void 
+    run_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+    {
+        static_assert(is_return_void() || is_discardable(), 
+                      "This is an non-discardable task, "
+                      "you should call `run_and_get_future()` nor `run()`.");
+        schr.enqueue(attr, get_handler_to_schedule());
     }
 
     /*! \brief Run the task.
@@ -159,6 +175,12 @@ public:
         return run_and_get_future_on(schr);
     }
 
+    [[nodiscard]] future_type run_and_get_future(const per_consumer_attr& attr)
+    {
+        auto schr = DriverPolicy{}.scheduler();
+        return run_and_get_future_on(attr, schr);
+    }
+
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
@@ -169,10 +191,27 @@ public:
         return result;
     }
 
+    [[nodiscard]] future_type run_and_get_future_on(
+        const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+    {
+        auto result = get_future();
+        if (!has_scheduled())
+        {   
+            schr.enqueue(attr, get_handler_to_schedule());
+        }
+        return result;
+    }
+
     [[nodiscard]] auto result()
     {
         auto schr = DriverPolicy{}.scheduler();
         return result_on(schr);
+    }
+
+    [[nodiscard]] auto result(const per_consumer_attr& attr)
+    {
+        auto schr = DriverPolicy{}.scheduler();
+        return result_on(attr, schr);
     }
 
     [[nodiscard]] auto result_on(const task_scheduler_wrapper& schr)
@@ -180,6 +219,13 @@ public:
         if constexpr (is_return_void())
             run_and_get_future_on(schr).get();
         else return run_and_get_future_on(schr).get();
+    }
+
+    [[nodiscard]] auto result_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+    {
+        if constexpr (is_return_void())
+            run_and_get_future_on(attr, schr).get();
+        else return run_and_get_future_on(attr, schr).get();
     }
 
     /*! \retval true This task is a discardable task. You could ignore the return value.
@@ -216,7 +262,6 @@ private:
 
 private:
     task_on_the_fly m_coro_handle;
-    //::std::shared_ptr<::std::promise<value_type>> m_std_promise_p{};
     ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 

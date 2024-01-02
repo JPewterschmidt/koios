@@ -20,6 +20,7 @@ namespace
     void logging_init()
     {
         spdlog::set_level(spdlog::level::debug);
+        spdlog::set_pattern("[%H:%M:%S %z] [thread %t] %v ");
     }
 
     void signal_handler(int signum)

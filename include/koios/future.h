@@ -324,6 +324,8 @@ public:
     using value_type = T;
 
     constexpr future() = default;
+    future(future&&) noexcept = default;
+    future& operator=(future&&) noexcept = default;
 
 private:
     future(::std::shared_ptr<fp_detials::future_impl<value_type>> fip)
@@ -345,6 +347,9 @@ public:
     template<typename> friend class fp_detials::promise_base;
 
 public:
+    constexpr future() = default;
+    future(future&&) noexcept = default;
+    future& operator=(future&&) noexcept = default;
     future(::std::shared_ptr<fp_detials::future_impl<pointer_type>> fip)
         : fp_detials::future_base<pointer_type>{ ::std::move(fip) }
     {

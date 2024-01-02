@@ -60,18 +60,18 @@ target("koios")
 --        --nothing
 --    end)
     
-target("koios-example")
-    set_kind("binary")
-    add_packages("")
-    add_cxflags("-Wconversion", { force = true })
-    add_deps("koios", "toolpex")
-    add_files( "example/*.cc")
-    add_syslinks("spdlog")
-    set_policy("build.warning", true)
-    add_packages(
-        "fmt", "gflags", 
-        "concurrentqueue", 
-        "botan"
-    )
+--target("koios-example")
+--    set_kind("binary")
+--    add_packages("")
+--    add_cxflags("-Wconversion", { force = true })
+--    add_deps("koios", "toolpex")
+--    add_files( "example/*.cc")
+--    add_syslinks("spdlog")
+--    set_policy("build.warning", true)
+--    add_packages(
+--        "fmt", "gflags", 
+--        "concurrentqueue", 
+--        "botan"
+--    )
     
 

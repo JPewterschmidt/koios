@@ -41,7 +41,7 @@ target("koios")
     )
     add_files( "src/*.cc")
 
-target("test")
+target("koios-test")
     set_kind("binary")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", { force = true })
@@ -60,7 +60,7 @@ target("test")
         --nothing
     end)
     
-target("example")
+target("koios-example")
     set_kind("binary")
     add_packages("")
     add_cxflags("-Wconversion", { force = true })

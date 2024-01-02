@@ -15,7 +15,7 @@ includes("toolpex")
 
 add_includedirs(
     "include", 
-    --"toolpex/include", 
+    "toolpex/include", 
     { public = true }
 )
 

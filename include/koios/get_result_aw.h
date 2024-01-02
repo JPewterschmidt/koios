@@ -55,7 +55,7 @@ public:
     }
     
     /*! \brief Get the ownership of the future type.
-     *  \return the `std::future<T>` object.
+     *  \return the `koios::future<T>` object.
      */
     auto get_future() noexcept 
     { 

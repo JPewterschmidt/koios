@@ -69,7 +69,7 @@ public:
      *  \param func The functor.
      *  \param args The arguments of the functor.
      *  \return The corresponding future type, which user could retrive the actuall return value of the enqueued functor.
-     *  \see `std::future`
+     *  \see `koios::future`
      *  \see `enqueue_no_future()`
      *
      *  Lower than `enqueue_no_future()`
@@ -138,6 +138,12 @@ public:
      */
     size_t number_of_threads() const noexcept { return m_thrs.size(); }
 
+    /*! \return the colletions of pointers of each attribute of consumer thread. */
+    const ::std::vector<const per_consumer_attr*>& consumer_attrs() noexcept
+    {
+        return m_consumer_attrs;
+    }
+
 protected:
     template<typename F, typename... Args>
     void enqueue_no_future_without_checking(F&& func, Args&&... args) noexcept
@@ -172,12 +178,11 @@ protected:
         // See the comments of `enqueue_no_future`.
 
         using return_type = typename std::result_of<F(Args...)>::type;
-        using future_type = ::std::future<return_type>;
 
         auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
-        future_type result = task->get_future();
+        auto result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
         m_cond.notify_all();
 
@@ -192,12 +197,11 @@ protected:
         // See the comments of `enqueue_no_future`.
 
         using return_type = typename std::result_of<F(Args...)>::type;
-        using future_type = ::std::future<return_type>;
 
         auto task = ::std::make_shared<::std::packaged_task<return_type()>>(
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
-        future_type result = task->get_future();
+        auto result = task->get_future();
         m_tasks.enqueue(ca, [task] mutable { (*task)(); });
         m_cond.notify_all();
 
@@ -207,6 +211,8 @@ protected:
     virtual void thread_specific_preparation(const per_consumer_attr& attr)
     {
         m_tasks.thread_specific_preparation(attr);
+        ::std::lock_guard lk{ m_lock };
+        m_consumer_attrs.push_back(&attr);
     }
 
     virtual void before_each_task() noexcept { }
@@ -232,6 +238,7 @@ private:
     ::std::vector<::std::jthread>   m_thrs;
     size_t                          m_num_thrs{};
     ::std::latch                    m_start_working;
+    ::std::vector<const per_consumer_attr*> m_consumer_attrs{};
 };
 
 KOIOS_NAMESPACE_END

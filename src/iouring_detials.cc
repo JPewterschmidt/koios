@@ -104,9 +104,7 @@ await_resume()
     };
 }
 
-::std::pair<
-    toolpex::unique_posix_fd, 
-    ::std::unique_ptr<toolpex::ip_address>> 
+accepted_client
 ioret_for_accept::
 get_client()
 {

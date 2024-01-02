@@ -18,7 +18,7 @@ namespace koios::uring
     class socket : public detials::iouring_aw_for_socket
     {
     public:
-        socket(int domain, int type, int protocal, unsigned int flags);
+        socket(int domain, int type, int protocal, unsigned int flags = 0);
     };
 }
 

@@ -42,19 +42,17 @@ public:
 
     void enqueue(task_on_the_fly h) noexcept
     {
-        if (!h) [[unlikely]] return;
-        thread_pool::enqueue_no_future_without_checking([h = ::std::move(h)] mutable { h(); });
+        thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
     }
 
     void enqueue(const per_consumer_attr& ca, task_concept auto t)
     {
-        enqueue(ca, t.move_out_coro_handle());
+        enqueue(ca, task_on_the_fly(t));
     }
 
     void enqueue(const per_consumer_attr& ca, task_on_the_fly h)
     {
-        if (!h) [[unlikely]] return;
-        thread_pool::enqueue_no_future_without_checking(ca, [h = ::std::move(h)] mutable { h(); });
+        thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
     }
 
     virtual void stop() noexcept { thread_pool::stop(); }

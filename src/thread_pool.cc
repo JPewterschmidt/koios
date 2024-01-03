@@ -52,6 +52,7 @@ void thread_pool::consumer(
     const ::std::thread::id mt_id) noexcept
 {
     const per_consumer_attr cattr{ 
+        .thread_id = ::std::this_thread::get_id(),
         .main_thread_id = mt_id,
         .number_of_threads = number_of_threads(),
     };

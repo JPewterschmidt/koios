@@ -1,7 +1,25 @@
 #include "koios/coroutine_mutex.h"
 #include "koios/runtime.h"
+#include "koios/exceptions.h"
 
 KOIOS_NAMESPACE_BEG
+
+unique_lock::unique_lock(unique_lock&& other) noexcept
+    : m_mutex{ ::std::exchange(other.m_mutex, nullptr) }, 
+      m_hold{ ::std::exchange(other.m_hold, false) }
+{
+}
+
+unique_lock& 
+unique_lock::operator=(unique_lock&& other) noexcept
+{
+    unlock();
+
+    m_mutex = ::std::exchange(other.m_mutex, nullptr);
+    m_hold = ::std::exchange(other.m_hold, false);
+
+    return *this;
+}
 
 void
 acq_lk_aw::
@@ -29,7 +47,10 @@ task<void>
 unique_lock::
 lock()
 {
-    auto lk = co_await m_mutex.acquire();
+    if (!m_mutex) [[unlikely]]
+        throw koios::exception{ "there's no corresponding mutex instance!" };
+
+    auto lk = co_await m_mutex->acquire();
 
     assert(!m_hold);
     m_hold = ::std::exchange(lk.m_hold, false);
@@ -41,9 +62,9 @@ lock()
 void unique_lock::
 unlock() noexcept
 {
-    if (m_hold)
+    if (m_mutex && m_hold)
     {
-        m_mutex.release();
+        m_mutex->release();
         m_hold = false;
     }
 }

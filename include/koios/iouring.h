@@ -85,6 +85,7 @@ namespace iel_detials
     };
 }
 
+/*! \brief Sub event loop of `koios::event_loop` which deal with iouring stuff. */
 class iouring_event_loop : public toolpex::move_only
 {
 private:
@@ -93,6 +94,15 @@ private:
 
 public:
     iouring_event_loop() = default;
+
+    /*! \brief the initialization function would be called by `koios::event_loop` after being constructed. 
+     *  
+     *  every thread would own a uring object,
+     *  so the initialization phase needs thread specific infomation
+     *  provided by `attr`
+     *
+     *  \param  attr thread specific infomation.
+     */
     void thread_specific_preparation(const per_consumer_attr& attr);
     void stop() { stop(get_unilk()); }
     void quick_stop();

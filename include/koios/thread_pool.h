@@ -17,6 +17,7 @@
 #include "koios/exceptions.h"
 #include "koios/per_consumer_attr.h" 
 #include "koios/queue_concepts.h"
+#include "toolpex/move_only.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -29,7 +30,7 @@ extern manually_stop_type manually_stop;
  *
  *  \attention Remeber to call `start()` after initialization !
  */
-class thread_pool
+class thread_pool : public toolpex::move_only
 {
 public:
     /*! \param numthr The number of threads this `thread_pool` hold.
@@ -97,6 +98,11 @@ public:
         enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
+    /*! \brief  Basically same as `enqueue` without `ca` parameter.
+     *  \param  ca The consumer attribute object reference.
+     *
+     *  This function would schedule `func` to the thread specified by `ca`
+     */
     template<typename F, typename... Args>
     [[nodiscard]] auto enqueue(const per_consumer_attr& ca, F&& func, Args&&... args)
     {
@@ -105,6 +111,11 @@ public:
         return enqueue_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
+    /*! \brief  Basically same as `enqueue_no_future` without `ca` parameter.
+     *  \param  ca The consumer attribute object reference.
+     *
+     *  This function would schedule `func` to the thread specified by `ca`
+     */
     template<typename F, typename... Args>
     void enqueue_no_future(const per_consumer_attr& ca, F&& func, Args&&... args)
     {

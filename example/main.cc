@@ -16,6 +16,7 @@
 #include "toolpex/unique_posix_fd.h"
 #include "koios/tcp_server.h"
 #include "koios/iouring_awaitables.h"
+#include "koios/coroutine_mutex.h"
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -28,11 +29,38 @@ task<void> tcp_app(uring::accepted_client client)
     co_return;
 }
 
+task<void> func()
+{
+    static koios::mutex m;
+    {
+        auto lk = co_await m.acquire();
+        //::std::cout << "func ok 1" << ::std::endl;
+        lk.unlock();
+    
+        co_await lk.lock();
+        //::std::cout << "func ok 2" << ::std::endl;
+    }
+    
+    co_return;
+}
+
 task<void> emitter()
 {
-    using namespace toolpex;
-    tcp_server server{ "127.0.0.1"_ip, 8889, tcp_app };
-    co_await server.until_stop_async();
+    ::std::vector<koios::future<void>> fvec{};
+
+    for (size_t i{}; i < 10000; ++i)
+    {
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+        fvec.emplace_back(func().run_and_get_future());
+    }
+
+    for (auto& f : fvec)
+        f.get();
 
     co_return;
 }
@@ -40,9 +68,11 @@ task<void> emitter()
 int main()
 try
 {
-    koios::runtime_init(10);
+    koios::runtime_init(2);
 
+    auto p = toolpex::tic();
     emitter().result();
+    ::std::cout << toolpex::toc(p) << ::std::endl;
 
     koios::runtime_exit();
     

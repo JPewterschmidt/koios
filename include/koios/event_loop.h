@@ -16,6 +16,18 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief Eventloop class type
+ *
+ *  This type inherited from `task_scheduler`, `thread_pool`
+ *  and bunch of sub-event loop, the core loop in `thread_pool::consumer`
+ *  would call the virtual function `before_each_task()` periodically, 
+ *  and this function would drive the whole event loop 
+ *  (all the sub event loop) work.
+ *
+ *  There're two types of event, one needs to be driven (by this class), 
+ *  the other would do the job by itself.
+ *  Both types hold ownership of `task_on_the_fly`.
+ */
 template<event_loop_concept... Loops>
 class event_loop : public task_scheduler, public Loops...                
 {
@@ -26,17 +38,14 @@ public:
     {
     }
 
-    virtual void thread_specific_preparation(const per_consumer_attr& attr) override
-    {
-        task_scheduler::thread_specific_preparation(attr);
-        (Loops::thread_specific_preparation(attr), ...);
-    }
-
     void do_occured_nonblk() noexcept
     {
         (Loops::do_occured_nonblk(), ...);
     }
 
+    /*! \brief Add event to specific event loop. 
+     *  \tparam SpecificLoop the loop you want to operate.
+     */
     template<typename SpecificLoop>
     void add_event(auto&&... data)
     {
@@ -50,6 +59,10 @@ public:
         SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
+    /*! \brief  Stop receiving any other event
+     *  
+     *  And call this function would stop all the sub eventloop working.
+     */
     virtual void stop() noexcept override
     {
         m_cleanning = true;
@@ -69,7 +82,7 @@ public:
         (Loops::until_done(), ...);
     }
     
-private:
+protected:
     virtual void before_each_task() noexcept override
     {
         do_occured_nonblk();
@@ -89,9 +102,14 @@ private:
         return *it;
     }
 
-protected:
     event_loop(event_loop&&) noexcept = default;
     event_loop& operator=(event_loop&&) noexcept = default;
+
+    virtual void thread_specific_preparation(const per_consumer_attr& attr) override
+    {
+        task_scheduler::thread_specific_preparation(attr);
+        (Loops::thread_specific_preparation(attr), ...);
+    }
 
 private:
     ::std::atomic_bool m_cleanning{false};

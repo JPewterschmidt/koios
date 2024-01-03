@@ -15,24 +15,16 @@ namespace
 {
     int flag1{};
     int flag2{};
-    int flag3{};
 
     ::std::binary_semaphore bs{0};
 }
 
-task<void> func()
+static task<void> func()
 {
     co_await this_task::sleep_for(5ms);
     flag1 = 1;
     co_await this_task::sleep_for(5ms);
     flag2 = 2;
-}
-
-task<void> fuckyou()
-{
-    flag3 = 3; 
-    bs.release();
-    co_return;
 }
 
 TEST(timer, awaitable)
@@ -48,7 +40,7 @@ namespace
     ::std::vector<int> ivec;
 }
 
-task<void> func1()
+static task<void> func1()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(1);
@@ -59,7 +51,7 @@ task<void> func1()
     co_return;
 }
 
-task<void> func2()
+static task<void> func2()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(2);
@@ -70,7 +62,7 @@ task<void> func2()
     co_return;
 }
 
-task<void> func3()
+static task<void> func3()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(3);
@@ -82,7 +74,7 @@ task<void> func3()
     co_return;
 }
 
-task<void> mainfunc()
+static task<void> mainfunc()
 {
     // add_event should never be called in main thread.
     get_task_scheduler().add_event<timer_event_loop>(20ms, func1());

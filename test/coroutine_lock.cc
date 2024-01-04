@@ -29,3 +29,29 @@ TEST(coro_lock, basic)
         f.get();
     ASSERT_EQ(g_val, 2 * g_test_count);
 }
+
+static size_t g_val2{};
+
+static koios::task<koios::unique_lock> func2()
+{
+    static koios::mutex lk;
+    auto guard = co_await lk.acquire();
+    g_val2++;
+    co_return guard;
+}
+
+static koios::task<void> func3()
+{
+    auto lk = co_await func2();
+    g_val2++;
+}
+
+TEST(coro_lock, move_func)
+{
+    ::std::vector<koios::future<void>> fvec;
+    for (size_t i{}; i < g_test_count; ++i)
+        fvec.emplace_back(func3().run_and_get_future());
+    for (auto& f : fvec)
+        f.get();
+    ASSERT_EQ(g_val2, 2 * g_test_count);
+}

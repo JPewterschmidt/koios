@@ -20,11 +20,10 @@
 
 using namespace koios;
 using namespace ::std::chrono_literals;
-using namespace toolpex::ip_address_literals;
 
 task<void> tcp_app(uring::accepted_client client)
 {
-    ::std::cout << client << ::std::endl;   
+    ::std::cout << client << ::std::endl;
 
     co_return;
 }
@@ -46,21 +45,11 @@ task<void> func()
 
 task<void> emitter()
 {
-    ::std::vector<koios::future<void>> fvec{};
+    using namespace toolpex::ip_address_literals;
 
-    for (size_t i{}; i < 10000; ++i)
-    {
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-        fvec.emplace_back(func().run_and_get_future());
-    }
-
-    for (auto& f : fvec)
-        f.get();
+    tcp_server server("127.0.0.1"_ip, 8889, tcp_app);   
+    co_await koios::this_task::sleep_for(3min);
+    server.stop();
 
     co_return;
 }

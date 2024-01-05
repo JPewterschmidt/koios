@@ -20,7 +20,7 @@ namespace koios::uring
     connect::connect(const toolpex::unique_posix_fd& fd, 
                      ::std::unique_ptr<toolpex::ip_address> addr, 
                      ::in_port_t port)
-        : uring::iouring_aw(init_helper(fd, ::std::move(addr), port))
+        : detials::iouring_aw_for_connect(init_helper(fd, ::std::move(addr), port))
     {
         errno = 0;
     }

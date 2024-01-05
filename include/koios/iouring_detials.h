@@ -65,8 +65,22 @@ namespace koios::uring
         const ::socklen_t m_len{};
     };
 
+    using ioret_for_connect = typename detials::ioret_for_any_base;
+
     namespace detials
     {
+        class iouring_aw_for_connect : public iouring_aw
+        {
+        public:
+            template<typename... Args>
+            iouring_aw_for_connect(Args&&... args)
+                : iouring_aw(::std::forward<Args>(args)...)
+            {
+            }
+
+            ioret_for_connect await_resume();
+        };
+
         class iouring_aw_for_data_deliver : public iouring_aw
         {
         public:

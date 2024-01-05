@@ -12,5 +12,6 @@
 #include "iouring_sync_file_range_aw.h"
 #include "iouring_unlink_aw.h"
 #include "iouring_write_aw.h"
+#include "iouring_connect_aw.h"
 
 #endif

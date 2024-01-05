@@ -17,29 +17,16 @@
 #include "koios/tcp_server.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/coroutine_mutex.h"
+#include <string_view>
+#include "koios/iouring_connect_aw.h"
 
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<void> tcp_app(uring::accepted_client client)
+task<void> tcp_server_app(uring::accepted_client client)
 {
     ::std::cout << client << ::std::endl;
 
-    co_return;
-}
-
-task<void> func()
-{
-    static koios::mutex m;
-    {
-        auto lk = co_await m.acquire();
-        //::std::cout << "func ok 1" << ::std::endl;
-        lk.unlock();
-    
-        co_await lk.lock();
-        //::std::cout << "func ok 2" << ::std::endl;
-    }
-    
     co_return;
 }
 
@@ -47,8 +34,8 @@ task<void> emitter()
 {
     using namespace toolpex::ip_address_literals;
 
-    tcp_server server("127.0.0.1"_ip, 8889, tcp_app);   
-    co_await koios::this_task::sleep_for(3min);
+    tcp_server server("127.0.0.1"_ip, 8889, tcp_server_app);   
+    co_await koios::this_task::sleep_for(1h);
     server.stop();
 
     co_return;
@@ -57,10 +44,12 @@ task<void> emitter()
 int main()
 try
 {
-    koios::runtime_init(2);
+    koios::runtime_init(3);
 
     auto p = toolpex::tic();
-    emitter().result();
+    auto f = emitter().run_and_get_future();
+    f.get();
+
     ::std::cout << toolpex::toc(p) << ::std::endl;
 
     koios::runtime_exit();

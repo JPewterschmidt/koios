@@ -69,8 +69,10 @@ tcp_loop(
         task<void>(uring::accepted_client)
     > userdefined)
 {
+    using namespace ::std::string_literals;
+
     assert(flag.stop_possible());
-    koios::log_debug("tcp_server start!");
+    koios::log_debug("tcp_server start! ip: "s + m_addr->to_string() + ", port: "s + ::std::to_string(m_port));
     while (!flag.stop_requested())
     {
         auto accret = co_await uring::accept(m_sockfd);
@@ -96,6 +98,10 @@ task<void> tcp_server::bind()
     et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &true_value, vallen);
 
     const auto addr = m_addr->to_sockaddr(m_port);
+
+    ::sockaddr_in sock_tmp{};
+    ::std::memcpy(&sock_tmp, &addr, sizeof(sock_tmp));
+
     et << ::bind(
         m_sockfd, 
         reinterpret_cast<const ::sockaddr*>(&addr), 

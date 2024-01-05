@@ -18,7 +18,9 @@ ioret_for_any_base(ioret r) noexcept
 {
     if (ret < 0) [[unlikely]]
     {
-        m_errno = errno;
+        if (errno != 0)
+            m_errno = errno;
+        else m_errno = -ret;
     }
 }
 
@@ -120,6 +122,13 @@ get_client()
         toolpex::unique_posix_fd{ ret }, 
         toolpex::ip_address::make(m_addr, m_len)
     };
+}
+
+ioret_for_connect
+detials::iouring_aw_for_connect::
+await_resume()
+{
+    return iouring_aw::await_resume();
 }
 
 } // namespace koios::uring

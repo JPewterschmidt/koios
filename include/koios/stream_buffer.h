@@ -20,6 +20,8 @@ public:
     using allocator_type = Alloc;
     using value_type = typename ::std::allocator_traits<allocator_type>::value_type;
     using pointer = typename ::std::allocator_traits<allocator_type>::pointer;
+    using immutable_span_type = ::std::span<const value_type>;
+    using mutable_span_type = ::std::span<value_type>;
 
     static_assert(sizeof(value_type) == sizeof(::std::byte), 
                   "the buffer value_type should only be a fundamental type ,"
@@ -33,8 +35,8 @@ public:
                 m_alloc, this->block_size())
         };
         m_blocks.emplace_back(m_alloc, first_block);
-        m_commiter_cursor = cursor{ first_block, m_block_size };
-        m_consumer_cursor = cursor{ first_block, m_block_size };
+        m_ctx.m_commiter_cursor = cursor{ first_block, m_block_size };
+        m_ctx.m_consumer_cursor = cursor{ first_block, m_block_size };
     }
 
     stream_buffer(stream_buffer&&) noexcept = default;
@@ -56,22 +58,29 @@ public:
      *
      *  This function would potentially allocate new space.
      */
-    ::std::span<value_type> commit(size_t bytes_filled)
+    mutable_span_type commit(size_t bytes_filled)
     {
-        if (m_commiter_cursor.left() < bytes_filled || bytes_filled > this->block_size())
+        if (m_ctx.m_commiter_cursor.left() < bytes_filled || bytes_filled > this->block_size())
             throw stream_buffer_exception::make_stream_buffer_exception_write_overflow();
 
-        auto ret = m_commiter_cursor.next_chunk(bytes_filled);
+        auto ret = m_ctx.m_commiter_cursor.next_chunk(bytes_filled);
         if (ret.size_bytes() != 0) // Current block was filled completely.
             return ret;
 
-        // Allocate new block
-        auto& block = m_blocks.emplace_back(
-            toolpex::allocate_guarded(m_alloc, this->block_size())
-        );
+        const auto new_block = [this] -> decltype(auto) { 
+            // Allocate new block
+            if (m_ctx.m_block_commiter_pointed + 1 == m_blocks.size())
+            {
+                return m_blocks.emplace_back(
+                    toolpex::allocate_guarded(m_alloc, this->block_size())
+                );
+            }
+            return m_blocks[++m_ctx.m_block_commiter_pointed];
+        };
+        auto& block = new_block();
 
-        m_commiter_cursor = { block, this->block_size() };
-        return m_commiter_cursor.next_chunk(0);
+        m_ctx.m_commiter_cursor = { block, this->block_size() };
+        return m_ctx.m_commiter_cursor.next_chunk(0);
     }
 
     /*! \brief  Consumed bytes readed, and get new readable memory span.
@@ -88,20 +97,25 @@ public:
      *             Or it will throw a `stream_buffer_exception`
      *  \see `koios::stream_buffer_exception`
      */
-    ::std::span<const value_type> consume(size_t bytes_readed)
+    immutable_span_type consume(size_t bytes_readed)
     {
-        if (m_commiter_cursor.left() < bytes_readed || bytes_readed > this->block_size())
+        if (m_ctx.m_commiter_cursor.left() < bytes_readed || bytes_readed > this->block_size())
             throw stream_buffer_exception::make_stream_buffer_exception_read_overflow();
 
-        auto ret = m_commiter_cursor.next_chunk(bytes_readed);
+        auto ret = m_ctx.m_commiter_cursor.next_chunk(bytes_readed);
         if (ret.size_bytes() != 0) // Current block was filled completely.
             return ret;
 
-        m_consumer_cursor = { 
-            m_blocks[++m_block_consumer_pointed], 
+        m_ctx.m_consumer_cursor = { 
+            m_blocks[++m_ctx.m_block_consumer_pointed], 
             this->block_size()
         };
-        return m_consumer_cursor.next_chunk(0);
+        return m_ctx.m_consumer_cursor.next_chunk(0);
+    }
+
+    void reset_consumer() noexcept
+    {
+        m_ctx.m_consumer_cursor = { m_blocks[0], this->block_size() };
     }
 
 protected:
@@ -110,7 +124,8 @@ protected:
     // Should block size align to 4K?
     static size_t block_size_adjust(size_t size) noexcept { return size; } 
 
-    class cursor : toolpex::move_only
+public:
+    class cursor
     {
     private:
         pointer m_cursor{};
@@ -133,13 +148,40 @@ protected:
         size_t left() const noexcept { return m_left_bytes; }
     };
 
+    void reset_consumer(cursor c) noexcept
+    {
+        m_ctx.m_consumer_cursor = ::std::move(c);
+    }
+
+    auto get_consumer_cursor() const noexcept
+    {
+        return m_ctx.m_consumer_cursor;
+    }
+
+    class buffer_context
+    {
+    public:
+        cursor m_commiter_cursor{};
+        cursor m_consumer_cursor{};
+        size_t m_block_consumer_pointed{0};
+        size_t m_block_commiter_pointed{0};
+    };
+
+    auto get_buffer_context() const noexcept
+    {
+        return m_ctx;
+    }
+
+    void set_buffer_context(buffer_context buf) noexcept
+    {
+        m_ctx = buf;
+    }
+
 private:
     const size_t m_block_size{};
     allocator_type m_alloc;
     ::std::vector<toolpex::allocator_ptr<allocator_type>> m_blocks;
-    cursor m_commiter_cursor{};
-    cursor m_consumer_cursor{};
-    size_t m_block_consumer_pointed{0};
+    buffer_context m_ctx;
 };
 
 KOIOS_NAMESPACE_END

@@ -27,6 +27,9 @@ task<void> tcp_server_app(uring::accepted_client client)
 {
     ::std::cout << client << ::std::endl;
 
+    ::std::string msg = "fuck you!!!!";
+    co_await uring::send(client.fd, msg);
+
     co_return;
 }
 

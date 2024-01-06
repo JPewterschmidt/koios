@@ -97,15 +97,15 @@ task<void> tcp_server::bind()
     et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEPORT, &true_value, vallen);
     et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &true_value, vallen);
 
-    const auto addr = m_addr->to_sockaddr(m_port);
+    const auto [addr, size] = m_addr->to_sockaddr(m_port);
 
     ::sockaddr_in sock_tmp{};
-    ::std::memcpy(&sock_tmp, &addr, sizeof(sock_tmp));
+    ::std::memcpy(&sock_tmp, &addr, size);
 
     et << ::bind(
         m_sockfd, 
         reinterpret_cast<const ::sockaddr*>(&addr), 
-        sizeof(addr)
+        size
     );
 
     co_return;

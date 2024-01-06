@@ -22,10 +22,8 @@ init_helper(const toolpex::unique_posix_fd& fd,
 send::send(const toolpex::unique_posix_fd& fd, 
            ::std::span<const unsigned char> buffer, 
            int flags)
-    : detials::iouring_aw_for_data_deliver(init_helper(
-           fd, buffer.data(), buffer.size_bytes(), flags))
+    : send(fd, as_bytes(buffer), flags)
 {
-    errno = 0;
 }
 
 send::send(const toolpex::unique_posix_fd& fd, 
@@ -33,6 +31,15 @@ send::send(const toolpex::unique_posix_fd& fd,
            int flags)
     : detials::iouring_aw_for_data_deliver(init_helper(
            fd, buffer.data(), buffer.size(), flags))
+{
+    errno = 0;
+}
+
+send::send(const toolpex::unique_posix_fd& fd, 
+           ::std::span<const ::std::byte> buffer, 
+           int flags)
+    : detials::iouring_aw_for_data_deliver(init_helper(
+           fd, buffer.data(), buffer.size_bytes(), flags))
 {
     errno = 0;
 }

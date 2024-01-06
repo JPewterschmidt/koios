@@ -8,11 +8,11 @@ namespace koios::uring
                 ::in_port_t port)
     {
         ::io_uring_sqe result{};
-        auto sock = addr->to_sockaddr(port);
+        auto [saddr, size] = addr->to_sockaddr(port);
         ::io_uring_prep_connect(
             &result, fd, 
-            reinterpret_cast<sockaddr*>(&sock), 
-            sizeof(sock)
+            reinterpret_cast<sockaddr*>(&saddr), 
+            size
         ); 
         return result;
     }

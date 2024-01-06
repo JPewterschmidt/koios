@@ -23,12 +23,10 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<void> tcp_server_app(uring::accepted_client client)
+task<void> tcp_server_app(toolpex::unique_posix_fd client)
 {
-    ::std::cout << client << ::std::endl;
-
     ::std::string msg = "fuck you!!!!";
-    co_await uring::send(client.fd, msg);
+    co_await uring::send(client, msg);
 
     co_return;
 }
@@ -37,7 +35,9 @@ task<void> emitter()
 {
     using namespace toolpex::ip_address_literals;
 
-    tcp_server server("127.0.0.1"_ip, 8889, tcp_server_app);   
+    tcp_server server("127.0.0.1"_ip, 8889);   
+    co_await server.start(tcp_server_app);
+    
     co_await koios::this_task::sleep_for(1h);
     server.stop();
 

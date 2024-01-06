@@ -15,6 +15,9 @@ namespace koios::uring
         connect(const toolpex::unique_posix_fd& fd, 
                 ::std::unique_ptr<toolpex::ip_address> addr, 
                 ::in_port_t port);
+
+    private:
+        ::sockaddr_storage m_sockaddr{};
     };
 }
 

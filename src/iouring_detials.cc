@@ -4,14 +4,6 @@
 
 namespace koios::uring { 
 
-::std::ostream& operator<<(
-    ::std::ostream& os, 
-    const accepted_client& client)
-{
-    os << "fd: " << client.fd << ", ip: " << client.ip->to_string();
-    return os;
-}
-
 detials::ioret_for_any_base::
 ioret_for_any_base(ioret r) noexcept 
     : ioret{ ::std::move(r) } 
@@ -114,14 +106,13 @@ await_resume()
     };
 }
 
-accepted_client
+::toolpex::unique_posix_fd
 ioret_for_accept::
 get_client()
 {
-    return { 
-        toolpex::unique_posix_fd{ ret }, 
-        toolpex::ip_address::make(m_addr, m_len)
-    };
+    if (auto ec = this->error_code(); ec)
+        throw koios::uring_exception(ec);
+    return { ret };
 }
 
 ioret_for_connect

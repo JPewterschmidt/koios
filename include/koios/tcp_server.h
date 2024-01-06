@@ -30,9 +30,9 @@ class tcp_server
 {
 public:
     tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
-               ::in_port_t port, 
-               ::std::function<task<void>(uring::accepted_client)> aw);
+               ::in_port_t port);
 
+    task<void> start(::std::function<task<void>(toolpex::unique_posix_fd)> aw);
     void stop();
     void until_stop_blk();
     bool is_stop() const { return m_stop.load(); }
@@ -42,7 +42,7 @@ private:
     friend class tcp_server_until_done_aw;
     task<void> tcp_loop(
         ::std::stop_token flag, 
-        ::std::function<task<void>(uring::accepted_client)> userdefined);
+        ::std::function<task<void>(toolpex::unique_posix_fd)> userdefined);
 
     task<void> bind();
     void listen();
@@ -53,7 +53,7 @@ private:
     }
 
 private:
-    ::std::atomic_bool m_stop{ false };
+    ::std::atomic_bool m_stop{ true };
 
     toolpex::unique_posix_fd m_sockfd;
     ::std::unique_ptr<toolpex::ip_address> m_addr;

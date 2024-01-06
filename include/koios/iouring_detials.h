@@ -41,14 +41,6 @@ namespace koios::uring
         ::toolpex::unique_posix_fd get_socket_fd();       
     };
 
-    struct accepted_client
-    {
-        toolpex::unique_posix_fd fd;
-        ::std::unique_ptr<toolpex::ip_address> ip;
-    };
-
-    ::std::ostream& operator<<(::std::ostream& os, const accepted_client& client);
-
     class ioret_for_accept : public detials::ioret_for_any_base
     {
     public:
@@ -57,7 +49,7 @@ namespace koios::uring
             const ::sockaddr* addr, 
         ::socklen_t len) noexcept;
 
-        accepted_client
+        ::toolpex::unique_posix_fd
         get_client();
 
     private:

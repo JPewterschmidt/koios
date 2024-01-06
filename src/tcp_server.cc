@@ -33,12 +33,21 @@ await_suspend(task_on_the_fly h)
 
 tcp_server::
 tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
-           ::in_port_t port, 
-           ::std::function<task<void>(uring::accepted_client)> aw)
+           ::in_port_t port)
     : m_addr{ ::std::move(addr) }, m_port{ port }
 {
-    bind().result();
-    listen();
+}
+
+task<void> 
+tcp_server::
+start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
+{
+    bool expected{ true };
+    if (!m_stop.compare_exchange_strong(expected, false))
+        co_return;
+
+    co_await this->bind();
+    this->listen();
     auto& schr = get_task_scheduler();
     const auto& attrs = schr.consumer_attrs();
     ::std::lock_guard lk{ m_futures_lock };
@@ -48,6 +57,8 @@ tcp_server(::std::unique_ptr<toolpex::ip_address> addr,
             tcp_loop(m_stop_src.get_token(), aw).run_and_get_future(*attr)
         );
     }
+
+    co_return;
 }
 
 void
@@ -66,7 +77,7 @@ tcp_server::
 tcp_loop(
     ::std::stop_token flag, 
     ::std::function<
-        task<void>(uring::accepted_client)
+        task<void>(toolpex::unique_posix_fd fd)
     > userdefined)
 {
     using namespace ::std::string_literals;

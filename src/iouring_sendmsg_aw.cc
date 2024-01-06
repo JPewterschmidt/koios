@@ -8,7 +8,7 @@ namespace koios::uring {
 
 static ::io_uring_sqe
 init_helper(const toolpex::unique_posix_fd& fd, 
-            ::msghdr* hdr,
+            const ::msghdr* hdr,
             int flags)
 {
     ::io_uring_sqe result{};
@@ -17,7 +17,7 @@ init_helper(const toolpex::unique_posix_fd& fd,
 }
 
 sendmsg::sendmsg(const toolpex::unique_posix_fd& fd, 
-                 ::msghdr* msg, 
+                 const ::msghdr* msg, 
                  int flags)
     : detials::iouring_aw_for_data_deliver(init_helper(fd, msg, flags))
 {

@@ -4,6 +4,7 @@
 #include <system_error>
 #include <cerrno>
 #include <span>
+#include <cstddef>
 
 #include "koios/macros.h"
 #include "koios/iouring_aw.h"
@@ -18,6 +19,14 @@ namespace koios::uring
     public:
         recv(const toolpex::unique_posix_fd& fd, 
              ::std::span<unsigned char> buffer, 
+             int flags = 0);
+
+        recv(const toolpex::unique_posix_fd& fd, 
+             ::std::span<char> buffer, 
+             int flags = 0);
+
+        recv(const toolpex::unique_posix_fd& fd, 
+             ::std::span<::std::byte> buffer, 
              int flags = 0);
     };
 }

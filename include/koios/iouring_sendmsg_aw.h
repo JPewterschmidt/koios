@@ -13,7 +13,7 @@ namespace koios::uring
     {
     public:
         sendmsg(const toolpex::unique_posix_fd& fd, 
-                ::msghdr* msg, 
+                const ::msghdr* msg, 
                 int flags = 0);
     };
 }

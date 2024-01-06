@@ -23,10 +23,21 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
+tcp_server* sp{};
+
 task<void> tcp_server_app(toolpex::unique_posix_fd client)
 {
     ::std::string msg = "fuck you!!!!";
+
+    ::std::array<char, 128> buffer{};
+
+    auto recv_ret = co_await uring::recv(client, buffer);
+    ::std::cout << recv_ret.nbytes_delivered() << "bytes delivered!" << ::std::endl;
+
     co_await uring::send(client, msg);
+    ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
+    if (sv.contains("stop") && sp)
+        sp->stop();
 
     co_return;
 }
@@ -37,9 +48,8 @@ task<void> emitter()
 
     tcp_server server("127.0.0.1"_ip, 8889);   
     co_await server.start(tcp_server_app);
-    
-    co_await koios::this_task::sleep_for(1h);
-    server.stop();
+    sp = &server;
+    co_await server.until_stop_async();   
 
     co_return;
 }

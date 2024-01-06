@@ -6,6 +6,7 @@
 #include "koios/iouring_detials.h"
 
 #include "toolpex/unique_posix_fd.h"
+#include <cstddef>
 
 namespace koios::uring
 {
@@ -18,6 +19,10 @@ namespace koios::uring
 
         send(const toolpex::unique_posix_fd& fd, 
              ::std::string_view sv, 
+             int flags = 0);
+
+        send(const toolpex::unique_posix_fd& fd, 
+             ::std::span<const ::std::byte> buffer, 
              int flags = 0);
     };
 }

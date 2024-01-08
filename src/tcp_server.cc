@@ -46,7 +46,7 @@ start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
     if (!m_stop.compare_exchange_strong(expected, false))
         co_return;
 
-    co_await this->bind();
+    m_sockfd = co_await uring::bind_get_sock(m_addr->dup(), m_port);
     this->listen();
     auto& schr = get_task_scheduler();
     const auto& attrs = schr.consumer_attrs();
@@ -89,34 +89,6 @@ tcp_loop(
         auto accret = co_await uring::accept(m_sockfd);
         userdefined(accret.get_client()).run();
     }
-    co_return;
-}
-
-task<void> tcp_server::bind()
-{
-    auto sockret = co_await uring::socket(m_addr->family(), SOCK_STREAM, 0);
-    if (auto ec = sockret.error_code(); ec)
-    {
-        throw toolpex::posix_exception{ ec };
-    }
-    m_sockfd = sockret.get_socket_fd();
-
-    toolpex::errret_thrower et{};
-
-    const int true_value{ 1 };
-    const ::socklen_t vallen{ sizeof(true_value) };
-    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEPORT, &true_value, vallen);
-    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &true_value, vallen);
-
-    const auto [addr, size] = m_addr->to_sockaddr(m_port);
-
-    errno = 0;
-    et << ::bind(
-        m_sockfd, 
-        reinterpret_cast<const ::sockaddr*>(&addr), 
-        size
-    );
-
     co_return;
 }
 

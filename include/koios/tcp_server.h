@@ -44,7 +44,6 @@ private:
         ::std::stop_token flag, 
         ::std::function<task<void>(toolpex::unique_posix_fd)> userdefined);
 
-    task<void> bind();
     void listen();
     void add_waiting(task_on_the_fly h)
     {

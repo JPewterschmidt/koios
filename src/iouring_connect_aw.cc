@@ -1,4 +1,5 @@
 #include "koios/iouring_connect_aw.h"
+#include "koios/iouring_socket_aw.h"
 
 namespace koios::uring
 {
@@ -26,5 +27,21 @@ namespace koios::uring
         *static_cast<detials::iouring_aw_for_connect*>(this) = detials::iouring_aw_for_connect(sqe);
         
         errno = 0;
+    }
+
+    ::koios::task<toolpex::unique_posix_fd> 
+    connect_get_sock(::std::unique_ptr<toolpex::ip_address> addr, 
+                     ::in_port_t port, 
+                     unsigned int flags)
+    {
+        auto sock_ret = co_await uring::socket(addr->family(), SOCK_STREAM, 0, flags);
+        if (auto ec = sock_ret.error_code(); ec)
+            throw koios::uring_exception{ ec };
+        auto sock = sock_ret.get_socket_fd();
+        auto conn_ret = co_await uring::connect(sock, ::std::move(addr), port);
+        if (auto ec = conn_ret.error_code(); ec)
+            throw koios::uring_exception{ ec };
+
+        co_return sock;
     }
 }

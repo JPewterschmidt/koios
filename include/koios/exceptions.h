@@ -106,6 +106,28 @@ void log_info(::std::string msg);
 void log_error(::std::string msg);
 void log_debug(::std::string msg);
 
+class stream_buffer_exception : public koios::exception
+{
+private:
+    stream_buffer_exception(::std::string_view msg) noexcept
+        : koios::exception{ msg }
+    {
+    }
+
+public:
+    static stream_buffer_exception 
+    make_stream_buffer_exception_read_overflow()
+    {
+        return { "Streambuffer: Read overflow!" };
+    }
+
+    static stream_buffer_exception
+    make_stream_buffer_exception_write_overflow()
+    {
+        return { "Streambuffer: Write overflow!" };
+    }
+};
+
 KOIOS_NAMESPACE_END
 
 #endif

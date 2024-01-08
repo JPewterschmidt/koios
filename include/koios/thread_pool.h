@@ -170,7 +170,7 @@ protected:
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
-        m_cond.notify_all();
+        m_cond.notify_one();
     }
 
     template<typename F, typename... Args>
@@ -178,7 +178,7 @@ protected:
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue(ca, [task = ::std::move(task)] mutable { task(); });
-        m_cond.notify_all();
+        m_cond.notify_one();
     }
 
     template<typename F, typename... Args>
@@ -195,7 +195,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
-        m_cond.notify_all();
+        m_cond.notify_one();
 
         return result;
     }
@@ -214,7 +214,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue(ca, [task] mutable { (*task)(); });
-        m_cond.notify_all();
+        m_cond.notify_one();
 
         return result;
     }

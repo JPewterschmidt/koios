@@ -94,7 +94,7 @@ tcp_loop(
 
 task<void> tcp_server::bind()
 {
-    auto sockret = co_await uring::socket(AF_INET, SOCK_STREAM, 0);
+    auto sockret = co_await uring::socket(m_addr->family(), SOCK_STREAM, 0);
     if (auto ec = sockret.error_code(); ec)
     {
         throw toolpex::posix_exception{ ec };
@@ -110,9 +110,7 @@ task<void> tcp_server::bind()
 
     const auto [addr, size] = m_addr->to_sockaddr(m_port);
 
-    ::sockaddr_in sock_tmp{};
-    ::std::memcpy(&sock_tmp, &addr, size);
-
+    errno = 0;
     et << ::bind(
         m_sockfd, 
         reinterpret_cast<const ::sockaddr*>(&addr), 

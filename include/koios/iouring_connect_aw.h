@@ -6,6 +6,7 @@
 #include "koios/iouring_aw.h"
 #include "toolpex/unique_posix_fd.h"
 #include "koios/iouring_detials.h"
+#include "koios/task.h"
 
 namespace koios::uring
 {
@@ -19,6 +20,10 @@ namespace koios::uring
     private:
         ::sockaddr_storage m_sockaddr{};
     };
-}
 
+    ::koios::task<toolpex::unique_posix_fd> 
+    connect_get_sock(::std::unique_ptr<toolpex::ip_address> addr, 
+                     ::in_port_t port, 
+                     unsigned int socket_flags = 0);
+}
 #endif

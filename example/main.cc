@@ -46,7 +46,7 @@ task<void> emitter()
 {
     using namespace toolpex::ip_address_literals;
 
-    tcp_server server("127.0.0.1"_ip, 8889);   
+    tcp_server server("::1"_ip, 8889);   
     co_await server.start(tcp_server_app);
     sp = &server;
     co_await server.until_stop_async();   

@@ -29,8 +29,13 @@ private:
 class tcp_server
 {
 public:
-    tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
+    tcp_server(toolpex::ip_address::ptr addr, 
                ::in_port_t port);
+
+    tcp_server(::in_port_t port)
+        : tcp_server{ toolpex::ipv4_address::get_allzero(), port }
+    {
+    }
 
     task<void> start(::std::function<task<void>(toolpex::unique_posix_fd)> aw);
     void stop();
@@ -55,7 +60,7 @@ private:
     ::std::atomic_bool m_stop{ true };
 
     toolpex::unique_posix_fd m_sockfd;
-    ::std::unique_ptr<toolpex::ip_address> m_addr;
+    toolpex::ip_address::ptr m_addr;
     ::in_port_t m_port;
     ::std::stop_source m_stop_src;
 

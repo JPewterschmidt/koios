@@ -3,6 +3,7 @@
 #include "toolpex/errret_thrower.h"
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
+#include "koios/this_task.h"
 #include <cassert>
 #include <netinet/in.h>
 #include <thread>
@@ -32,7 +33,7 @@ await_suspend(task_on_the_fly h)
 }
 
 tcp_server::
-tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
+tcp_server(toolpex::ip_address::ptr addr, 
            ::in_port_t port)
     : m_addr{ ::std::move(addr) }, m_port{ port }
 {
@@ -46,11 +47,10 @@ start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
     if (!m_stop.compare_exchange_strong(expected, false))
         co_return;
 
-    m_sockfd = co_await uring::bind_get_sock(m_addr->dup(), m_port);
+    m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
     this->listen();
-    auto& schr = get_task_scheduler();
-    const auto& attrs = schr.consumer_attrs();
     ::std::lock_guard lk{ m_futures_lock };
+    const auto& attrs = koios::get_task_scheduler().consumer_attrs();
     for (const auto& attr : attrs)
     {
         m_futures.emplace_back(
@@ -58,6 +58,8 @@ start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
         );
     }
 
+    using namespace ::std::chrono_literals;
+    co_await koios::this_task::sleep_for(500ms);
     co_return;
 }
 
@@ -83,7 +85,12 @@ tcp_loop(
     using namespace ::std::string_literals;
 
     assert(flag.stop_possible());
-    koios::log_debug("tcp_server start! ip: "s + m_addr->to_string() + ", port: "s + ::std::to_string(m_port));
+    koios::log_debug(
+        "tcp_server start! ip: "s 
+        + m_addr->to_string() 
+        + ", port: "s 
+        + ::std::to_string(m_port)
+    );
     while (!flag.stop_requested())
     {
         auto accret = co_await uring::accept(m_sockfd);

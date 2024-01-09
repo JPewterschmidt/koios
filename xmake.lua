@@ -46,8 +46,8 @@ target("test")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", { force = true })
     add_deps("koios", "toolpex")
-    set_warnings("all", "error")
     add_files( "test/*.cc")
+    set_warnings("all", "error")
     add_packages(
         "gtest", "fmt", "spdlog",
         "botan"

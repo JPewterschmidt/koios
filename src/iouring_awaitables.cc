@@ -6,7 +6,7 @@ namespace koios::uring
     using namespace toolpex;
 
     ::koios::task<unique_posix_fd> 
-    bind_get_sock(ip_address::uptr addr, in_port_t port, 
+    bind_get_sock(ip_address::ptr addr, in_port_t port, 
                   bool reuse_port, bool reuse_addr,
                   unsigned int flags)
     {

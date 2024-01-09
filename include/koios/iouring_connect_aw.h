@@ -14,7 +14,7 @@ namespace koios::uring
     {
     public:
         connect(const toolpex::unique_posix_fd& fd, 
-                ::std::unique_ptr<toolpex::ip_address> addr, 
+                toolpex::ip_address::ptr addr, 
                 ::in_port_t port);
 
     private:
@@ -22,7 +22,7 @@ namespace koios::uring
     };
 
     ::koios::task<toolpex::unique_posix_fd> 
-    connect_get_sock(::std::unique_ptr<toolpex::ip_address> addr, 
+    connect_get_sock(toolpex::ip_address::ptr addr, 
                      ::in_port_t port, 
                      unsigned int socket_flags = 0);
 }

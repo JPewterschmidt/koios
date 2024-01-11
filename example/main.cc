@@ -10,8 +10,6 @@
 #include <vector>
 #include <fstream>
 
-
-
 #include "koios/work_stealing_queue.h"
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/this_task.h"
@@ -65,7 +63,7 @@ task<void> client_app()
     }
 }
 
-task<void> emitter()
+task<void> server_emitter()
 {
     using namespace toolpex::ip_address_literals;
 
@@ -82,7 +80,7 @@ try
 {
     koios::runtime_init(3);
 
-    emitter().result();
+    server_emitter().result();
 
     koios::runtime_exit();
     

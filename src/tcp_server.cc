@@ -3,6 +3,7 @@
 #include "toolpex/errret_thrower.h"
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
+#include "koios/this_task.h"
 #include <cassert>
 #include <netinet/in.h>
 #include <thread>
@@ -32,7 +33,7 @@ await_suspend(task_on_the_fly h)
 }
 
 tcp_server::
-tcp_server(::std::unique_ptr<toolpex::ip_address> addr, 
+tcp_server(toolpex::ip_address::ptr addr, 
            ::in_port_t port)
     : m_addr{ ::std::move(addr) }, m_port{ port }
 {
@@ -46,11 +47,10 @@ start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
     if (!m_stop.compare_exchange_strong(expected, false))
         co_return;
 
-    co_await this->bind();
+    m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
     this->listen();
-    auto& schr = get_task_scheduler();
-    const auto& attrs = schr.consumer_attrs();
     ::std::lock_guard lk{ m_futures_lock };
+    const auto& attrs = koios::get_task_scheduler().consumer_attrs();
     for (const auto& attr : attrs)
     {
         m_futures.emplace_back(
@@ -58,6 +58,8 @@ start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
         );
     }
 
+    using namespace ::std::chrono_literals;
+    co_await koios::this_task::sleep_for(500ms);
     co_return;
 }
 
@@ -83,40 +85,17 @@ tcp_loop(
     using namespace ::std::string_literals;
 
     assert(flag.stop_possible());
-    koios::log_debug("tcp_server start! ip: "s + m_addr->to_string() + ", port: "s + ::std::to_string(m_port));
+    koios::log_debug(
+        "tcp_server start! ip: "s 
+        + m_addr->to_string() 
+        + ", port: "s 
+        + ::std::to_string(m_port)
+    );
     while (!flag.stop_requested())
     {
         auto accret = co_await uring::accept(m_sockfd);
         userdefined(accret.get_client()).run();
     }
-    co_return;
-}
-
-task<void> tcp_server::bind()
-{
-    auto sockret = co_await uring::socket(m_addr->family(), SOCK_STREAM, 0);
-    if (auto ec = sockret.error_code(); ec)
-    {
-        throw toolpex::posix_exception{ ec };
-    }
-    m_sockfd = sockret.get_socket_fd();
-
-    toolpex::errret_thrower et{};
-
-    const int true_value{ 1 };
-    const ::socklen_t vallen{ sizeof(true_value) };
-    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEPORT, &true_value, vallen);
-    et << ::setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &true_value, vallen);
-
-    const auto [addr, size] = m_addr->to_sockaddr(m_port);
-
-    errno = 0;
-    et << ::bind(
-        m_sockfd, 
-        reinterpret_cast<const ::sockaddr*>(&addr), 
-        size
-    );
-
     co_return;
 }
 

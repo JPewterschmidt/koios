@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cassert>
 #include <fcntl.h>
+#include <atomic>
+#include <vector>
 #include <fstream>
 
 #include "koios/work_stealing_queue.h"
@@ -20,6 +22,8 @@
 #include <string_view>
 #include "koios/iouring_connect_aw.h"
 
+#include "koios/latch.h"
+
 using namespace koios;
 using namespace ::std::chrono_literals;
 
@@ -27,6 +31,10 @@ tcp_server* sp{};
 
 task<void> tcp_server_app(toolpex::unique_posix_fd client)
 {
+    static size_t count{};
+    auto [addr, port] = toolpex::ip_address::getpeername(client);
+    ::std::cout << "client: [addr: " << addr->to_string() << ", port: " << port << "]";
+
     ::std::string msg = "fuck you!!!!";
 
     ::std::array<char, 128> buffer{};
@@ -36,21 +44,34 @@ task<void> tcp_server_app(toolpex::unique_posix_fd client)
 
     co_await uring::send(client, msg);
     ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
-    if (sv.contains("stop") && sp)
+    if (sv.contains("stop") && sp && ++count > 10)
         sp->stop();
 
     co_return;
 }
 
-task<void> emitter()
+task<void> client_app()
+{
+    using namespace toolpex::ip_address_literals;
+    using namespace ::std::string_view_literals;
+
+    auto sock = co_await uring::connect_get_sock("::1"_ip, 8889);
+    auto ret = co_await uring::send(sock, "fuck you"sv);
+    while (ret.error_code())
+    {
+        co_await uring::send(sock, "fuck you"sv);
+    }
+}
+
+task<void> server_emitter()
 {
     using namespace toolpex::ip_address_literals;
 
     tcp_server server("::1"_ip, 8889);   
-    co_await server.start(tcp_server_app);
     sp = &server;
+    co_await server.start(tcp_server_app);
+    co_await client_app();
     co_await server.until_stop_async();   
-
     co_return;
 }
 
@@ -59,11 +80,7 @@ try
 {
     koios::runtime_init(3);
 
-    auto p = toolpex::tic();
-    auto f = emitter().run_and_get_future();
-    f.get();
-
-    ::std::cout << toolpex::toc(p) << ::std::endl;
+    server_emitter().result();
 
     koios::runtime_exit();
     

@@ -3,17 +3,7 @@
 
 using namespace koios;
 
-namespace
+TEST(utility, from_result)
 {
-    task<void> emitter()
-    {
-        int i = co_await identity(1);
-        (void)i;
-    }
-}
-
-TEST(utility, identity)
-{
-    emitter().result();
-    ASSERT_TRUE(true);
+    ASSERT_EQ(1, from_result(1).result());
 }

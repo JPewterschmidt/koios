@@ -2,15 +2,13 @@
 #define KOIOS_UTILITY_H
 
 #include "koios/macros.h"
-#include "koios/task.h"
-
-#include <concepts>
+#include "koios/functional.h"
 
 KOIOS_NAMESPACE_BEG
 
-auto identity(auto arg) -> task<decltype(arg)>
+inline auto from_result(auto&& r)
 {
-    co_return arg;
+    return identity(::std::forward<decltype(r)>(r));
 }
 
 KOIOS_NAMESPACE_END

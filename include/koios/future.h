@@ -5,6 +5,7 @@
 #include <exception>
 #include <memory>
 #include <cassert>
+#include <type_traits>
 #include <optional>
 #include <condition_variable> 
 #include <mutex>
@@ -42,6 +43,7 @@ namespace fp_detials
     };
 
     template<typename Ret>
+    requires (!::std::is_reference_v<Ret>)
     class promise_storage : public promise_storage_base
     {
     public:
@@ -81,6 +83,7 @@ namespace fp_detials
     template<> class promise_storage<void> : public promise_storage_base { };
 
     template<typename T>
+    requires (!::std::is_reference_v<T>)
     struct counterpart_future
     {
     protected:
@@ -92,7 +95,7 @@ namespace fp_detials
     class storage_deliver : protected counterpart_future<T>
     {
     public:
-        using value_type = T;
+        using value_type = ::std::remove_reference_t<T>;
 
     protected:
         void send() noexcept
@@ -168,7 +171,7 @@ namespace fp_detials
     class future_impl
     {
     public:
-        using value_type = Result;
+        using value_type = ::std::remove_reference_t<Result>;
         template<typename> friend class fp_detials::promise_impl;
         template<typename> friend class fp_detials::promise_base;
         template<typename> friend class fp_detials::storage_deliver;
@@ -241,7 +244,7 @@ namespace fp_detials
     class future_base
     {
     public:
-        using value_type = Result;
+        using value_type = ::std::remove_reference_t<Result>;
         template<typename> friend class promise_base;
 
     public:

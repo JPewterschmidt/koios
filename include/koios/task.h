@@ -83,7 +83,7 @@ public:
     template<typename, typename, typename>
     friend class get_result_aw_base;
 
-private:
+protected:
     _type(promise_type& p)
         : get_result_aw<T, _type, DriverPolicy>(p),
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 

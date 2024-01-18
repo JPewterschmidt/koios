@@ -7,33 +7,6 @@
 
 KOIOS_NAMESPACE_BEG
 
-namespace exp_cpt_detials
-{
-    template <typename Callable>
-    struct get_return_type;
-
-    template <typename Ret, typename... Args>
-    struct get_return_type<Ret (Args...)> 
-    {
-        using type = Ret;
-    };
-
-    template <typename Ret, typename... Args>
-    struct get_return_type<Ret (*) (Args...)> 
-    {
-        using type = Ret;
-    };
-
-    template <typename Ret, typename... Args>
-    struct get_return_type<Ret (&) (Args...)> 
-    {
-        using type = Ret;
-    };
-
-    template <typename Callable>
-    using get_return_type_t = typename get_return_type<Callable>::type;
-}
-
 template<typename Exp>
 concept regular_expected_like_concept = requires (Exp e)
 {
@@ -51,7 +24,7 @@ concept expected_like_concept =
 
 template<typename ExpFunc>
 concept expected_callable_concept = expected_like_concept< 
-    exp_cpt_detials::get_return_type_t<ExpFunc> 
+    toolpex::get_return_type_t<ExpFunc> 
 >;
 
 KOIOS_NAMESPACE_END

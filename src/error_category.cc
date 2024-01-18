@@ -11,30 +11,48 @@ static constexpr ::std::string_view categoryname{
     "koios expected related facilities' error category"
 };
 
-static ::std::unordered_map<int, ::std::string_view> condition_str
+namespace
 {
-    { KOIOS_EXPECTED_SUCCEED,           "Succeed"sv },
-    { KOIOS_EXPECTED_CANCELED,          "Canceled"sv },
-    { KOIOS_EXPECTED_USER_DEFINED_ERROR,"Exception Catched"sv },
-};
+    class expected_category_t : public ::std::error_category
+    {
+    public:
+        virtual const char* name() const noexcept override;
+        virtual ~expected_category_t() noexcept {}
+        virtual ::std::string message(int condition) const override;
+    };
 
-const char* 
-expected_category::
-name() const noexcept 
-{
-    return categoryname.data();
+    static ::std::unordered_map<int, ::std::string_view> condition_str
+    {
+        { KOIOS_EXPECTED_SUCCEED,           "Succeed"sv },
+        { KOIOS_EXPECTED_CANCELED,          "Canceled"sv },
+        { KOIOS_EXPECTED_USER_DEFINED_ERROR,"Exception Catched"sv },
+        { KOIOS_EXPECTED_NOTHING_TO_GET,    "Nothing to get"sv },
+    };
+
+    const char* 
+    expected_category_t::
+    name() const noexcept 
+    {
+        return categoryname.data();
+    }
+
+    ::std::string 
+    expected_category_t::
+    message(int condition) const
+    {
+        if (auto found = condition_str.find(condition); 
+                found == condition_str.end())
+        {
+            return ::std::string{categoryname} + ": "s + ::std::string{found->second};
+        }
+        return ::std::string{categoryname} + ": unkonw"s;
+    }
 }
 
-::std::string 
-expected_category::
-message(int condition) const
+const ::std::error_category& expected_category() noexcept
 {
-    if (auto found = condition_str.find(condition); 
-            found == condition_str.end())
-    {
-        return ::std::string{categoryname} + ": "s + ::std::string{found->second};
-    }
-    return ::std::string{categoryname} + ": unkonw"s;
+    static koios::expected_category_t result{};
+    return result;
 }
 
 KOIOS_NAMESPACE_END

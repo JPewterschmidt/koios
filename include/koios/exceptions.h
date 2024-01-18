@@ -10,6 +10,7 @@
 #include "fmt/core.h"
 
 #include "koios/macros.h"
+#include "koios/error_category.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -22,8 +23,13 @@ class exception : public ::std::exception
 public:
     exception() = default;
 
-    exception(auto&& msg)
-        : m_msg{ ::std::forward<decltype(msg)>(msg) }
+    exception(::std::string_view msg) noexcept
+        : m_msg{ msg }
+    {
+    }
+
+    exception(::std::error_code ec) noexcept
+        : m_msg{ ec.message() }
     {
     }
 
@@ -125,6 +131,20 @@ public:
     make_stream_buffer_exception_write_overflow()
     {
         return { "Streambuffer: Write overflow!" };
+    }
+};
+
+class expected_exception : public koios::exception
+{
+public:
+    expected_exception(int err) noexcept 
+        : koios::exception{ ::std::error_code{ err, koios::expected_category() } }
+    {
+    }
+
+    expected_exception(::std::error_code ec) noexcept
+        : koios::exception{ ::std::move(ec) }
+    {
     }
 };
 

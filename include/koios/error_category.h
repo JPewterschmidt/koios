@@ -8,13 +8,7 @@
 
 KOIOS_NAMESPACE_BEG
 
-class expected_category : public ::std::error_category
-{
-public:
-    virtual const char* name() const noexcept override;
-    virtual ~expected_category() noexcept {}
-    virtual ::std::string message(int condition) const override;
-};
+const ::std::error_category& expected_category() noexcept;
 
 KOIOS_NAMESPACE_END
 

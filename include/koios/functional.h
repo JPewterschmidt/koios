@@ -3,6 +3,7 @@
 
 #include "koios/macros.h"
 #include "koios/task.h"
+#include "koios/task_concepts.h"
 #include <concepts>
 
 KOIOS_NAMESPACE_BEG

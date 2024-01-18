@@ -14,6 +14,7 @@
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/this_task.h"
 #include "koios/expected.h"
+#include "koios/functional.h"
 
 #include "toolpex/tic_toc.h"
 #include "toolpex/unique_posix_fd.h"
@@ -76,7 +77,7 @@ expected_task<int, ::std::error_code> exp2(int i = 2)
     };
 }
 
-task<void> emitter()
+task<void> expected_emitter()
 {
     auto e1 = co_await exp1();
     auto e2 = co_await e1.and_then(exp1);
@@ -88,6 +89,11 @@ task<void> emitter()
         ::std::cout << "val: " << e4.value() << ::std::endl;
     }
 
+    co_return;
+}
+
+task<void> emitter()
+{
     co_return;
 }
 

@@ -4,8 +4,9 @@
 #include "koios/macros.h"
 #include "koios/functional.h"
 #include "koios/expected_concepts.h"
+#include "koios/task_concepts.h"
+#include "toolpex/concepts_and_traits.h"
 #include <variant>
-
 
 KOIOS_NAMESPACE_BEG
 
@@ -41,11 +42,17 @@ public:
     value_type& value() noexcept { return get<0>(m_storage); }
     error_type& error() noexcept { return get<1>(m_storage); }
 
+    operator value_type&() 
+    { 
+        if (has_value()) [[likely]] return value(); 
+        throw koios::expected_exception{KOIOS_EXPECTED_NOTHING_TO_GET};
+    }
+
     auto and_then(expected_callable_concept auto f)
-        -> exp_cpt_detials::get_return_type_t<decltype(f)>
+        -> toolpex::get_return_type_t<decltype(f)>
     {
         using functor_type = decltype(f);
-        using functor_return_type = exp_cpt_detials::get_return_type_t<functor_type>;
+        using functor_return_type = toolpex::get_return_type_t<functor_type>;
 
         if (has_value())
         {
@@ -107,6 +114,7 @@ auto unexpected(auto&& arg)
 
 template<typename T, typename Err, driver_policy_concept D = run_this_async>
 using expected_task = typename _task<expected<T, Err>, D, discardable>::_type;
+
 
 KOIOS_NAMESPACE_END
 

@@ -1,57 +1,75 @@
 #include "koios/error_category.h"
 #include <unordered_map>
-#include <string_view>
 
 KOIOS_NAMESPACE_BEG
 
-using namespace ::std::string_view_literals;
 using namespace ::std::string_literals;
 
-static constexpr ::std::string_view categoryname{ 
+static const ::std::string koios_ctgr_name{ 
+    "koios' error category"
+};
+
+static const ::std::string exp_ctgr_name{ 
     "koios expected related facilities' error category"
 };
 
 namespace
 {
-    class expected_category_t : public ::std::error_category
+    class koios_category_t : public ::std::error_category
     {
     public:
-        virtual const char* name() const noexcept override;
+        virtual const char* name() const noexcept override { return koios_ctgr_name.c_str(); }
+        virtual ~koios_category_t() noexcept {}
+        virtual ::std::string message(int condition) const override;
+    };
+
+    class expected_category_t : public koios_category_t
+    {
+    public:
+        virtual const char* name() const noexcept override { return exp_ctgr_name.c_str(); }
         virtual ~expected_category_t() noexcept {}
         virtual ::std::string message(int condition) const override;
     };
 
-    static ::std::unordered_map<int, ::std::string_view> condition_str
+    ::std::string 
+    koios_category_t::
+    message(int condition) const
     {
-        { KOIOS_EXPECTED_SUCCEED,           "Succeed"sv },
-        { KOIOS_EXPECTED_CANCELED,          "Canceled"sv },
-        { KOIOS_EXPECTED_USER_DEFINED_ERROR,"Exception Catched"sv },
-        { KOIOS_EXPECTED_NOTHING_TO_GET,    "Nothing to get"sv },
-    };
-
-    const char* 
-    expected_category_t::
-    name() const noexcept 
-    {
-        return categoryname.data();
+        switch (condition)
+        {
+        case koios_state_t::KOIOS_SUCCEED            : return koios_ctgr_name + " Success";
+        case koios_state_t::KOIOS_EXCEPTION_CATCHED  : return koios_ctgr_name + " Exception Catched";
+        }
+        
+        return exp_ctgr_name + " Unknow";
     }
 
     ::std::string 
     expected_category_t::
     message(int condition) const
     {
-        if (auto found = condition_str.find(condition); 
-                found == condition_str.end())
+        switch (condition)
         {
-            return ::std::string{categoryname} + ": "s + ::std::string{found->second};
+        case expected_state_t::KOIOS_EXPECTED_SUCCEED            : return exp_ctgr_name + " Success";
+        case expected_state_t::KOIOS_EXPECTED_CANCELED           : return exp_ctgr_name + " Canceled";
+        case expected_state_t::KOIOS_EXPECTED_EXCEPTION_CATCHED  : return exp_ctgr_name + " Exception Catched";
+        case expected_state_t::KOIOS_EXPECTED_USER_DEFINED_ERROR : return exp_ctgr_name + " User Definded Error";
+        case expected_state_t::KOIOS_EXPECTED_NOTHING_TO_GET     : return exp_ctgr_name + " Nothing to Get";
         }
-        return ::std::string{categoryname} + ": unkonw"s;
+        
+        return exp_ctgr_name + " Unknow";
     }
+}
+
+const ::std::error_category& koios_category() noexcept
+{
+    static const koios::koios_category_t result{};
+    return result;
 }
 
 const ::std::error_category& expected_category() noexcept
 {
-    static koios::expected_category_t result{};
+    static const koios::expected_category_t result{};
     return result;
 }
 

@@ -4,4 +4,10 @@
 #define KOIOS_NAMESPACE_BEG namespace koios {
 #define KOIOS_NAMESPACE_END }
 
+#define KOIOS_EXPECTED_SUCCEED              0
+#define KOIOS_EXPECTED_CANCELED             1
+#define KOIOS_EXPECTED_EXCEPTION_CATCHED    2
+#define KOIOS_EXPECTED_USER_DEFINED_ERROR   3
+#define KOIOS_EXPECTED_NOTHING_TO_GET       4
+
 #endif

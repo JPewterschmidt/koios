@@ -13,6 +13,8 @@
 #include "koios/work_stealing_queue.h"
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/this_task.h"
+#include "koios/expected.h"
+#include "koios/functional.h"
 
 #include "toolpex/tic_toc.h"
 #include "toolpex/unique_posix_fd.h"
@@ -63,27 +65,44 @@ task<void> client_app()
     }
 }
 
-task<void> server_emitter()
+expected_task<int, ::std::error_code> exp1(int i = 1)
 {
-    using namespace toolpex::ip_address_literals;
+    co_return i + 1;
+}
 
-    tcp_server server("::1"_ip, 8889);   
-    sp = &server;
-    co_await server.start(tcp_server_app);
-    co_await client_app();
-    co_await server.until_stop_async();   
+expected_task<int, ::std::error_code> exp2(int i = 2)
+{
+    co_return unexpected_t<::std::error_code>{
+        ::std::error_code{ EINVAL, ::std::system_category() }
+    };
+}
+
+task<void> expected_emitter()
+{
+    auto e1 = co_await exp1();
+    auto e2 = co_await e1.and_then(exp1);
+    auto e3 = co_await e2.and_then(exp1);
+    auto e4 = co_await e3.and_then(exp1);
+
+    if (e4.has_value())
+    {
+        ::std::cout << "val: " << e4.value() << ::std::endl;
+    }
+
+    co_return;
+}
+
+task<void> emitter()
+{
     co_return;
 }
 
 int main()
 try
 {
-    koios::runtime_init(3);
-
-    server_emitter().result();
-
-    koios::runtime_exit();
-    
+    runtime_init(3);
+    emitter().result();
+    runtime_exit();
     return 0;
 }
 catch (const ::std::exception& e)

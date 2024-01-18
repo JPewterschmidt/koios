@@ -17,14 +17,27 @@ class unique_file_state
 public:
     unique_file_state(::std::filesystem::path path);
 
-    ::std::string name() const noexcept { return m_path; }
+    unique_file_state(unique_file_state&& other) noexcept
+        : m_path{ ::std::move(other.m_path) }, 
+          m_fd{ ::std::move(other.m_fd) }
+    {
+    }
+
+    unique_file_state& operator=(unique_file_state&& other) noexcept
+    {
+        m_path  = ::std::move(other.m_path);
+        m_fd    = ::std::move(other.m_fd);
+        return *this;
+    }
+
+    ::std::string name() const { return m_path; }
     task<::std::error_code> append_async(::std::span<const ::std::byte> buffer) noexcept;
-    void close() { m_fd.close(); }
+    void close() noexcept { m_fd.close(); }
 
 private:
     ::std::filesystem::path m_path;
     toolpex::unique_posix_fd m_fd;
-    koios::mutex m_fs_io_lock;
+    mutable koios::mutex m_fs_io_lock;
 };
 
 KOIOS_NAMESPACE_END

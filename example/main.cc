@@ -25,13 +25,14 @@
 #include "koios/iouring_connect_aw.h"
 
 #include "koios/latch.h"
+#include "koios/unique_file_state.h"
 
 using namespace koios;
 using namespace ::std::chrono_literals;
 
 task<void> emitter()
 {
-    
+    unique_file_state f{ "not_suppose_to_exist.txt" };
 
     co_return;
 }

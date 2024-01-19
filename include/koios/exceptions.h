@@ -74,7 +74,7 @@ public:
 class uring_exception : public koios::exception
 {
 public:
-    uring_exception() = default;
+    uring_exception() noexcept = default;
 
     uring_exception(::std::string_view msg) noexcept
         : koios::exception{ msg }

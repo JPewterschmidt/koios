@@ -24,7 +24,6 @@
 #include <string_view>
 #include "koios/iouring_connect_aw.h"
 
-#include "koios/latch.h"
 #include "koios/unique_file_state.h"
 
 using namespace koios;

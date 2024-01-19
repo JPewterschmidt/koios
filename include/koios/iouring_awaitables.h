@@ -27,7 +27,7 @@ namespace koios::uring
 
     ::koios::task<::std::error_code>
     append_all(const toolpex::unique_posix_fd& fd, 
-              ::std::span<const ::std::byte> buffer);
+              ::std::span<const ::std::byte> buffer) noexcept;
 }
 
 #endif

@@ -38,7 +38,8 @@ namespace koios::uring
 
     ::koios::task<::std::error_code>
     append_all(const toolpex::unique_posix_fd& fd, 
-              ::std::span<const ::std::byte> buffer)
+              ::std::span<const ::std::byte> buffer) noexcept
+    try 
     {
         ::std::error_code result;
         ::std::span<const ::std::byte> left = buffer;
@@ -51,5 +52,13 @@ namespace koios::uring
         }
 
         co_return result;
+    }
+    catch (const koios::exception& e)
+    {
+        co_return e.error_code();
+    }
+    catch (...)
+    {
+        co_return { KOIOS_EXCEPTION_CATCHED, koios_category() };
     }
 }

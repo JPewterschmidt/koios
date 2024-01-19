@@ -6,6 +6,7 @@
 #include <source_location>
 #include <cstring>
 #include <string>
+#include <system_error>
 
 #include "fmt/core.h"
 
@@ -21,23 +22,37 @@ KOIOS_NAMESPACE_BEG
 class exception : public ::std::exception
 {
 public:
-    exception() = default;
+    exception() noexcept
+        : m_ec{ KOIOS_EXCEPTION_CATCHED, koios_category() }
+    {
+    }
 
     exception(::std::string_view msg) noexcept
-        : m_msg{ msg }
+        : m_msg{ msg }, m_ec{ KOIOS_EXCEPTION_CATCHED, koios_category() }
     {
     }
 
     exception(::std::error_code ec) noexcept
-        : m_msg{ ec.message() }
+        : m_msg{ ec.message() }, m_ec{ ec }
     {
     }
 
     virtual const char* what() const noexcept override { return m_msg.c_str(); }
     void log() const noexcept;
 
+    virtual ::std::error_code error_code() const noexcept
+    {
+        return m_ec;
+    }
+
+    operator ::std::error_code() const noexcept
+    {
+        return this->error_code();
+    }
+
 protected:
     ::std::string m_msg;
+    ::std::error_code m_ec;
 };
 
 /*! \brief Exception which will be thrown 
@@ -81,18 +96,21 @@ public:
     {
     }
 
-    uring_exception(int errno) noexcept
-        : uring_exception{ ::strerror(errno) }
+    uring_exception(int err) noexcept
+        : koios::exception{ ::std::make_error_code(static_cast<::std::errc>(err)) }
     {
     }
 
     uring_exception(::std::error_code ec) noexcept
-        : uring_exception{ ec.message() }
+        : koios::exception{ ec }
     {
     }
 
     bool has_error_code() const noexcept { return m_has_ec; }
-    ::std::error_code error_code() const noexcept { return m_ec; }
+    virtual ::std::error_code error_code() const noexcept override 
+    { 
+        return m_ec; 
+    }
 
 private:
     ::std::error_code m_ec;

@@ -74,10 +74,10 @@ public:
 class uring_exception : public koios::exception
 {
 public:
-    uring_exception() = default;
+    uring_exception() noexcept = default;
 
-    uring_exception(auto&& msg) noexcept
-        : koios::exception{ ::std::forward<decltype(msg)>(msg) }
+    uring_exception(::std::string_view msg) noexcept
+        : koios::exception{ msg }
     {
     }
 
@@ -90,6 +90,13 @@ public:
         : uring_exception{ ec.message() }
     {
     }
+
+    bool has_error_code() const noexcept { return m_has_ec; }
+    ::std::error_code error_code() const noexcept { return m_ec; }
+
+private:
+    ::std::error_code m_ec;
+    bool m_has_ec;
 };
 
 class future_exception : public koios::exception

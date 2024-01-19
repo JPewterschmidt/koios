@@ -16,6 +16,7 @@
 
 #include "koios/task.h"
 #include "toolpex/ipaddress.h"
+#include <cstddef>
 
 namespace koios::uring
 {
@@ -23,6 +24,10 @@ namespace koios::uring
     bind_get_sock(toolpex::ip_address::ptr addr, in_port_t port, 
                   bool reuse_port = true, bool reuse_addr = true,
                   unsigned int flags = 0);
+
+    ::koios::task<::std::error_code>
+    append_all(const toolpex::unique_posix_fd& fd, 
+              ::std::span<const ::std::byte> buffer);
 }
 
 #endif

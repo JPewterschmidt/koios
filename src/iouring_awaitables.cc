@@ -35,4 +35,21 @@ namespace koios::uring
 
         co_return sockfd;
     }
+
+    ::koios::task<::std::error_code>
+    append_all(const toolpex::unique_posix_fd& fd, 
+              ::std::span<const ::std::byte> buffer)
+    {
+        ::std::error_code result;
+        ::std::span<const ::std::byte> left = buffer;
+
+        while (!left.empty())
+        {
+            auto ret = co_await uring::write(fd, left);
+            if ((result = ret.error_code())) break;
+            left = left.subspan(ret.nbytes_delivered());
+        }
+
+        co_return result;
+    }
 }

@@ -34,6 +34,8 @@ namespace uring
               ::std::string_view buffer,
               uint64_t offset = 0);
     };
+
+    // `ioret_for_data_deliver` is return type of await_resume
 }
 
 KOIOS_NAMESPACE_END

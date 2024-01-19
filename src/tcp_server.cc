@@ -85,12 +85,12 @@ tcp_loop(
     using namespace ::std::string_literals;
 
     assert(flag.stop_possible());
-    koios::log_debug(
-        "tcp_server start! ip: "s 
-        + m_addr->to_string() 
-        + ", port: "s 
-        + ::std::to_string(m_port)
-    );
+    //koios::log_debug(
+    //    "tcp_server start! ip: "s 
+    //    + m_addr->to_string() 
+    //    + ", port: "s 
+    //    + ::std::to_string(m_port)
+    //);
     while (!flag.stop_requested())
     {
         auto accret = co_await uring::accept(m_sockfd);

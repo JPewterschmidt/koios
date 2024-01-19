@@ -64,8 +64,7 @@ public:
      *  After store the return value, this function will wake up the caller, 
      *  if there's a caller task call this task by `co_await`.
      */
-    template<typename TT>
-    requires (::std::constructible_from<T, TT>)
+    template<::std::convertible_to<T> TT = T>
     void return_value(TT&& val)
     {
         this->m_promise_p->set_value(::std::forward<TT>(val));

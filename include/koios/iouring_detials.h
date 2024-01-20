@@ -14,19 +14,6 @@
 
 namespace koios::uring
 {
-    namespace detials
-    {
-        class ioret_for_any_base : public ioret
-        {
-        public:
-            ioret_for_any_base(ioret r) noexcept;
-            ::std::error_code error_code() const noexcept;
-
-        private:
-            int m_errno{};
-        };
-    }
-
     class ioret_for_data_deliver : public detials::ioret_for_any_base
     {
     public:

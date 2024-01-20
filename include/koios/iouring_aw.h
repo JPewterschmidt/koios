@@ -20,7 +20,7 @@ namespace koios::uring
         
         void await_suspend(task_on_the_fly h);
 
-        ioret await_resume() 
+        detials::ioret_for_any_base await_resume() 
         { 
             return *m_ret;
         }

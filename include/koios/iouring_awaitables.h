@@ -10,6 +10,7 @@
 #include "koios/iouring_sendmsg_aw.h"
 #include "koios/iouring_socket_aw.h"
 #include "koios/iouring_sync_file_range_aw.h"
+#include "koios/iouring_fsync_aw.h"
 #include "koios/iouring_unlink_aw.h"
 #include "koios/iouring_write_aw.h"
 #include "koios/iouring_connect_aw.h"

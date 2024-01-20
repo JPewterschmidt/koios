@@ -29,6 +29,24 @@ public:
     auto get_future() { return m_promise_p->get_future(); }
     auto get_std_promise_pointer() { return m_promise_p; }
 
+#ifdef KOIOS_DEBUG
+    ~return_value_or_void_base() noexcept
+    {
+        if (!caller_waked()) [[unlikely]]
+        {
+#ifdef __cpp_lib_stacktrace
+#include <stacktrace>
+            ::std::cerr << "You have to call `co_return`!!!!\n"
+                        << ::std::stacktrace::current()
+                        << ::std::endl;
+#else
+            ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
+#endif
+            ::std::terminate();
+        }
+    }
+#endif
+
 protected:
     ::std::shared_ptr<koios::promise<T>> m_promise_p{ ::std::make_shared<koios::promise<T>>() };
     task_on_the_fly m_caller{};
@@ -38,6 +56,9 @@ protected:
      */
     void wake_caller()
     {
+#ifdef KOIOS_DEBUG
+        m_caller_waked = true;
+#endif
         if (!m_caller) return;
         DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
     }
@@ -47,6 +68,11 @@ protected:
         m_promise_p->set_exception(::std::move(ep));
         wake_caller();
     }
+#ifdef KOIOS_DEBUG
+private:
+    bool caller_waked() const noexcept { return m_caller_waked; }
+    bool m_caller_waked{ false };
+#endif
 };
 
 /*! \brief The major `return_value_or_void` class template.

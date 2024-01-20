@@ -33,6 +33,9 @@ target("koios")
         "concurrentqueue", 
         "botan"
     )
+    if not is_mode("release") then
+        add_cxxflags("-DKOIOS_DEBUG", {force = true})
+    end
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })
     add_syslinks(

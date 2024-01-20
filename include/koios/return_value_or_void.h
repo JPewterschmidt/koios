@@ -34,14 +34,7 @@ public:
     {
         if (!caller_waked()) [[unlikely]]
         {
-#ifdef __cpp_lib_stacktrace
-#include <stacktrace>
-            ::std::cerr << "You have to call `co_return`!!!!\n"
-                        << ::std::stacktrace::current()
-                        << ::std::endl;
-#else
             ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
-#endif
             ::std::terminate();
         }
     }

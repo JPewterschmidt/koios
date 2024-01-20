@@ -265,16 +265,16 @@ private:
     ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 
-template<typename T>
+template<typename T = void>
 using async_task = typename _task<T, run_this_async, discardable>::_type;
 
-template<typename T>
+template<typename T = void>
 using sync_task = typename _task<T, run_this_sync, discardable>::_type;
 
-template<typename T>
+template<typename T = void>
 using nodiscard_task = typename _task<T, run_this_async, non_discardable>::_type;
 
-template<typename T>
+template<typename T = void>
 using task = async_task<T>;
 
 KOIOS_NAMESPACE_END

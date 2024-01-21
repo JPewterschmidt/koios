@@ -30,7 +30,6 @@ namespace koios::uring
     class unlink : public iouring_aw
     {
     public:
-        unlink(::std::string_view path, int flags = 0);
         unlink(::std::filesystem::path path, int flags = 0);
     };
 }

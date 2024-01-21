@@ -1,3 +1,21 @@
+/* Koios, A c++ async runtime library.
+ * Copyright (C) 2024  Jeremy Pewterschmidt
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 #ifndef TASK_PROMISE_BASE_H
 #define TASK_PROMISE_BASE_H
 
@@ -27,15 +45,19 @@ public:
     constexpr void await_resume() const noexcept { }
 };
 
+using eager_aw = ::std::suspend_never;
+
 /*! \brief life-cycle control class of a task
  *  \tparam FinalSuspendAwaitable Class which contains the methods
  *                                when coroutine get into the final suspend phase.
  */
-template<typename FinalSuspendAwaitable = destroy_aw>
+template<
+    typename InitialSuspendAwaitable = eager_aw, 
+    typename FinalSuspendAwaitable = destroy_aw>
 class promise_base
 {
 public:
-    constexpr ::std::suspend_always initial_suspend() const noexcept
+    constexpr InitialSuspendAwaitable initial_suspend() const noexcept
         { return {}; }
     constexpr FinalSuspendAwaitable final_suspend() const noexcept
         { return {}; }

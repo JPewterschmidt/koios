@@ -1,3 +1,21 @@
+/* Koios, A c++ async runtime library.
+ * Copyright (C) 2024  Jeremy Pewterschmidt
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 #ifndef KOIOS_TASK_CONCEPTS_H
 #define KOIOS_TASK_CONCEPTS_H
 
@@ -27,8 +45,18 @@ concept task_concept = requires(T t)
     { t.run_and_get_future() } -> toolpex::is_specialization_of<::koios::future>;
 } and awaitible_concept<T>;
 
+template<typename T>
+concept emitter_task_concept = 
+    task_concept<T> 
+    and ::std::same_as<typename T::initial_suspend_type, ::std::suspend_always>;
+
 template<typename Func>
 concept task_callable_concept = task_concept<toolpex::get_return_type_t<Func>>;
+
+template<typename Func>
+concept emitter_task_callable_concept = 
+    task_callable_concept<Func> 
+    and emitter_task_concept<toolpex::get_return_type_t<Func>>;
 
 KOIOS_NAMESPACE_END
 

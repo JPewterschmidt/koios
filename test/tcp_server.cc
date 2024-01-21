@@ -39,9 +39,11 @@ namespace
         co_await uring::send(sock, "fuck you, and stop."sv);
         co_await uring::send(sock, "fuck you, and stop."sv);
         co_await uring::send(sock, "fuck you, and stop."sv);
+
+        co_return;
     }
 
-    task<bool> emit_test()
+    emitter_task<bool> emit_test()
     {
         using namespace toolpex::ip_address_literals;
         using namespace ::std::string_view_literals;

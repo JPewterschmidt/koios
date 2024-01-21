@@ -29,18 +29,29 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<void> emitter()
+task<> func()
 {
-    unique_file_state f{ "not_suppose_to_exist.txt" };
-
     co_return;
+}
+
+emitter_task<> func2()
+{
+    co_return;
+}
+
+task<int> emitter(int i = 1)
+{
+    co_await func();
+    co_await make_emitter(func);
+    co_await make_emitter(func2);
+    co_return i;
 }
 
 int main()
 try
 {
-    runtime_init(3);
-    emitter().result();
+    runtime_init(4);
+    ::std::cout << make_emitter(emitter, 2).result() << ::std::endl;
     runtime_exit();
     return 0;
 }

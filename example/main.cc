@@ -50,11 +50,11 @@ emitter_task<int> emitter(int i = 1)
 int main()
 try
 {
-    ::std::function<emitter_task<int>(int)> func = emitter;
-    ::std::cout << emitter_task_callable_concept<decltype(func)> << ::std::endl;
-    ::std::cout << task_callable_concept<decltype(func)> << ::std::endl;
-    ::std::cout << emitter_task_concept<toolpex::get_return_type_t<decltype(func)>> << ::std::endl;
-    ::std::cout << task_concept<toolpex::get_return_type_t<decltype(func)>> << ::std::endl;
+    runtime_init(4);
+
+    ::std::cout << emitter().result() << ::std::endl;
+
+    runtime_exit();
     
     return 0;
 }

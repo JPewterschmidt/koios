@@ -310,6 +310,9 @@ using task = async_task<T, InitialSuspendAw>;
 template<typename T = void, typename InitialSuspendAw = ::std::suspend_always>
 using emitter_task = async_task<T, InitialSuspendAw>;
 
+using taskec = task<::std::error_code>;
+using etaskec = emitter_task<::std::error_code>;
+
 KOIOS_NAMESPACE_END
 
 #endif

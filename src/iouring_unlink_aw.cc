@@ -31,11 +31,6 @@ init_helper(::std::string_view path, int flags)
     return result;
 }
 
-unlink::unlink(::std::string_view path, int flags)
-    : iouring_aw{ init_helper(path, flags) }
-{
-}
-
 unlink::unlink(::std::filesystem::path path, int flags)
     : iouring_aw{ init_helper(path.string(), flags) }
 {

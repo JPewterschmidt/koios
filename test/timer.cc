@@ -4,6 +4,7 @@
 #include "koios/runtime.h"
 #include "koios/task.h"
 #include "koios/this_task.h"
+#include "koios/functional.h"
 
 #include <semaphore>
 #include <vector>
@@ -36,7 +37,7 @@ TEST(timer, awaitable)
 ::std::mutex ivec_lock;
 ::std::vector<int> ivec;
 
-emitter_task<> func1()
+task<> func1()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(1);
@@ -47,7 +48,7 @@ emitter_task<> func1()
     co_return;
 }
 
-emitter_task<> func2()
+task<> func2()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(2);
@@ -58,7 +59,7 @@ emitter_task<> func2()
     co_return;
 }
 
-emitter_task<> func3()
+task<> func3()
 {
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(3);
@@ -73,9 +74,9 @@ emitter_task<> func3()
 emitter_task<void> mainfunc()
 {
     // add_event should never be called in main thread.
-    get_task_scheduler().add_event<timer_event_loop>(20ms, func1());
-    get_task_scheduler().add_event<timer_event_loop>(40ms, func2());
-    get_task_scheduler().add_event<timer_event_loop>(60ms, func3());
+    get_task_scheduler().add_event<timer_event_loop>(20ms, make_emitter(func1));
+    get_task_scheduler().add_event<timer_event_loop>(40ms, make_emitter(func2));
+    get_task_scheduler().add_event<timer_event_loop>(60ms, make_emitter(func3));
     co_return;
 }
 

@@ -26,12 +26,12 @@
 
 KOIOS_NAMESPACE_BEG
 
-template class koios::_task<void, run_this_async, discardable>;
-template class koios::_task<void, run_this_async, non_discardable>;
-template class koios::_task<bool, run_this_async, discardable>;
-template class koios::_task<int, run_this_async, discardable>;
-template class koios::_task<size_t, run_this_async, discardable>;
-template class koios::_task<::std::string, run_this_async, discardable>;
-template class koios::_task<::std::string_view, run_this_async, discardable>;
+template class koios::_task<void, run_this_async, discardable, eager_aw>;
+template class koios::_task<void, run_this_async, non_discardable, eager_aw>;
+template class koios::_task<bool, run_this_async, discardable, eager_aw>;
+template class koios::_task<int, run_this_async, discardable, eager_aw>;
+template class koios::_task<size_t, run_this_async, discardable, eager_aw>;
+template class koios::_task<::std::string, run_this_async, discardable, eager_aw>;
+template class koios::_task<::std::string_view, run_this_async, discardable, eager_aw>;
 
 KOIOS_NAMESPACE_END

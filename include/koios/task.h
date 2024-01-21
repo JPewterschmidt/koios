@@ -48,7 +48,7 @@ KOIOS_NAMESPACE_BEG
  *  \tparam DriverPolicy One of `run_this_async` or `run_this_sync`.
  *  \tparam Discardable One of `discardable` or `non_discardable`.
  */
-template<typename, driver_policy_concept, typename>
+template<typename, driver_policy_concept, typename, typename>
 struct _task
 {
     struct [[nodiscard]] _type;
@@ -72,20 +72,23 @@ struct non_discardable{};
 template<
     typename T, 
     driver_policy_concept DriverPolicy,
-    typename Discardable>
-class _task<T, DriverPolicy, Discardable>::_type 
-    : public get_result_aw<T, _task<T, DriverPolicy, Discardable>::_type, DriverPolicy>
+    typename Discardable, 
+    typename InitialSuspendAw>
+class _task<T, DriverPolicy, Discardable, InitialSuspendAw>::_type 
+    : public get_result_aw<T, _task<T, DriverPolicy, Discardable, InitialSuspendAw>::_type, DriverPolicy>
 {
 public:
     using value_type = T;
     using future_type = koios::future<value_type>;
+    using initial_suspend_type = InitialSuspendAw;
 
     class promise_type 
-        : public promise_base<destroy_aw>, 
+        : public promise_base<InitialSuspendAw, destroy_aw>, 
           public return_value_or_void<T, promise_type, DriverPolicy>
     {
     public:
-        _task<T, DriverPolicy, Discardable>::_type get_return_object() noexcept
+        _task<T, DriverPolicy, Discardable, initial_suspend_type>::_type 
+        get_return_object() noexcept
         {
             return { *this };
         }
@@ -107,12 +110,13 @@ protected:
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
           m_std_promise_p{ p.get_std_promise_pointer() }
     {
+        if (is_eager()) m_coro_handle.give_up_ownership();
     }
 
 public:
     /*! Of course move constructor will move the ownership of the handler. */
     _type(_type&& other) noexcept
-        : get_result_aw<T, _task<T, DriverPolicy, Discardable>::_type, DriverPolicy>(::std::move(other)),
+        : get_result_aw<T, _task<T, DriverPolicy, Discardable, initial_suspend_type>::_type, DriverPolicy>(::std::move(other)),
           m_coro_handle{ ::std::move(other.m_coro_handle) }
     {
     }
@@ -167,7 +171,8 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        schr.enqueue(get_handler_to_schedule());
+        if (!is_eager() && !this->future().ready())
+            schr.enqueue(get_handler_to_schedule());
     }
 
     void 
@@ -176,7 +181,8 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        schr.enqueue(attr, get_handler_to_schedule());
+        if (!is_eager() && !this->future().ready())
+            schr.enqueue(attr, get_handler_to_schedule());
     }
 
     /*! \brief Run the task.
@@ -202,7 +208,7 @@ public:
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if (!has_scheduled())
+        if (!has_scheduled() && !is_eager() && !result.ready())
         {   
             schr.enqueue(get_handler_to_schedule());
         }
@@ -213,7 +219,7 @@ public:
         const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if (!has_scheduled())
+        if (!has_scheduled() && !is_eager() && !result.ready())
         {   
             schr.enqueue(attr, get_handler_to_schedule());
         }
@@ -256,10 +262,19 @@ public:
         return ::std::same_as<Discardable, discardable>;
     }
 
+    [[nodiscard]] static consteval bool is_eager()
+    {
+        return ::std::same_as<initial_suspend_type, eager_aw>;
+    }
+
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
-    [[nodiscard]] bool has_scheduled() const noexcept { return !m_coro_handle; }
     [[nodiscard]] static consteval bool is_return_void() { return ::std::same_as<void, value_type>; }
+
+    [[nodiscard]] bool has_scheduled() const noexcept 
+    { 
+        return !m_coro_handle; 
+    }
 
     /*! \brief Take the ownership of the future object related to this task.
      *  \return the future object.
@@ -270,7 +285,7 @@ private:
      */
     [[nodiscard]] future_type get_future()
     {
-        if (has_scheduled())
+        if (!is_eager() && has_scheduled())
             throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
 
         return get_result_aw<T, _type, DriverPolicy>::get_future();
@@ -283,17 +298,17 @@ private:
     ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 
-template<typename T = void>
-using async_task = typename _task<T, run_this_async, discardable>::_type;
+template<typename T = void, typename InitialSuspendAw = eager_aw>
+using async_task = typename _task<T, run_this_async, discardable, InitialSuspendAw>::_type;
 
-template<typename T = void>
-using sync_task = typename _task<T, run_this_sync, discardable>::_type;
+template<typename T = void, typename InitialSuspendAw = eager_aw>
+using nodiscard_task = typename _task<T, run_this_async, non_discardable, InitialSuspendAw>::_type;
 
-template<typename T = void>
-using nodiscard_task = typename _task<T, run_this_async, non_discardable>::_type;
+template<typename T = void, typename InitialSuspendAw = eager_aw>
+using task = async_task<T, InitialSuspendAw>;
 
-template<typename T = void>
-using task = async_task<T>;
+template<typename T = void, typename InitialSuspendAw = ::std::suspend_always>
+using emitter_task = async_task<T, InitialSuspendAw>;
 
 KOIOS_NAMESPACE_END
 

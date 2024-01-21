@@ -29,17 +29,15 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 
-task<void> emitter()
+task<> emitter()
 {
-    unique_file_state f{ "not_suppose_to_exist.txt" };
-
     co_return;
 }
 
 int main()
 try
 {
-    runtime_init(3);
+    runtime_init(4);
     emitter().result();
     runtime_exit();
     return 0;

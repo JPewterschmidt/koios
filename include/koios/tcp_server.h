@@ -63,7 +63,7 @@ public:
 
 private:
     friend class tcp_server_until_done_aw;
-    task<void> tcp_loop(
+    emitter_task<void> tcp_loop(
         ::std::stop_token flag, 
         ::std::function<task<void>(toolpex::unique_posix_fd)> userdefined);
 

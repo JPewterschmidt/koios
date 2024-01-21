@@ -45,7 +45,8 @@ struct _generator
  *  \tparam Alloc The allocator type used.
  */
 template<typename T, typename Alloc>
-class generator_promise_type : public promise_base<::std::suspend_always>
+class generator_promise_type 
+    : public promise_base<::std::suspend_always, ::std::suspend_always>
 {
 private:
     /*! \brief allocate memory then initialize the object at.

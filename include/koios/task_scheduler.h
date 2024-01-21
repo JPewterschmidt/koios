@@ -60,7 +60,7 @@ public:
 
     void enqueue(task_on_the_fly h) noexcept
     {
-        thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
+        if (h) thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
     }
 
     void enqueue(const per_consumer_attr& ca, task_concept auto t)
@@ -70,7 +70,7 @@ public:
 
     void enqueue(const per_consumer_attr& ca, task_on_the_fly h)
     {
-        thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
+        if (h) thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
     }
 
     virtual void stop() noexcept { thread_pool::stop(); }

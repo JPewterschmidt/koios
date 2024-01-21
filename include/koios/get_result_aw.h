@@ -77,9 +77,14 @@ public:
      */
     auto get_future() noexcept 
     { 
+        return ::std::move(future()); 
+    }
+
+    auto& future() noexcept
+    {
         // For which scheduled by user call `task::run()` or `task::run_and_get_future()` directly.
         assert(!m_promise.caller_set());
-        return ::std::move(m_future); 
+        return m_future; 
     }
 
 protected:

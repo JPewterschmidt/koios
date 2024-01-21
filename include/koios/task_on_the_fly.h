@@ -101,6 +101,8 @@ public:
         return m_h.address();
     }
 
+    void give_up_ownership() noexcept { exchange_ownership(); }
+
 private:
     void destroy() noexcept
     {
@@ -111,7 +113,6 @@ private:
     }
 
     bool exchange_ownership() noexcept { return ::std::exchange(m_holds_ownership, false); }
-    void give_up_ownership() noexcept { exchange_ownership(); }
     bool holds_ownership() const noexcept { return m_holds_ownership; }
 
 private:

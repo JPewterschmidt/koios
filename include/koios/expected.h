@@ -130,9 +130,11 @@ auto unexpected(auto&& arg)
     };
 }
 
-template<typename T, typename Err, driver_policy_concept D = run_this_async>
-using expected_task = typename _task<expected<T, Err>, D, discardable>::_type;
+template<typename T, typename Err, driver_policy_concept D = run_this_async, typename InitialSuspendAw = eager_aw>
+using expected_task = typename _task<expected<T, Err>, D, discardable, InitialSuspendAw>::_type;
 
+template<typename T, typename Err, driver_policy_concept D = run_this_async, typename InitialSuspendAw = ::std::suspend_always>
+using emitter_expected_task = typename _task<expected<T, Err>, D, discardable, InitialSuspendAw>::_type;
 
 KOIOS_NAMESPACE_END
 

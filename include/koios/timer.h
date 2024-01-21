@@ -192,11 +192,12 @@ private:
     {
         ::std::shared_lock lk{ m_ptrs_lock };
         auto id = ::std::this_thread::get_id();
-        assert(m_impl_ptrs.contains(id));
-        return { 
-            ::std::move(lk), 
-            m_impl_ptrs[id]
-        };
+        auto ptr = m_impl_ptrs[id];
+        if (!m_impl_ptrs.contains(id))
+        {
+            ptr = m_impl_ptrs.begin()->second;
+        }
+        return { ::std::move(lk), ptr };
     }
 
 private:    

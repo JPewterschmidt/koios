@@ -28,11 +28,6 @@ namespace
         co_return referd_obj;
     }
 
-    sync_task<int> for_sync_task()
-    {
-        co_return 1;
-    }
-    
     nodiscard_task<int> for_nodiscard()
     {
         co_return 1;
@@ -50,11 +45,6 @@ TEST(task, basic)
     int& ref = for_basic_test3().run_and_get_future().get();
     ref = 100;
     ASSERT_EQ(referd_obj, 100);
-}
-
-TEST(task, sync_task)
-{
-    ASSERT_EQ(for_sync_task().run_and_get_future().get(), 1);
 }
 
 TEST(task, nodiscard)

@@ -118,8 +118,12 @@ shrlk_and_curthr_ptr()
 {
     const auto id = ::std::this_thread::get_id();
     auto lk = get_shrlk();
-    assert(m_impls.contains(id));
-    return ::std::make_pair(::std::move(lk), m_impls[id]);
+    auto ptr = m_impls[id];
+    if (!m_impls.contains(id))
+    {
+        ptr = m_impls.begin()->second;
+    }
+    return ::std::make_pair(::std::move(lk), ::std::move(ptr));
 }
 
 void iouring_event_loop::

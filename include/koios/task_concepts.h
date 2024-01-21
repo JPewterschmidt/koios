@@ -45,8 +45,18 @@ concept task_concept = requires(T t)
     { t.run_and_get_future() } -> toolpex::is_specialization_of<::koios::future>;
 } and awaitible_concept<T>;
 
+template<typename T>
+concept emitter_task_concept = 
+    task_concept<T> 
+    and ::std::same_as<typename T::initial_suspend_type, ::std::suspend_always>;
+
 template<typename Func>
 concept task_callable_concept = task_concept<toolpex::get_return_type_t<Func>>;
+
+template<typename Func>
+concept emitter_task_callable_concept = 
+    task_callable_concept<Func> 
+    and emitter_task_concept<toolpex::get_return_type_t<Func>>;
 
 KOIOS_NAMESPACE_END
 

@@ -31,6 +31,24 @@ auto identity(auto arg) -> task<decltype(arg)>
     co_return arg;
 }
 
+template<typename Func, typename... Args>
+requires (
+    task_callable_concept<Func> 
+    and !emitter_task_callable_concept<Func>)
+auto make_emitter(Func&& f, Args&&... args) 
+    -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
+{
+    co_return co_await ::std::forward<Func>(f)(::std::forward<Args>(args)...);
+}
+
+template<typename Func, typename... Args>
+requires (emitter_task_callable_concept<Func>)
+auto make_emitter(Func&& f, Args&&... args)
+    -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
+{
+    return ::std::forward<Func>(f)(::std::forward<Args>(args)...);
+}
+
 KOIOS_NAMESPACE_END
 
 #endif

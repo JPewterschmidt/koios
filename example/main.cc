@@ -39,7 +39,7 @@ emitter_task<> func2()
     co_return;
 }
 
-task<int> emitter(int i = 1)
+emitter_task<int> emitter(int i = 1)
 {
     co_await func();
     co_await make_emitter(func);
@@ -50,9 +50,12 @@ task<int> emitter(int i = 1)
 int main()
 try
 {
-    runtime_init(4);
-    ::std::cout << make_emitter(emitter, 2).result() << ::std::endl;
-    runtime_exit();
+    ::std::function<emitter_task<int>(int)> func = emitter;
+    ::std::cout << emitter_task_callable_concept<decltype(func)> << ::std::endl;
+    ::std::cout << task_callable_concept<decltype(func)> << ::std::endl;
+    ::std::cout << emitter_task_concept<toolpex::get_return_type_t<decltype(func)>> << ::std::endl;
+    ::std::cout << task_concept<toolpex::get_return_type_t<decltype(func)>> << ::std::endl;
+    
     return 0;
 }
 catch (const ::std::exception& e)

@@ -39,7 +39,7 @@ emitter_task<> func2()
     co_return;
 }
 
-task<int> emitter(int i = 1)
+emitter_task<int> emitter(int i = 1)
 {
     co_await func();
     co_await make_emitter(func);
@@ -51,8 +51,11 @@ int main()
 try
 {
     runtime_init(4);
-    ::std::cout << make_emitter(emitter, 2).result() << ::std::endl;
+
+    ::std::cout << emitter().result() << ::std::endl;
+
     runtime_exit();
+    
     return 0;
 }
 catch (const ::std::exception& e)

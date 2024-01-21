@@ -57,30 +57,6 @@ tcp_server(toolpex::ip_address::ptr addr,
 {
 }
 
-task<void> 
-tcp_server::
-start(::std::function<task<void>(toolpex::unique_posix_fd)> aw)
-{
-    bool expected{ true };
-    if (!m_stop.compare_exchange_strong(expected, false))
-        co_return;
-
-    m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
-    this->listen();
-    ::std::lock_guard lk{ m_futures_lock };
-    const auto& attrs = koios::get_task_scheduler().consumer_attrs();
-    for (const auto& attr : attrs)
-    {
-        m_futures.emplace_back(
-            tcp_loop(m_stop_src.get_token(), aw).run_and_get_future(*attr)
-        );
-    }
-
-    using namespace ::std::chrono_literals;
-    co_await koios::this_task::sleep_for(500ms);
-    co_return;
-}
-
 void
 tcp_server::
 until_stop_blk()
@@ -90,31 +66,6 @@ until_stop_blk()
     {
         f.get();
     }
-}
-
-emitter_task<void> 
-tcp_server::
-tcp_loop(
-    ::std::stop_token flag, 
-    ::std::function<
-        task<void>(toolpex::unique_posix_fd fd)
-    > userdefined)
-{
-    using namespace ::std::string_literals;
-
-    assert(flag.stop_possible());
-    //koios::log_debug(
-    //    "tcp_server start! ip: "s 
-    //    + m_addr->to_string() 
-    //    + ", port: "s 
-    //    + ::std::to_string(m_port)
-    //);
-    while (!flag.stop_requested())
-    {
-        auto accret = co_await uring::accept(m_sockfd);
-        userdefined(accret.get_client()).run();
-    }
-    co_return;
 }
 
 void tcp_server::listen()

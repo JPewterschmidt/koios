@@ -21,8 +21,10 @@
 
 #include "koios/macros.h"
 #include "koios/task.h"
+#include "koios/this_task.h"
+#include "koios/functional.h"
 #include "toolpex/ipaddress.h"
-#include "koios/iouring_socket_aw.h"
+#include "koios/iouring_awaitables.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
@@ -55,7 +57,34 @@ public:
     {
     }
 
-    task<void> start(::std::function<task<void>(toolpex::unique_posix_fd)> aw);
+    /*! \brief  Make the tcp server start working
+     *
+     *  \param  callback a copyable callable object, 
+     *          receive a `toolpex::unique_posix_fd` 
+     *          as it's unique parameter.
+     */
+    task<void> start(task_callable_concept auto callback)
+    {
+        bool expected{ true };
+        if (!m_stop.compare_exchange_strong(expected, false))
+            co_return;
+
+        m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
+        this->listen();
+        ::std::lock_guard lk{ m_futures_lock };
+        const auto& attrs = koios::get_task_scheduler().consumer_attrs();
+        for (const auto& attr : attrs)
+        {
+            m_futures.emplace_back(
+                tcp_loop(m_stop_src.get_token(), callback).run_and_get_future(*attr)
+            );
+        }
+
+        using namespace ::std::chrono_literals;
+        co_await koios::this_task::sleep_for(500ms);
+        co_return;
+    }
+
     void stop();
     void until_stop_blk();
     bool is_stop() const { return m_stop.load(); }
@@ -65,7 +94,18 @@ private:
     friend class tcp_server_until_done_aw;
     emitter_task<void> tcp_loop(
         ::std::stop_token flag, 
-        ::std::function<task<void>(toolpex::unique_posix_fd)> userdefined);
+        task_callable_concept auto userdefined)
+    {
+        using namespace ::std::string_literals;
+
+        assert(flag.stop_possible());
+        while (!flag.stop_requested())
+        {
+            auto accret = co_await uring::accept(m_sockfd);
+            make_emitter(userdefined, accret.get_client()).run();
+        }
+        co_return;
+    }
 
     void listen();
     void add_waiting(task_on_the_fly h)

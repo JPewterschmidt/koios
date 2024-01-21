@@ -9,7 +9,7 @@ namespace
     tcp_server* sp{};
     ::std::atomic_bool flag{ false };
 
-    task<void> tcp_server_app(toolpex::unique_posix_fd client)
+    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client)
     {
         auto [addr, port] = toolpex::ip_address::getpeername(client);
 
@@ -51,14 +51,11 @@ namespace
         tcp_server server("::1"_ip, 8890);
         co_await server.start(tcp_server_app);
         sp = &server;
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
+
+        for (size_t i{}; i < 20; ++i)
+            co_await client_app();
 
         co_await server.until_stop_async();
-        
         co_return flag;
     }
 }

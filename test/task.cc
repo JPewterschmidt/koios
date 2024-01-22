@@ -101,12 +101,29 @@ TEST(task, exception)
 
 namespace
 {
+    ::std::error_code ec{ EINVAL, ::std::system_category() };
+
+    expected_task<void, ::std::error_code> expvoid_succeed()
+    {
+        co_return ok();
+    }
+
+    expected_task<void, ::std::error_code> expvoid_failed()
+    {
+        co_return unexpected(ec);
+    }
+
+    emitter_task<bool> emitter_void()
+    {
+        auto ret1 = co_await expvoid_succeed();
+        auto ret2 = co_await expvoid_failed();
+        co_return ret1.has_value() && !ret2.has_value();
+    }
+
     expected_task<int, ::std::error_code> exp(int i = 0)
     {
         co_return i + 1;
     }
-
-    ::std::error_code ec{ EINVAL, ::std::system_category() };
 
     expected_task<int, ::std::error_code> exp2(int)
     {
@@ -118,7 +135,7 @@ namespace
         bool result{ true };
 
         auto ret = co_await (co_await exp()).and_then(exp);
-        result &= (ret == 2);
+        result &= (ret.value() == 2);
         
         co_return result;
     }
@@ -139,6 +156,7 @@ namespace
 TEST(expected_task, basic)
 {
     ASSERT_TRUE(emit_exp_basic().result());
+    ASSERT_TRUE(emitter_void().result());
 }
 
 TEST(expected_task, failed)

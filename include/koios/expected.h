@@ -25,6 +25,7 @@
 #include "koios/task_concepts.h"
 #include "toolpex/concepts_and_traits.h"
 #include <variant>
+#include <optional>
 
 KOIOS_NAMESPACE_BEG
 
@@ -34,36 +35,92 @@ requires(::std::is_nothrow_move_constructible_v<Err>
 class unexpected_t;
 
 constexpr enum class unexpected_tag_t{} unexpected_tag{};
+constexpr enum class expected_tag_t{} expected_tag{};
 
 template<typename T, typename Err>
-requires (!toolpex::is_specialization_of<T, unexpected_t>)
-class expected
+class expected_base
 {
 public:
     using value_type = T;
     using error_type = Err;
 
+    template<typename... Args>
+    constexpr expected_base(Args&&... args)
+        : m_storage(::std::forward<Args>(args)...)
+    {
+    }
+
+    constexpr bool has_value() const noexcept { return m_storage.index() == 0; }
+
+    error_type& error() { return get<1>(m_storage); }
+    value_type& value() { return get<0>(m_storage); }
+
+private:
+    ::std::variant<value_type, error_type> m_storage;
+};
+
+template<typename Err>
+class expected_base<void, Err>
+{
 public:
-    constexpr expected(value_type val)
-        : m_storage(::std::in_place_index_t<0>{}, ::std::move(val))
+    using value_type = void;
+    using error_type = Err;
+
+    constexpr expected_base(::std::in_place_index_t<0>) noexcept 
+    {
+    }
+
+    constexpr expected_base(::std::in_place_index_t<1>, error_type err) noexcept 
+        : m_err{ ::std::move(err) }
+    {
+    }
+
+    constexpr bool has_value() const noexcept { return !m_err; }
+
+    error_type& error()
+    {
+        if (m_err) return *m_err;
+        throw ::std::bad_variant_access{};
+    }
+
+    void value()
+    {
+        if (m_err) [[unlikely]] throw ::std::bad_variant_access{};
+    }
+
+private:
+    ::std::optional<error_type> m_err;
+};
+
+template<typename T, typename Err>
+requires (!toolpex::is_specialization_of<T, unexpected_t>)
+class expected : public expected_base<T, Err>
+{
+public:
+    using value_type = T;
+    using error_type = Err;
+
+private:
+    using base_type = expected_base<T, Err>;
+
+public:
+    template<typename Val>
+    requires (::std::convertible_to<Val, value_type> or ::std::constructible_from<value_type, Val>)
+    constexpr expected(Val&& val)
+        : base_type(::std::in_place_index_t<0>{}, ::std::forward<Val>(val))
     {
     }
 
     template<typename... Args>
     expected(unexpected_tag_t, Args&&... args) 
         noexcept(::std::is_nothrow_constructible_v<Err>)
-        : m_storage(::std::in_place_index_t<1>{}, ::std::forward<Args>(args)...)
+        : base_type(::std::in_place_index_t<1>{}, ::std::forward<Args>(args)...)
     {
     }
 
-    constexpr bool has_value() const noexcept { return m_storage.index() == 0; }
-    value_type& value() noexcept { return get<0>(m_storage); }
-    error_type& error() noexcept { return get<1>(m_storage); }
-
-    operator value_type&() 
-    { 
-        if (has_value()) [[likely]] return value(); 
-        throw koios::expected_exception{KOIOS_EXPECTED_NOTHING_TO_GET};
+    expected(expected_tag_t) noexcept
+        : base_type(::std::in_place_index_t<0>{})
+    {
     }
 
     auto and_then(expected_callable_concept auto f)
@@ -72,26 +129,30 @@ public:
         using functor_type = decltype(f);
         using functor_return_type = toolpex::get_return_type_t<functor_type>;
 
-        if (has_value())
+        if (this->has_value())
         {
-            return f(::std::move(value()));
+            if constexpr (!is_return_void())
+                return f(::std::move(this->value()));
+            else return f();
         }
 
         if constexpr (regular_expected_like_concept<functor_return_type>)
         {
-            return {unexpected_tag, ::std::move(error())};
+            return {unexpected_tag, ::std::move(this->error())};
         }
         else if constexpr (expected_like_astask_concept<functor_return_type>)
         {
             return koios::identity(typename functor_return_type::value_type{
-                unexpected_tag, ::std::move(error())
+                unexpected_tag, ::std::move(this->error())
             });
         }
         else toolpex::not_implemented();
     }
 
-private:
-    ::std::variant<value_type, error_type> m_storage;
+    static consteval bool is_return_void() 
+    {
+        return ::std::same_as<void, value_type>;
+    }
 };
 
 template<typename Err>
@@ -123,11 +184,26 @@ private:
     error_type m_err;
 };
 
+class expected_void_t
+{
+public:
+    template<typename Err>
+    operator expected<void, Err>()
+    {
+        return { expected_tag };
+    }
+};
+
 auto unexpected(auto&& arg)
 {
     return unexpected_t<::std::remove_reference_t<decltype(arg)>>{ 
         ::std::forward<decltype(arg)>(arg)
     };
+}
+
+inline auto ok()
+{
+    return expected_void_t{};
 }
 
 template<typename T, typename Err, driver_policy_concept D = run_this_async, typename InitialSuspendAw = eager_aw>

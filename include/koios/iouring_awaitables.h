@@ -32,6 +32,7 @@
 #include "koios/iouring_unlink_aw.h"
 #include "koios/iouring_write_aw.h"
 #include "koios/iouring_connect_aw.h"
+#include "koios/exceptions.h"
 
 #include "koios/task.h"
 #include "toolpex/ipaddress.h"
@@ -44,9 +45,14 @@ namespace koios::uring
                   bool reuse_port = true, bool reuse_addr = true,
                   unsigned int flags = 0);
 
-    ::koios::task<::std::error_code>
+    ::koios::task<>
     append_all(const toolpex::unique_posix_fd& fd, 
-              ::std::span<const ::std::byte> buffer) noexcept;
+              ::std::span<const ::std::byte> buffer);
+
+    ::koios::task<>
+    append_all(const toolpex::unique_posix_fd& fd, 
+              ::std::span<const ::std::byte> buffer, 
+              ::std::error_code& ec_out) noexcept;
 }
 
 #endif

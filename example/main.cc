@@ -48,12 +48,33 @@ emitter_task<int> emitter(int i = 1)
     co_return i;
 }
 
+namespace
+{
+    bool hascopyed{ false };
+    class lifetime
+    {
+    public:
+        lifetime() = default;
+        lifetime(const lifetime&) { hascopyed = true; }
+        lifetime& operator= (const lifetime&) { hascopyed = true; return *this; }
+        lifetime(lifetime&&) noexcept { ::std::cout << "ok" << ::std::endl; }
+        lifetime& operator=(lifetime&&) noexcept { ::std::cout << "ok" << ::std::endl; return *this; }
+    };
+    
+    task<lifetime> should_not_copy()
+    {
+        lifetime ret;
+        co_return ret;
+    }
+}
+
 int main()
 try
 {
     runtime_init(4);
 
-    ::std::cout << emitter().result() << ::std::endl;
+    (void)should_not_copy().result();
+    ::std::cout << hascopyed << ::std::endl;
 
     runtime_exit();
     

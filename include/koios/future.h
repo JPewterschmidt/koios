@@ -65,10 +65,10 @@ namespace fp_detials
     class promise_storage : public promise_storage_base
     {
     public:
-        template<typename T>
-        void construct(T&& val)
+        template<typename... Args>
+        void construct(Args&&... val)
         {
-            new (this->value_buffer_ptr()) Ret(::std::forward<T>(val));
+            new (this->value_buffer_ptr()) Ret(::std::forward<Args>(val)...);
         }
 
         void destruct()
@@ -133,10 +133,10 @@ namespace fp_detials
     class promise_impl_base : protected storage_deliver<T>
     {
     public:
-        template<typename TT>
-        void set_value(TT&& val) 
+        template<typename... Args>
+        void set_value(Args&&... val) 
         {
-            this->storage()->construct(::std::forward<T>(val));
+            this->storage()->construct(::std::forward<Args>(val)...);
             this->send();
         }
     };

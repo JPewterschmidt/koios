@@ -32,8 +32,9 @@ init_helper(::std::string_view path, int flags)
 }
 
 unlink::unlink(::std::filesystem::path path, int flags)
-    : iouring_aw{ init_helper(path.string(), flags) }
+    : m_path_str{ path.string() }
 {
+    static_cast<iouring_aw&>(*this) = iouring_aw{ init_helper(m_path_str, flags) };
 }
 
 } // namespace koios::uring

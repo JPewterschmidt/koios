@@ -31,6 +31,9 @@ namespace koios::uring
     {
     public:
         unlink(::std::filesystem::path path, int flags = 0);
+
+    private:
+        ::std::string m_path_str;
     };
 }
 

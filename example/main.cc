@@ -26,6 +26,9 @@
 
 #include "koios/unique_file_state.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 using namespace koios;
 using namespace ::std::chrono_literals;
 
@@ -41,9 +44,7 @@ emitter_task<> func2()
 
 emitter_task<int> emitter(int i = 1)
 {
-    co_await func();
-    co_await make_emitter(func);
-    co_await make_emitter(func2);
+
     co_return i;
 }
 

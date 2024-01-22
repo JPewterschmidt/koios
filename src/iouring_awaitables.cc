@@ -54,12 +54,23 @@ namespace koios::uring
         co_return sockfd;
     }
 
-    ::koios::task<::std::error_code>
+    ::koios::task<>
     append_all(const toolpex::unique_posix_fd& fd, 
-              ::std::span<const ::std::byte> buffer) noexcept
-    try 
+              ::std::span<const ::std::byte> buffer)
     {
-        ::std::error_code result;
+        ::std::error_code ec;
+        co_await append_all(fd, buffer, ec);
+        if (ec) [[unlikely]]
+        {
+            throw uring_exception(ec);
+        }
+    }
+
+    ::koios::task<>
+    append_all(const toolpex::unique_posix_fd& fd, 
+              ::std::span<const ::std::byte> buffer, 
+              ::std::error_code& result) noexcept
+    {
         ::std::span<const ::std::byte> left = buffer;
 
         while (!left.empty())
@@ -68,15 +79,5 @@ namespace koios::uring
             if ((result = ret.error_code())) break;
             left = left.subspan(ret.nbytes_delivered());
         }
-
-        co_return result;
-    }
-    catch (const koios::exception& e)
-    {
-        co_return e.error_code();
-    }
-    catch (...)
-    {
-        co_return { KOIOS_EXCEPTION_CATCHED, koios_category() };
     }
 }

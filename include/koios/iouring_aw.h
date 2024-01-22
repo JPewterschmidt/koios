@@ -33,7 +33,12 @@ namespace koios::uring
     class iouring_aw
     {
     public:
+        iouring_aw() noexcept = default;
         iouring_aw(::io_uring_sqe sqe);
+
+        iouring_aw(iouring_aw&&) noexcept = default;
+        iouring_aw& operator=(iouring_aw&&) noexcept = default;
+
         constexpr bool await_ready() const noexcept { return false; }
         
         void await_suspend(task_on_the_fly h);

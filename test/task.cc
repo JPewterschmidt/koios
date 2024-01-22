@@ -20,7 +20,8 @@ namespace
 
     task<int> for_basic_test2()
     {
-        co_return 2;
+        const int i = 2;
+        co_return i;
     }
 
     task<int&> for_basic_test3()
@@ -163,4 +164,30 @@ TEST(expected_task, failed)
 {
     ASSERT_TRUE(emit_failed_exp().result());
     ASSERT_FALSE(emit_failed_exp_hasvalue().result());
+}
+
+namespace
+{
+    bool hascopyed{ false };
+    class lifetime
+    {
+    public:
+        lifetime() = default;
+        lifetime(const lifetime&) { hascopyed = true; }
+        lifetime& operator= (const lifetime&) { hascopyed = true; return *this; }
+        lifetime(lifetime&&) noexcept = default;
+        lifetime& operator=(lifetime&&) noexcept = default;
+    };
+    
+    task<lifetime> should_not_copy()
+    {
+        lifetime ret;
+        co_return ret;
+    }
+}
+
+TEST(task, should_not_copy_ret)
+{
+    (void)should_not_copy().result();
+    ASSERT_FALSE(hascopyed);
 }

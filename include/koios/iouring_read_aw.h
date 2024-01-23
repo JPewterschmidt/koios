@@ -37,7 +37,7 @@ namespace uring
     {
     public:
         read(const toolpex::unique_posix_fd& fd, 
-             ::std::span<unsigned char> buffer, 
+             ::std::span<::std::byte> buffer, 
              uint64_t offset = 0);
     };
 }

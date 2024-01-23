@@ -24,7 +24,7 @@ namespace koios::uring {
 
 static ::io_uring_sqe 
 init_helper(const toolpex::unique_posix_fd& fd, 
-            ::std::span<unsigned char> buffer, 
+            ::std::span<::std::byte> buffer, 
             uint64_t offset = 0)
 {
     ::io_uring_sqe result{};
@@ -38,7 +38,7 @@ init_helper(const toolpex::unique_posix_fd& fd,
 }
 
 read::read(const toolpex::unique_posix_fd& fd, 
-           ::std::span<unsigned char> buffer, 
+           ::std::span<::std::byte> buffer, 
            uint64_t offset)
     : detials::iouring_aw_for_data_deliver(init_helper(fd, buffer, offset))
 {

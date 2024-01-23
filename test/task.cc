@@ -188,6 +188,40 @@ namespace
 
 TEST(task, should_not_copy_ret)
 {
+    hascopyed = false;
     (void)should_not_copy().result();
     ASSERT_FALSE(hascopyed);
+}
+
+namespace
+{
+    task<int> when_all1()
+    {
+        co_return 1;
+    }
+
+    task<double> when_all2()
+    {
+        co_return 1.0;
+    }
+
+    task<lifetime> when_all3()
+    {
+        lifetime ret;
+        co_return ret;
+    }
+
+    emitter_task<bool> emit_when_all_tests()
+    {
+        auto [i, d, f] = co_await when_all(when_all1(), when_all2(), when_all3());
+        (void)i;
+        (void)d;
+        (void)f;
+        co_return hascopyed;
+    }
+}
+
+TEST(task, when_all)
+{
+    ASSERT_FALSE(emit_when_all_tests().result());
 }

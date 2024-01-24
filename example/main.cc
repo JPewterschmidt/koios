@@ -36,47 +36,34 @@ using namespace ::std::string_view_literals;
 
 namespace
 {
+bool success1{};
+bool success2{};
 
-::std::string g_file_name{ "testfile_for_iouring.txt" };
-task<toolpex::unique_posix_fd> create_file()
+emitter_task<> dummy()
 {
-    toolpex::errret_thrower et;
-    co_return et << ::creat(g_file_name.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    co_return;
 }
 
-task<toolpex::unique_posix_fd> open_file()
+class loop_for_test : public user_event_loop
 {
-    toolpex::errret_thrower et;
-    co_return et << ::open(g_file_name.c_str(), O_RDWR);
-}
+public:
+    void thread_specific_preparation(const per_consumer_attr& attr) noexcept override 
+    { 
+        success1 = true;
+    }
+    void stop() noexcept override { }
+    void quick_stop() noexcept override { }
+    void until_done() override { }
+    ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept override 
+    { 
+        return 1000ms;
+    }
 
-task<> delete_file()
-{
-    co_await uring::unlink(g_file_name);
-}
-
-task<bool> append_all_test()
-{
-    auto content = "123456789"sv;
-    ::std::array<char, 5> buffer{};
-
-    co_await delete_file();
-    auto fd = co_await create_file();
-    
-    co_await uring::append_all(fd, content);
-
-    ::std::error_code ec;
-    co_await uring::append_all(fd, content, ec);
-    if (ec) co_return false;
-
-    fd.close();
-    fd = co_await open_file();
-
-    co_await uring::read(fd, ::std::as_writable_bytes(::std::span{ buffer }));
-    fd.close();
-    co_await delete_file();
-    co_return ::std::ranges::equal(buffer, content.substr(0, 5));
-}
+    void do_occured_nonblk() noexcept override
+	{
+        success2 = true;
+	}
+};
 
 } // annoymous namespace
 
@@ -84,10 +71,11 @@ int main()
 try
 {
     runtime_init(4);
-
-    ::std::cout << append_all_test().result() << ::std::endl;
-
+    get_task_scheduler().as_loop<user_event_loops>().add_loop(::std::make_unique<loop_for_test>());
+    dummy().result();
     runtime_exit();
+
+    ::std::cout << success1 << success2;
     
     return 0;
 }

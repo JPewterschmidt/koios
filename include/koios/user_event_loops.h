@@ -8,6 +8,8 @@
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
+#include <unordered_map>
+#include <thread>
 
 KOIOS_NAMESPACE_BEG
 
@@ -37,11 +39,10 @@ public:
     void add_loop(user_event_loop::uptr loop);
 
 private:
+    ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;
     ::std::vector<user_event_loop::uptr> m_loops;
     mutable ::std::shared_mutex m_mutex;
-    bool m_after_ts_prep{ false };
 };
-
 KOIOS_NAMESPACE_END
 
 #endif

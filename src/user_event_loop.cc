@@ -6,11 +6,11 @@ KOIOS_NAMESPACE_BEG
 void user_event_loops::thread_specific_preparation(const per_consumer_attr& attr) noexcept
 {
     ::std::unique_lock lk{ m_mutex };
+    m_attrs.insert({ attr.thread_id, &attr });
     for (auto& loop : m_loops)
     {
         loop->thread_specific_preparation(attr);
     }
-    m_after_ts_prep = true;
 }
 
 void user_event_loops::stop() noexcept
@@ -64,8 +64,8 @@ void user_event_loops::do_occured_nonblk() noexcept
 void user_event_loops::add_loop(user_event_loop::uptr loop)
 {
     ::std::unique_lock lk{ m_mutex };
-    assert(!m_after_ts_prep && !!loop);
-    m_loops.push_back(::std::move(loop));
+    loop->thread_specific_preparation(*m_attrs[::std::this_thread::get_id()]);
+    m_loops.emplace_back(::std::move(loop));
 }
 
 KOIOS_NAMESPACE_END

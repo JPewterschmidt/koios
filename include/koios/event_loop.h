@@ -77,6 +77,12 @@ public:
         SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
+    template<typename Loop>
+    auto& as_loop()
+    {
+        return static_cast<Loop&>(*this);
+    }
+
     /*! \brief  Stop receiving any other event
      *  
      *  And call this function would stop all the sub eventloop working.

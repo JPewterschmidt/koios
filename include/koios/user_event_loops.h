@@ -16,7 +16,7 @@ KOIOS_NAMESPACE_BEG
 class user_event_loop
 {
 public:
-    using uptr = ::std::unique_ptr<user_event_loop>;
+    using sptr = ::std::shared_ptr<user_event_loop>;
 
 public:
     virtual void thread_specific_preparation(const per_consumer_attr& attr) noexcept = 0;
@@ -36,11 +36,11 @@ public:
     void until_done();
     ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept;
     void do_occured_nonblk() noexcept;
-    void add_loop(user_event_loop::uptr loop);
+    void add_loop(user_event_loop::sptr loop);
 
 private:
     ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;
-    ::std::vector<user_event_loop::uptr> m_loops;
+    ::std::vector<user_event_loop::sptr> m_loops;
     mutable ::std::shared_mutex m_mutex;
 };
 KOIOS_NAMESPACE_END

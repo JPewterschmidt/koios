@@ -85,7 +85,7 @@ public:
 
 TEST(event_loop, user_event_loop)
 {
-    get_task_scheduler().as_loop<user_event_loops>().add_loop(::std::make_unique<loop_for_test>());
+    get_task_scheduler().as_loop<user_event_loops>().add_loop(::std::make_shared<loop_for_test>());
     dummy().result();
     ASSERT_TRUE(success1 && success2);
 }

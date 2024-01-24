@@ -147,6 +147,11 @@ public:
         m_cond.notify_one();
     }
 
+    bool is_cleaning() const noexcept
+    {
+        return m_stop_now.load();
+    }
+
     /*! \brief Wake up all sleeping threads and join all threads.
      * 
      *  The awakened thread will not go to sleep again, 

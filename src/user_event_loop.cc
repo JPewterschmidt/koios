@@ -61,7 +61,7 @@ void user_event_loops::do_occured_nonblk() noexcept
     }
 }
 
-void user_event_loops::add_loop(user_event_loop::uptr loop)
+void user_event_loops::add_loop(user_event_loop::sptr loop)
 {
     ::std::unique_lock lk{ m_mutex };
     loop->thread_specific_preparation(*m_attrs[::std::this_thread::get_id()]);

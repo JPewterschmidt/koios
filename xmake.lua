@@ -24,6 +24,15 @@ set_languages("c++2b", "c17")
 set_policy("build.warning", true)
 set_policy("build.optimization.lto", false)
 
+if not is_mode("release") then
+    add_cxxflags("-DKOIOS_DEBUG", {force = true})
+end
+
+if is_mode("asan") then
+    add_cxxflags("-fno-inline", {force = true})
+    set_optimize("none", {force = true})
+end
+
 target("koios")
     set_kind("shared")
     add_deps("toolpex")
@@ -33,9 +42,6 @@ target("koios")
         "concurrentqueue", 
         "botan"
     )
-    if not is_mode("release") then
-        add_cxxflags("-DKOIOS_DEBUG", {force = true})
-    end
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })
     add_syslinks(

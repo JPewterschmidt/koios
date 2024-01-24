@@ -26,6 +26,7 @@
 #include "koios/event_loop.h"
 #include "koios/timer.h"
 #include "koios/iouring.h"
+#include "koios/user_event_loops.h"
 
 #include <memory>
 #include <source_location>
@@ -34,7 +35,8 @@ KOIOS_NAMESPACE_BEG
 
 using event_loop_t = event_loop<
     timer_event_loop, 
-    iouring_event_loop
+    iouring_event_loop, 
+    user_event_loops
 >;
 
 ::std::unique_ptr<task_scheduler>& 

@@ -75,8 +75,11 @@ template<
     typename Discardable, 
     typename InitialSuspendAw>
 class _task<T, DriverPolicy, Discardable, InitialSuspendAw>::_type 
-    : public get_result_aw<T, _task<T, DriverPolicy, Discardable, InitialSuspendAw>::_type, DriverPolicy>
+    : public get_result_aw<T, _type, DriverPolicy>
 {
+private:
+    using get_result_aw_type = get_result_aw<T, _type, DriverPolicy>;
+
 public:
     using value_type = T;
     using future_type = koios::future<value_type>;
@@ -106,17 +109,17 @@ public:
 
 protected:
     _type(promise_type& p)
-        : get_result_aw<T, _type, DriverPolicy>(p),
+        : get_result_aw_type(p),
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
           m_std_promise_p{ p.get_std_promise_pointer() }
     {
-        if (is_eager()) m_coro_handle.give_up_ownership();
+        if constexpr (is_eager()) m_coro_handle.give_up_ownership();
     }
 
 public:
     /*! Of course move constructor will move the ownership of the handler. */
     _type(_type&& other) noexcept
-        : get_result_aw<T, _task<T, DriverPolicy, Discardable, initial_suspend_type>::_type, DriverPolicy>(::std::move(other)),
+        : get_result_aw_type(::std::move(other)),
           m_coro_handle{ ::std::move(other.m_coro_handle) }
     {
     }
@@ -171,8 +174,15 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if (!is_eager() && !this->future().ready())
-            schr.enqueue(get_handler_to_schedule());
+        if constexpr (!is_eager())
+        {
+            if (!this->future().ready())
+            {   
+                auto h = get_handler_to_schedule();
+                [[assume(bool(h))]];
+                schr.enqueue(::std::move(h));
+            }
+        }
     }
 
     void 
@@ -181,8 +191,15 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if (!is_eager() && !this->future().ready())
-            schr.enqueue(attr, get_handler_to_schedule());
+        if constexpr (!is_eager())
+        {
+            if (!this->future().ready())
+            {   
+                auto h = get_handler_to_schedule();
+                [[assume(bool(h))]];
+                schr.enqueue(attr, ::std::move(h));
+            }
+        }
     }
 
     /*! \brief Run the task.
@@ -208,9 +225,14 @@ public:
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if (!has_scheduled() && !is_eager() && !result.ready())
-        {   
-            schr.enqueue(get_handler_to_schedule());
+        if constexpr (!is_eager())
+        {
+            if (!has_scheduled() && !result.ready())
+            {   
+                auto h = get_handler_to_schedule();
+                [[assume(bool(h))]];
+                schr.enqueue(::std::move(h));
+            }
         }
         return result;
     }
@@ -219,9 +241,14 @@ public:
         const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if (!has_scheduled() && !is_eager() && !result.ready())
-        {   
-            schr.enqueue(attr, get_handler_to_schedule());
+        if constexpr (!is_eager())
+        {
+            if (!has_scheduled() && !result.ready())
+            {   
+                auto h = get_handler_to_schedule();
+                [[assume(bool(h))]];
+                schr.enqueue(attr, ::std::move(h));
+            }
         }
         return result;
     }
@@ -285,8 +312,10 @@ private:
      */
     [[nodiscard]] future_type get_future()
     {
-        if (!is_eager() && has_scheduled())
-            throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
+        if constexpr (!is_eager())
+        {
+            if (has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
+        }
 
         return get_result_aw<T, _type, DriverPolicy>::get_future();
     }

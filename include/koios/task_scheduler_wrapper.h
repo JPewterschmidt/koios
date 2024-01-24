@@ -67,6 +67,7 @@ private:
         {
             return +[](void* schr, const per_consumer_attr* attr, task_on_the_fly h) mutable noexcept
             {
+                [[assume(bool(h))]];
                 if (attr == nullptr)
                     static_cast<Schr*>(schr)->enqueue(::std::move(h));
                 else static_cast<Schr*>(schr)->enqueue(*attr, ::std::move(h));
@@ -76,6 +77,7 @@ private:
         {
             return +[](void* schr, [[maybe_unused]] const per_consumer_attr*, task_on_the_fly h) mutable noexcept
             {
+                [[assume(bool(h))]];
                 static_cast<Schr*>(schr)->enqueue(::std::move(h));
             };
         }
@@ -90,12 +92,12 @@ public:
      */
     void enqueue(task_on_the_fly h) const
     {
-        m_enqueue_impl(m_schr, nullptr, ::std::move(h));
+        if (h) m_enqueue_impl(m_schr, nullptr, ::std::move(h));
     }
 
     void enqueue(const per_consumer_attr& attr, task_on_the_fly h) const
     {
-        m_enqueue_impl(m_schr, &attr, ::std::move(h));
+        if (h) m_enqueue_impl(m_schr, &attr, ::std::move(h));
     }
 
 private:

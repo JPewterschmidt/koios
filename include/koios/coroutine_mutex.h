@@ -98,7 +98,11 @@ struct waiting_handle
 class mutex : public toolpex::move_only
 {
 public:
-    /*! \brief  Acquire the ownership of the mutex (asynchronous)*/
+    /*! \brief  Acquire the ownership of the mutex (asynchronous)
+     *
+     *  Due to the underlying mutex may throw an exception when lock it, 
+     *  We didn't mark this function as noexcept.
+     */
     acq_lk_aw acquire() { return { *this }; }
 
 private:
@@ -107,6 +111,12 @@ private:
 
     // reentrant
     void try_wake_up_next() noexcept;
+
+    /*! \brief  Try to acquire the ownership.
+     *
+     *  Due to the underlying mutex may throw an exception when lock it, 
+     *  We didn't mark this function as noexcept.
+     */
     bool hold_this_immediately();
     void add_waiting(task_on_the_fly t);
     void release();

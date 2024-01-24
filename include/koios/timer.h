@@ -177,7 +177,7 @@ public:
         ::std::unique_lock lk{ m_ptrs_lock };
         m_impl_ptrs.insert({
             attr.thread_id, 
-            ::std::make_shared<timer_event_loop_impl>()
+            ::std::make_unique<timer_event_loop_impl>()
         });
     }
 
@@ -187,15 +187,15 @@ public:
 private:
     ::std::pair<
         ::std::shared_lock<::std::shared_mutex>, 
-        ::std::shared_ptr<timer_event_loop_impl>> 
+        timer_event_loop_impl*> 
     cur_thread_ptr()
     {
         ::std::shared_lock lk{ m_ptrs_lock };
         auto id = ::std::this_thread::get_id();
-        auto ptr = m_impl_ptrs[id];
+        auto* ptr = m_impl_ptrs[id].get();
         if (!m_impl_ptrs.contains(id))
         {
-            ptr = m_impl_ptrs.begin()->second;
+            ptr = m_impl_ptrs.begin()->second.get();
         }
         return { ::std::move(lk), ptr };
     }
@@ -203,7 +203,7 @@ private:
 private:    
     ::std::unordered_map<
         ::std::thread::id, 
-        ::std::shared_ptr<timer_event_loop_impl>
+        ::std::unique_ptr<timer_event_loop_impl>
     > m_impl_ptrs;
     mutable ::std::shared_mutex m_ptrs_lock;
 };

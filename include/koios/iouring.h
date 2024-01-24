@@ -143,7 +143,7 @@ private:
 private:
     ::std::unordered_map<
         ::std::thread::id, 
-        ::std::shared_ptr<iel_detials::iouring_event_loop_perthr>
+        ::std::unique_ptr<iel_detials::iouring_event_loop_perthr>
     > m_impls;
     bool m_cleaning{ false };
     mutable ::std::shared_mutex m_impls_lock;

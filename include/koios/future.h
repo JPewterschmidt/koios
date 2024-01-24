@@ -204,7 +204,7 @@ namespace fp_detials
         auto get()
         {
             auto lk = get_unique_lock();
-            if (!m_storage_ptr) 
+            if (!ready_nolock()) 
                 m_cond.wait(lk, [this]{ return ready_nolock(); });
 
             return get_nonblk(::std::move(lk));
@@ -212,9 +212,10 @@ namespace fp_detials
 
         auto get_nonblk()
         {
-            if (!m_storage_ptr) [[unlikely]]
+            auto lk = get_unique_lock();
+            if (!ready_nolock()) [[unlikely]]
                 throw koios::future_exception{};
-            return get_nonblk(get_unique_lock());
+            return get_nonblk(::std::move(lk));
         }
 
     private:

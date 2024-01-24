@@ -23,6 +23,7 @@
 #include "koios/task.h"
 #include "koios/task_concepts.h"
 #include <concepts>
+#include <tuple>
 
 KOIOS_NAMESPACE_BEG
 
@@ -47,6 +48,13 @@ auto make_emitter(Func&& f, Args&&... args)
     -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
     return ::std::forward<Func>(f)(::std::forward<Args>(args)...);
+}
+
+template<awaitible_concept... Aws>
+auto when_all(Aws&&... aws)
+    -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
+{
+    co_return ::std::make_tuple((co_await aws)...);
 }
 
 KOIOS_NAMESPACE_END

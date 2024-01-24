@@ -60,6 +60,47 @@ void runtime_reload(size_t numthr, manually_stop_type);
 ::std::unique_ptr<task_scheduler> 
 exchange_task_scheduler(::std::unique_ptr<task_scheduler> other);
 
+class runtime_handler
+{
+public:
+    runtime_handler(size_t numthr)
+    {
+        runtime_init(numthr);
+    }
+
+    runtime_handler(size_t numthr, manually_stop_type)
+    {
+        runtime_init(numthr, manually_stop);
+    }
+
+    runtime_handler(runtime_handler&& other) noexcept
+        : enabled{ other.exchange_ownership() }
+    {
+    }
+
+    runtime_handler& operator = (runtime_handler&& other) noexcept
+    {
+        enabled = other.exchange_ownership();
+        return *this;
+    }
+
+    int runtime_exit()
+    {
+        if (enabled) return koios::runtime_exit();
+        return 0;
+    }
+
+    ~runtime_handler() noexcept 
+    { 
+        (void)runtime_exit(); 
+        (void)exchange_ownership();
+    }
+
+private:
+    bool exchange_ownership() noexcept { return ::std::exchange(enabled, false); }
+    bool enabled{ true };
+};
+
 KOIOS_NAMESPACE_END
 
 #endif

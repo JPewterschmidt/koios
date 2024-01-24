@@ -107,7 +107,7 @@ thread_specific_preparation(const per_consumer_attr& attr)
     auto unilk = get_unilk();
     m_impls.insert({
         attr.thread_id, 
-        ::std::make_shared<
+        ::std::make_unique<
             iel_detials::iouring_event_loop_perthr
         >()
     });
@@ -118,12 +118,12 @@ shrlk_and_curthr_ptr()
 {
     const auto id = ::std::this_thread::get_id();
     auto lk = get_shrlk();
-    auto ptr = m_impls[id];
+    auto* ptr = m_impls[id].get();
     if (!m_impls.contains(id))
     {
-        ptr = m_impls.begin()->second;
+        ptr = m_impls.begin()->second.get();
     }
-    return ::std::make_pair(::std::move(lk), ::std::move(ptr));
+    return ::std::make_pair(::std::move(lk), ptr);
 }
 
 void iouring_event_loop::

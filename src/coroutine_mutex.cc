@@ -99,13 +99,14 @@ hold_this_immediately()
 void mutex::
 add_waiting(task_on_the_fly h)
 {
-    waiting_handle handle{ .task = ::std::move(h) };
-    m_waitings.enqueue(::std::move(handle));
+    m_waitings.enqueue({ .task = ::std::move(h) });
 }
 
 static void wake_up(waiting_handle& h)
 {
-    get_task_scheduler().enqueue(h.attr, ::std::move(h.task));
+    auto t = ::std::move(h.task);
+    [[assume(bool(t))]];
+    get_task_scheduler().enqueue(h.attr, ::std::move(t));
 }
 
 void mutex::

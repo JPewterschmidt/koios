@@ -110,6 +110,8 @@ template<typename Task, typename DriverPolicy>
 class get_result_aw<void, Task, DriverPolicy> : public get_result_aw_base<void, Task, DriverPolicy>
 {
 public:
+    using value_type = void;
+
     get_result_aw(promise_wrapper<void> promise)
         : get_result_aw_base<void, Task, DriverPolicy>{ ::std::move(promise) }
     {

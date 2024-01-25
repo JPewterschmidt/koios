@@ -9,9 +9,6 @@ namespace
 {
     ::std::unique_ptr<tcp_server> sp{};
     ::std::atomic_bool flag{ false };
-    ::std::atomic_bool client_app_leave{ false };
-    ::std::atomic_bool before_recv{ false };
-    ::std::atomic_bool after_recv{ false };
 
     emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
     try
@@ -19,19 +16,18 @@ namespace
         ::std::string msg = "fuck you!!!!";
         ::std::array<char, 128> buffer{};
 
-        before_recv.store(true);
         const auto recv_ret = co_await uring::recv(client, buffer);
-        after_recv.store(true);
 
         co_await uring::send(client, msg);
         ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
-        if (sv.contains("stop") && sp)
+        if (sv.contains("stop"))
             flag.store(true), sp->stop();
 
         co_return;
     }
     catch (...)
     {
+        co_return;
     }
 
     task<void> client_app() noexcept
@@ -41,14 +37,19 @@ namespace
         using namespace ::std::string_view_literals;
 
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-        auto ret = co_await uring::send(sock, "fuck you, and stop."sv);
-        if (auto ec = ret.error_code(); ec) { co_return; }
-        client_app_leave.store(true);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
 
         co_return;
     }
     catch (...)
     {
+        co_return;
     }
 
     emitter_task<bool> emit_test()
@@ -65,9 +66,10 @@ namespace
                                    // how can I make sure that this `client_app` know 
                                    // it has a caller even those the caller handler was not been set
                                    // in time.
+                                   //
+                                   // ioruing_event_loop take the credit. It should not to be work-stealing
 
         co_await sp->until_stop_async();
-        sp = nullptr;
         co_return flag;
     }
 }

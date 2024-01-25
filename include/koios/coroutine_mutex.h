@@ -51,6 +51,7 @@ private:
     }
 
 public:
+    unique_lock() noexcept = default;
     unique_lock(unique_lock&& other) noexcept;
     unique_lock& operator=(unique_lock&& other) noexcept;
 

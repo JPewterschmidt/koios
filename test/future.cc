@@ -9,6 +9,7 @@ namespace
     {
         p.set_value(666);
     }
+    int dummy{};
 }
 
 TEST(future, basic)
@@ -47,4 +48,28 @@ TEST(future, regular_exception)
     {
         ASSERT_STREQ(ex.what(), "xxx888xxx");
     }
+}
+
+TEST(future, future_ready1)
+{
+    promise<int> p;
+    auto f = p.get_future();
+    p.set_value(1);
+    ASSERT_TRUE(p.future_ready());
+}
+
+TEST(future, future_ready2)
+{
+    promise<int&> p;
+    auto f = p.get_future();
+    p.set_value(dummy);
+    ASSERT_TRUE(p.future_ready());
+}
+
+TEST(future, future_ready3)
+{
+    promise<void> p;
+    auto f = p.get_future();
+    p.set_value();
+    ASSERT_TRUE(p.future_ready());
 }

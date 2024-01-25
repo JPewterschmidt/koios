@@ -53,7 +53,10 @@ namespace
         co_await sp->start(tcp_server_app);
 
         for (size_t i{}; i < 20; ++i)
-            co_await client_app();
+            co_await client_app(); // some of this never return, and caused memory leak, 
+                                   // how can I make sure that this `client_app` know 
+                                   // it has a caller even those the caller handler was not been set
+                                   // in time.
 
         co_await sp->until_stop_async();
         co_return flag;

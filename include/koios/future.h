@@ -51,10 +51,7 @@ namespace fp_detials
     {
     public:
         auto& exception_ptr() { return m_exception; }
-        void set_exception_ptr(::std::exception_ptr e)
-        {
-            m_exception = ::std::move(e);
-        }
+        void set_exception_ptr(::std::exception_ptr e) { m_exception = ::std::move(e); }
 
     private:
         ::std::exception_ptr m_exception;
@@ -71,15 +68,8 @@ namespace fp_detials
             new (this->value_buffer_ptr()) Ret(::std::forward<Args>(val)...);
         }
 
-        void destruct()
-        {
-            this->value_buffer_ptr()->~Ret();
-        }
-
-        Ret& ref()
-        {
-            return *value_buffer_ptr();
-        }
+        void destruct() { this->value_buffer_ptr()->~Ret(); }
+        Ret& ref() { return *value_buffer_ptr(); }
 
         auto move_out()
         {
@@ -89,10 +79,7 @@ namespace fp_detials
         }
 
     private:
-        auto* value_buffer_ptr() noexcept 
-        {
-            return reinterpret_cast<Ret*>(m_val);
-        }
+        auto* value_buffer_ptr() noexcept { return reinterpret_cast<Ret*>(m_val); }
 
     private:
         unsigned char m_val[sizeof(Ret)]{};
@@ -107,6 +94,7 @@ namespace fp_detials
     protected:
         ::std::shared_ptr<future_impl<T>> m_future_ptr;   
         auto& f_ptr_ref() noexcept { return m_future_ptr; }
+        const auto& f_ptr_ref() const noexcept { return m_future_ptr; }
     };
 
     template<typename T>
@@ -115,13 +103,11 @@ namespace fp_detials
     public:
         using value_type = ::std::remove_reference_t<T>;
 
-    protected:
-        void send() noexcept
-        {
-            this->f_ptr_ref()->set_storage_ptr(storage());
-        }
 
+    protected:
+        void send() noexcept { this->f_ptr_ref()->set_storage_ptr(storage()); }
         auto& storage() { return m_storage; }
+        bool future_ready() const noexcept { return this->f_ptr_ref()->ready(); }
 
     private:
         ::std::shared_ptr<promise_storage<value_type>> m_storage{ 
@@ -145,10 +131,7 @@ namespace fp_detials
     class promise_impl_base<void> : protected storage_deliver<void>
     { 
     public:
-        void set_value() noexcept
-        {
-            this->send();
-        }
+        void set_value() noexcept { this->send(); }
     };
     
     template<typename T>
@@ -160,29 +143,20 @@ namespace fp_detials
         using value_type = T;
 
     public:
-        promise_impl()
-        {
-            //this->m_future_ptr = ::std::make_shared<future_impl<value_type>>();
-            this->m_future_ptr.reset(new future_impl<value_type>{});
-        }
+        promise_impl() { this->m_future_ptr.reset(new future_impl<value_type>{}); }
 
-        void weak_link_to_counterpart_future()
-        {
-        }
-
+        void weak_link_to_counterpart_future() { }
         promise_impl(promise_impl&& other) noexcept = default;
         promise_impl& operator=(promise_impl&&) noexcept = default;
-
-        auto get_future_impl_p()
-        {
-            return this->f_ptr_ref();
-        }
+        auto get_future_impl_p() { return this->f_ptr_ref(); }
 
         void set_exception(::std::exception_ptr e)
         {
             this->storage()->set_exception_ptr(::std::move(e));
             this->send();
         }
+
+        bool future_ready() const noexcept { return this->promise_impl_base<T>::future_ready(); }
     };
 
     template<typename Result>
@@ -226,15 +200,8 @@ namespace fp_detials
             m_cond.notify_all(); 
         }
 
-        bool ready_nolock() const noexcept
-        {
-            return !!m_storage_ptr;
-        }
-
-        auto get_unique_lock()
-        {
-            return ::std::unique_lock{ m_lock };
-        }
+        bool ready_nolock() const noexcept { return !!m_storage_ptr; }
+        auto get_unique_lock() { return ::std::unique_lock{ m_lock }; }
 
         auto get_nonblk(::std::unique_lock<::std::mutex> lk)
         {
@@ -378,15 +345,8 @@ public:
     }
 
 public:
-    reference_type get() 
-    { 
-        return *fp_detials::future_base<pointer_type>::get();
-    }
-
-    reference_type get_nonblk()
-    {
-        return *fp_detials::future_base<pointer_type>::get_nonblk();
-    }
+    reference_type get()        { return *fp_detials::future_base<pointer_type>::get(); }
+    reference_type get_nonblk() { return *fp_detials::future_base<pointer_type>::get_nonblk(); }
 };
 
 namespace fp_detials
@@ -410,17 +370,10 @@ namespace fp_detials
         promise_base& operator=(promise_base&&) noexcept = default;
 
     public:
-        future<value_type> get_future()
-        {
-            return { m_impl_ptr->get_future_impl_p() };
-        }
-
-        void set_exception(::std::exception_ptr e)
-        {
-            m_impl_ptr->set_exception(::std::move(e));
-        }
-
+        future<value_type> get_future() { return { m_impl_ptr->get_future_impl_p() }; }
+        void set_exception(::std::exception_ptr e) { m_impl_ptr->set_exception(::std::move(e)); }
         auto& storage() noexcept { return m_impl_ptr->storage(); }
+        bool future_ready() const noexcept { return m_impl_ptr->future_ready(); }
 
     protected:
         ::std::shared_ptr<fp_detials::promise_impl<value_type>> m_impl_ptr;
@@ -447,17 +400,10 @@ namespace fp_detials
         promise_base& operator=(promise_base&&) noexcept = default;
 
     public:
-        future<reference_type> get_future()
-        {
-            return { m_impl_ptr->get_future_impl_p() };
-        }
-
-        void set_exception(::std::exception_ptr e)
-        {
-            m_impl_ptr->set_exception(::std::move(e));
-        }
-
+        future<reference_type> get_future() { return { m_impl_ptr->get_future_impl_p() }; }
+        void set_exception(::std::exception_ptr e) { m_impl_ptr->set_exception(::std::move(e)); }
         auto& storage() noexcept { return m_impl_ptr->storage(); }
+        bool future_ready() const noexcept { return m_impl_ptr->future_ready(); }
 
     protected:
         ::std::shared_ptr<fp_detials::promise_impl<pointer_type>> m_impl_ptr;
@@ -477,10 +423,7 @@ public:
      *  this function call will wake up the clocked future object.
      */
     template<typename T>
-    void set_value(T&& val)
-    {
-        this->m_impl_ptr->set_value(::std::forward<T>(val));
-    }
+    void set_value(T&& val) { this->m_impl_ptr->set_value(::std::forward<T>(val)); }
 };
 
 template<typename T>
@@ -489,11 +432,7 @@ class promise<T&> : public fp_detials::promise_base<T&>
 public:
     using value_type = T;
     using reference_type = T&;
-    
-    void set_value(reference_type ref)
-    {
-        this->m_impl_ptr->set_value(&ref);
-    }
+    void set_value(reference_type ref) { this->m_impl_ptr->set_value(&ref); }
 };
 
 template<>
@@ -505,10 +444,7 @@ public:
     /*! \brief Do nothing but tell the future object: I'm ready.
      *  \see `promise`
      */
-    void set_value() const noexcept 
-    {
-        this->m_impl_ptr->set_value();
-    }
+    void set_value() const noexcept { this->m_impl_ptr->set_value(); }
 };
 
 KOIOS_NAMESPACE_END

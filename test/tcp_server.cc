@@ -13,7 +13,8 @@ namespace
     ::std::atomic_bool before_recv{ false };
     ::std::atomic_bool after_recv{ false };
 
-    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client)
+    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
+    try
     {
         ::std::string msg = "fuck you!!!!";
         ::std::array<char, 128> buffer{};
@@ -24,13 +25,17 @@ namespace
 
         co_await uring::send(client, msg);
         ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
-        if (sv.contains("stop"))
+        if (sv.contains("stop") && sp)
             flag.store(true), sp->stop();
 
         co_return;
     }
+    catch (...)
+    {
+    }
 
-    task<void> client_app()
+    task<void> client_app() noexcept
+    try
     {
         using namespace toolpex::ip_address_literals;
         using namespace ::std::string_view_literals;
@@ -41,6 +46,9 @@ namespace
         client_app_leave.store(true);
 
         co_return;
+    }
+    catch (...)
+    {
     }
 
     emitter_task<bool> emit_test()
@@ -59,6 +67,7 @@ namespace
                                    // in time.
 
         co_await sp->until_stop_async();
+        sp = nullptr;
         co_return flag;
     }
 }

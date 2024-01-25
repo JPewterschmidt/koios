@@ -54,22 +54,31 @@ public:
 
     bool await_ready() const noexcept 
     { 
-        return m_future.ready();
-    }
+/**************************************************************************************/
+/***                          Critical Section Begin                                ***/
+/**************************************************************************************/
+/**/    lock_shared_state();                                                        /**/
+/**/    return m_future.ready(m_lock);                                              /**/
+/**/}                                                                               /**/
 
-    /*! This function will record the caller coroutine for resuming it.
-     *  It will also schedule this current task with `DriverPolicy`.
-     */
-    void await_suspend(task_on_the_fly h) noexcept
-    {
-        // Dear developers: 
-        // This function should not throw (even potentially) anything.
-        // See also comments of `thread_pool::enqueue`
 
-        m_promise.set_caller(::std::move(h));
-        DriverPolicy{}.scheduler().enqueue(
-            static_cast<Task*>(this)->get_handler_to_schedule()
-        );
+/**/    //  This function will record the caller coroutine for resuming it.         /**/
+/**/    //  It will also schedule this current task with `DriverPolicy`.            /**/
+/**/    //                                                                          /**/
+/**/void await_suspend(task_on_the_fly h) noexcept                                  /**/
+/**/{                                                                               /**/
+/**/    // Dear developers:                                                         /**/
+/**/    // This function should not throw (even potentially) anything.              /**/
+/**/    // See also comments of `thread_pool::enqueue`                              /**/
+/**/                                                                                /**/
+/**/    m_promise.set_caller(::std::move(h));                                       /**/
+/**/    DriverPolicy{}.scheduler().enqueue(                                         /**/
+/**/        static_cast<Task*>(this)->get_handler_to_schedule()                     /**/
+/**/    );                                                                          /**/
+/**/    unlock_shared_state();                                                      /**/
+/**************************************************************************************/
+/***                        Critical Section End **2**                              ***/
+/**************************************************************************************/
     }
     
     /*! \brief Get the ownership of the future type.
@@ -82,18 +91,52 @@ public:
 
     auto& future() noexcept
     {
-        // For which scheduled by user call `task::run()` or `task::run_and_get_future()` directly.
+        // For which scheduled by user call 
+        // `task::run()` or `task::run_and_get_future()` directly.
         assert(!m_promise.caller_set());
         return m_future; 
     }
 
 protected:
+    // Only used in await_ready() !
+    // The counterpart promise object should also acquire this lock.
+    // In practice, the counterpart promise object of koios is `return_value_or_void`.
+    void lock_shared_state() const noexcept { m_lock = m_future.get_shared_state_lock(); }
+
+    // Only used in await_suspend and await_resume
+    // to make the
+    //                   ready => suspend
+    //                          or
+    //                   ready => resume 
+    // opertions ATOMIC.
+    //
+    // XXX: Only call this function at 
+    //      the end of `await_suspend` and `await_resume`
+    //      (the end of critical section.)
+    //
+    // If you forget to call this function, 
+    // thanks for RAII, the mutex will be unlocked, 
+    // after the task's lifetime.
+    //
+    // XXX: If user just store the task object into a variable, 
+    //      the destruction phase of `get_result_aw` will be delayed!.
+    //      Thus, you had to call this function in 
+    //      `await_resume` and `await_suspend` manually.
+    //
+    void unlock_shared_state() const noexcept 
+    { 
+        if (m_lock) m_lock.unlock(); 
+    }
+
+protected:
     promise_wrapper<value_type> m_promise;
     koios::future<T> m_future;
+    mutable ::std::unique_lock<::std::mutex> m_lock{};
 };
 
 template<typename T, typename Task, typename DriverPolicy>
-class get_result_aw : public get_result_aw_base<T, Task, DriverPolicy>
+class get_result_aw
+    : public get_result_aw_base<T, Task, DriverPolicy>
 {
 public:
     using value_type = T;
@@ -103,11 +146,20 @@ public:
     {
     }
     
-    decltype(auto) await_resume() { return this->m_future.get_nonblk(); }
+/**/decltype(auto) await_resume()                                                   /**/
+/**/{                                                                               /**/
+/**/    auto result = this->m_future.get_nonblk(this->m_lock);                      /**/
+/**/    this->unlock_shared_state();                                                /**/
+/**************************************************************************************/
+/***                        Critical Section End **2**                              ***/
+/**************************************************************************************/
+        return result;
+    }
 };
 
 template<typename Task, typename DriverPolicy>
-class get_result_aw<void, Task, DriverPolicy> : public get_result_aw_base<void, Task, DriverPolicy>
+class get_result_aw<void, Task, DriverPolicy>
+    : public get_result_aw_base<void, Task, DriverPolicy>
 {
 public:
     using value_type = void;
@@ -117,7 +169,14 @@ public:
     {
     }
 
-    void await_resume() { this->m_future.get_nonblk(); }
+/**/void await_resume()                                                             /**/
+/**/{                                                                               /**/
+/**/    this->m_future.get_nonblk(this->m_lock);                                    /**/
+/**/    this->unlock_shared_state();                                                /**/
+/**************************************************************************************/
+/***                        Critical Section End **3**                              ***/
+/**************************************************************************************/
+    }
 };
 
 KOIOS_NAMESPACE_END

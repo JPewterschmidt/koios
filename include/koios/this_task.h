@@ -56,6 +56,18 @@ namespace this_task
     {
         return sleep_await{ dura };
     }
+
+    inline auto yield()
+    {
+        class yield_aw
+        {
+        public:
+            constexpr bool await_ready() const noexcept { return false; }
+            void await_suspend(task_on_the_fly f) const noexcept { get_task_scheduler().enqueue(::std::move(f)); }
+            constexpr void await_resume() const noexcept {}
+        };
+        return yield_aw{};
+    }
 }
 
 KOIOS_NAMESPACE_END

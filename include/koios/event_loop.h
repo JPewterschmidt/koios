@@ -47,7 +47,7 @@ KOIOS_NAMESPACE_BEG
  *  Both types hold ownership of `task_on_the_fly`.
  */
 template<event_loop_concept... Loops>
-class event_loop : public task_scheduler, public Loops...                
+class event_loop : public task_scheduler, private Loops...                
 {
 public:
     template<typename... Args>
@@ -92,6 +92,12 @@ public:
         m_cleanning = true;
         (Loops::stop(), ...);
         task_scheduler::stop();
+    }
+
+    void quick_stop() noexcept
+    {
+        (Loops::quick_stop(), ...);
+        task_scheduler::quick_stop();
     }
 
     virtual ~event_loop() noexcept 

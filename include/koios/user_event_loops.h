@@ -3,6 +3,7 @@
 
 #include "koios/macros.h"
 #include "koios/per_consumer_attr.h"
+#include "koios/user_event_loop_interface.h"
 
 #include <chrono>
 #include <mutex>
@@ -13,20 +14,6 @@
 
 KOIOS_NAMESPACE_BEG
 
-class user_event_loop
-{
-public:
-    using sptr = ::std::shared_ptr<user_event_loop>;
-
-public:
-    virtual void thread_specific_preparation(const per_consumer_attr& attr) noexcept = 0;
-    virtual void stop() noexcept = 0;
-    virtual void quick_stop() noexcept = 0;
-    virtual void until_done() = 0;
-    virtual ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept = 0;
-    virtual void do_occured_nonblk() noexcept = 0;
-};
-
 class user_event_loops
 {
 public:
@@ -36,13 +23,14 @@ public:
     void until_done();
     ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept;
     void do_occured_nonblk() noexcept;
-    void add_loop(user_event_loop::sptr loop);
+    void add_loop(user_event_loop_interface::sptr loop);
 
 private:
     ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;
-    ::std::vector<user_event_loop::sptr> m_loops;
+    ::std::vector<user_event_loop_interface::sptr> m_loops;
     mutable ::std::shared_mutex m_mutex;
 };
+
 KOIOS_NAMESPACE_END
 
 #endif

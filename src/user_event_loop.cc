@@ -1,4 +1,6 @@
 #include "koios/user_event_loops.h"
+#include "koios/user_event_loop_interface.h"
+#include "toolpex/exceptions.h"
 #include <cassert>
 
 KOIOS_NAMESPACE_BEG
@@ -61,11 +63,14 @@ void user_event_loops::do_occured_nonblk() noexcept
     }
 }
 
-void user_event_loops::add_loop(user_event_loop::sptr loop)
+void user_event_loops::add_loop(user_event_loop_interface::sptr loop)
 {
     ::std::unique_lock lk{ m_mutex };
-    loop->thread_specific_preparation(*m_attrs[::std::this_thread::get_id()]);
-    m_loops.emplace_back(::std::move(loop));
+    auto& inplace_loop = m_loops.emplace_back(::std::move(loop));
+    for (auto [tid, attrp] : m_attrs)
+    {
+        inplace_loop->thread_specific_preparation(*attrp);
+    }
 }
 
 KOIOS_NAMESPACE_END

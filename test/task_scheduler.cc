@@ -59,7 +59,7 @@ emitter_task<> dummy()
     co_return;
 }
 
-class loop_for_test : public user_event_loop
+class loop_for_test : public user_event_loop_interface
 {
 public:
     void thread_specific_preparation(const per_consumer_attr& attr) noexcept override 

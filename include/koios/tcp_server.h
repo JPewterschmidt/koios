@@ -28,10 +28,12 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
+#include "koios/get_handle_aw.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
 #include <mutex>
+#include <shared_mutex>
 
 KOIOS_NAMESPACE_BEG
 
@@ -46,6 +48,8 @@ public:
     {
     }
 
+    ~tcp_server() noexcept;
+
     /*! \brief  Make the tcp server start working
      *
      *  \param  callback a copyable callable object, 
@@ -59,14 +63,12 @@ public:
         m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
         this->listen();
         m_waiting_latch = co_await m_waiting_queue.acquire();
-        ::std::lock_guard lk{ m_futures_lock };
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
         for (const auto& attr : attrs)
         {
-            ++m_count;
-            m_futures.emplace_back(
-                tcp_loop(m_stop_src.get_token(), callback).run_and_get_future(*attr)
-            );
+            if (m_stop_src.stop_requested()) break;
+            m_count.fetch_add();
+            tcp_loop(m_stop_src.get_token(), callback).run(*attr);
         }
 
         co_return;
@@ -78,8 +80,7 @@ public:
     { 
         if (m_stop_src.stop_requested())
         {
-            ::std::unique_lock lk{ m_futures_lock };
-            return m_count == 0;
+            return m_count.load() == 0;
         }
         return false;
     }
@@ -94,11 +95,27 @@ private:
         using namespace ::std::string_literals;
 
         assert(flag.stop_possible());
+        if (flag.stop_requested()) 
+        {
+            co_return;
+        }
+
+        {
+            void* addr = co_await get_handle_aw{};
+            ::std::unique_lock lk{ m_stop_related_lock };       
+            m_loop_handles.push_back(addr);       
+        }
+
         while (!flag.stop_requested())
         try
         {
             auto accret = co_await uring::accept(m_sockfd); // to prevent so called 
                                                             // "insufficient contextual information to determine type
+            if (auto ec = accret.error_code(); ec)
+            {
+                koios::log_error(ec.message());
+                continue;
+            }
             make_emitter(userdefined, accret.get_client()).run();
         }
         catch (const koios::exception& e)
@@ -110,8 +127,7 @@ private:
             koios::log_error("tcp_server catched unknow exception");
         }
 
-        ::std::unique_lock lk{ m_futures_lock };
-        if (--m_count <= 0)
+        if (m_count.fetch_sub() <= 0)
         {
             m_waiting_latch.unlock();
         }
@@ -120,18 +136,20 @@ private:
     }
 
     void listen();
+    task<> send_cancel_to_awaiting_accept() const noexcept;
 
 private:
-    toolpex::unique_posix_fd m_sockfd;
-    toolpex::ip_address::ptr m_addr;
-    ::in_port_t m_port;
-    ::std::stop_source m_stop_src;
-    int m_count{};
+    toolpex::unique_posix_fd    m_sockfd;
+    toolpex::ip_address::ptr    m_addr;
+    ::in_port_t                 m_port;
+    ::std::stop_source          m_stop_src;
+    toolpex::ref_count          m_count{};
 
-    ::std::vector<koios::future<void>> m_futures;
-    mutable ::std::mutex m_futures_lock;
-    mutable koios::mutex m_waiting_queue;
-    koios::unique_lock m_waiting_latch;
+    ::std::vector<void*>        m_loop_handles;
+    mutable ::std::shared_mutex m_stop_related_lock;
+    mutable koios::mutex        m_waiting_queue;
+    koios::unique_lock          m_waiting_latch;
+    koios::future<void>         m_stop_complete;
 };
 
 KOIOS_NAMESPACE_END

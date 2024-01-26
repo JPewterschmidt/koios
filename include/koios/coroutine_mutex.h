@@ -69,7 +69,7 @@ public:
     ~unique_lock() noexcept { unlock(); }
 
 private:
-    mutex* m_mutex;
+    mutex* m_mutex{};
     bool m_hold{ true };
 };
 

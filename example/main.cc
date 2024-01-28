@@ -36,59 +36,81 @@ using namespace ::std::string_view_literals;
 
 namespace
 {
+    ::std::unique_ptr<tcp_server> sp{};
+    ::std::atomic_bool flag{ false };
 
-::std::string g_file_name{ "testfile_for_iouring.txt" };
-task<toolpex::unique_posix_fd> create_file()
-{
-    toolpex::errret_thrower et;
-    co_return et << ::creat(g_file_name.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
+    try
+    {
+        ::std::string msg = "fuck you!!!!";
+        ::std::array<char, 128> buffer{};
+
+        const auto recv_ret = co_await uring::recv(client, buffer);
+
+        co_await uring::send(client, msg);
+        ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
+        if (sv.contains("stop"))
+            flag.store(true), sp->stop();
+
+        co_return;
+    }
+    catch (...)
+    {
+        co_return;
+    }
+
+    task<void> client_app() noexcept
+    try
+    {
+        using namespace toolpex::ip_address_literals;
+        using namespace ::std::string_view_literals;
+
+        auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "fuck you, and stop."sv);
+
+        co_return;
+    }
+    catch (...)
+    {
+        co_return;
+    }
+
+    emitter_task<bool> emit_test()
+    {
+        using namespace toolpex::ip_address_literals;
+        using namespace ::std::string_view_literals;
+        using namespace ::std::chrono_literals;
+
+        sp.reset(new tcp_server("::1"_ip, 8890));
+        co_await sp->start(tcp_server_app);
+
+        for (size_t i{}; i < 20; ++i)
+            co_await client_app(); // some of this never return, and caused memory leak, 
+                                   // how can I make sure that this `client_app` know 
+                                   // it has a caller even those the caller handler was not been set
+                                   // in time.
+
+        co_await sp->until_stop_async();
+        co_return flag;
+    }
 }
-
-task<toolpex::unique_posix_fd> open_file()
-{
-    toolpex::errret_thrower et;
-    co_return et << ::open(g_file_name.c_str(), O_RDWR);
-}
-
-task<> delete_file()
-{
-    co_await uring::unlink(g_file_name);
-}
-
-task<bool> append_all_test()
-{
-    auto content = "123456789"sv;
-    ::std::array<char, 5> buffer{};
-
-    co_await delete_file();
-    auto fd = co_await create_file();
-    
-    co_await uring::append_all(fd, content);
-
-    ::std::error_code ec;
-    co_await uring::append_all(fd, content, ec);
-    if (ec) co_return false;
-
-    fd.close();
-    fd = co_await open_file();
-
-    co_await uring::read(fd, ::std::as_writable_bytes(::std::span{ buffer }));
-    fd.close();
-    co_await delete_file();
-    co_return ::std::ranges::equal(buffer, content.substr(0, 5));
-}
-
-} // annoymous namespace
 
 int main()
 try
 {
     runtime_init(4);
+    ::std::cout << "runtime inited" << ::std::endl;
 
-    ::std::cout << append_all_test().result() << ::std::endl;
+    ::std::cout << emit_test().result() << ::std::endl;
 
     runtime_exit();
-    
+
     return 0;
 }
 catch (const ::std::exception& e)

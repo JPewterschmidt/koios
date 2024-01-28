@@ -40,7 +40,12 @@ template<typename T, typename Promise, typename DriverPolicy>
 class return_value_or_void_base 
 {
 public:
-    /*! Set the caller coroutine handle which coroutine represented will be wake up after this task done.  */
+    /*! Set the caller coroutine handle which coroutine represented will be wake up after this task done.  
+     *
+     *  The counterpart future (in practice `get_result_aw::await_suspend`)
+     *  would call this function, Set it's coroutine_handler as the caller handler.
+     *  Thus, this function should NOT acquire the lock of future/promise shared state lock.
+     */
     void set_caller(task_on_the_fly h) noexcept { m_caller = ::std::move(h); } 
 
     /*! Take the ownership of the future object */
@@ -48,9 +53,10 @@ public:
     auto get_std_promise_pointer() { return m_promise_p; }
 
 #ifdef KOIOS_DEBUG
+#include "koios/runtime.h"
     ~return_value_or_void_base() noexcept
     {
-        if (!caller_waked()) [[unlikely]]
+        if (!caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning()) [[unlikely]]
         {
             ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
             ::std::terminate();
@@ -64,25 +70,53 @@ protected:
 
     /*! \brief Wake the caller coroutine, if this task has been called with `co_await`.
      *  If this task was scheduled by `task_scheduler` directly, this function won't do anything.
+     *
+     *  \retval true There is a handler point to the caller, and successfully wake it up.
+     *  \retval false There is not a handler point to the caller, do nothing.
      */
-    void wake_caller()
+    void wake_caller() noexcept
     {
 #ifdef KOIOS_DEBUG
-        m_caller_waked = true;
+        m_caller_woke_or_exception_caught = true;
 #endif
-        if (!m_caller) return;
+        if (!has_caller()) return;
         DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
     }
 
+    bool has_caller() const noexcept { return !!m_caller; }
+
+    // Called by `unhandled_exception`
     void deal_exception(::std::exception_ptr ep)
     {
-        m_promise_p->set_exception(::std::move(ep));
-        wake_caller();
+#ifdef KOIOS_DEBUG
+        m_caller_woke_or_exception_caught = true;
+#endif
+/**************************************************************************************/
+/***                          Critical Section Begin                                ***/
+/**************************************************************************************/
+/**/    auto lk = m_promise_p->get_shared_state_lock();                             /**/
+/**/    m_promise_p->set_exception(lk, ep);                                         /**/
+/**/    if (has_caller())                                                           /**/
+/**/    {                                                                           /**/
+/**/        wake_caller();                                                          /**/
+/**/    }                                                                           /**/
+/**/    else                                                                        /**/
+/**/    {                                                                           /**/
+/**/        // For those tasks were activated by `t.run()`                          /**/
+/**/        // or something make the task object never record the caller hander.    /**/
+/**/        // We should let the exception handler of some layer                    /**/
+/**/        // (such as `thread_pool`) know and do something,                       /**/
+/**/        // or the programmer won't receive any information !                    /**/
+/**/        ::std::rethrow_exception(ep);                                           /**/
+/**/    }                                                                           /**/
+/**************************************************************************************/
+/***                           Critical Section End                                 ***/
+/**************************************************************************************/
     }
 #ifdef KOIOS_DEBUG
 private:
-    bool caller_waked() const noexcept { return m_caller_waked; }
-    bool m_caller_waked{ false };
+    bool caller_woke_or_exception_caught() const noexcept { return m_caller_woke_or_exception_caught; }
+    bool m_caller_woke_or_exception_caught{ false };
 #endif
 };
 
@@ -104,8 +138,15 @@ public:
     template<::std::convertible_to<T> TT = T>
     void return_value(TT&& val)
     {
-        this->m_promise_p->set_value(::std::forward<TT>(val));
-        this->wake_caller();
+/**************************************************************************************/
+/***                          Critical Section Begin                                ***/
+/**************************************************************************************/
+/**/    auto lk = this->m_promise_p->get_shared_state_lock();                       /**/
+/**/    this->m_promise_p->set_value(lk, ::std::forward<TT>(val));                  /**/
+/**/    this->wake_caller();                                                        /**/
+/**************************************************************************************/
+/***                           Critical Section End                                 ***/
+/**************************************************************************************/
     }
 };
 
@@ -118,8 +159,15 @@ public:
     /*! \brief Just wake the caller. */
     void return_void() 
     { 
-        this->m_promise_p->set_value(); 
-        this->wake_caller(); 
+/**************************************************************************************/
+/***                          Critical Section Begin                                ***/
+/**************************************************************************************/
+/**/    auto lk = this->m_promise_p->get_shared_state_lock();                       /**/
+/**/    this->m_promise_p->set_value(lk);                                           /**/
+/**/    this->wake_caller();                                                        /**/
+/**************************************************************************************/
+/***                           Critical Section End                                 ***/
+/**************************************************************************************/
     }
 };
 

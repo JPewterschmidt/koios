@@ -142,6 +142,16 @@ public:
         enqueue_no_future_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
+    void wake_up() noexcept
+    {
+        m_cond.notify_one();
+    }
+
+    bool is_cleaning() const noexcept
+    {
+        return m_stop_now.load();
+    }
+
     /*! \brief Wake up all sleeping threads and join all threads.
      * 
      *  The awakened thread will not go to sleep again, 
@@ -188,7 +198,7 @@ protected:
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
-        m_cond.notify_one();
+        wake_up();
     }
 
     template<typename F, typename... Args>
@@ -196,7 +206,7 @@ protected:
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue(ca, [task = ::std::move(task)] mutable { task(); });
-        m_cond.notify_one();
+        wake_up();
     }
 
     template<typename F, typename... Args>
@@ -213,7 +223,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
-        m_cond.notify_one();
+        wake_up();
 
         return result;
     }
@@ -232,7 +242,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue(ca, [task] mutable { (*task)(); });
-        m_cond.notify_one();
+        wake_up();
 
         return result;
     }

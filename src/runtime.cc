@@ -33,7 +33,7 @@ KOIOS_NAMESPACE_BEG
 
 namespace
 {
-    ::std::unique_ptr<task_scheduler> g_ts_p;
+    ::std::unique_ptr<event_loop_t> g_ts_p;
 
     void logging_init()
     {
@@ -77,7 +77,7 @@ namespace
  *
  *  \warning You has to call the `runtime_init()` function first.
  */
-::std::unique_ptr<task_scheduler>&
+::std::unique_ptr<event_loop_t>&
 get_task_scheduler_ptr(::std::source_location sl)
 {
     if (!g_ts_p) [[unlikely]]
@@ -90,33 +90,23 @@ get_task_scheduler_ptr(::std::source_location sl)
 
 /*! \brief Initialize this koios runtime.
  *  \param numthr the number of thread the runtime managed.
- *  \param manually_stop_type A tag which indecicate 
- *                            that the `thread_pool` or something like `task_scheduler`
- *                            needs user call `stop()` to terminate manually.
  */
-void runtime_init(size_t numthr, manually_stop_type)
-{
-    logging_init();
-    koios::log_info("runtime initializing (manually_stop_type)");
-    signal_handle_init();
-
-    //g_ts_p.reset(new task_scheduler{ numthr, manually_stop });
-    g_ts_p = ::std::make_unique<event_loop_t>(numthr, manually_stop);
-    g_ts_p->start();
-}
-
-/*! \brief Initialize this koios runtime.
- *  \param numthr the number of thread the runtime managed.
- */
-void runtime_init(size_t numthr)
+void runtime_init(runtime_init_config cfg)
 {
     logging_init();
     koios::log_info("runtime initializing");
 
     signal_handle_init();
 
-    //g_ts_p.reset(new task_scheduler{ numthr });
-    g_ts_p = ::std::make_unique<event_loop_t>(numthr);
+    if (!cfg.m_manualy_stop)
+        g_ts_p = ::std::make_unique<event_loop_t>(cfg.m_number_thread);
+    else g_ts_p = ::std::make_unique<event_loop_t>(cfg.m_number_thread, manually_stop);
+
+    auto& schr = *g_ts_p;
+    for (auto& loop : cfg.m_loops)
+    {
+        schr.as_loop<user_event_loops>().add_loop(loop);
+    }
     g_ts_p->start();
 }
 
@@ -130,22 +120,7 @@ int runtime_exit()
     return 0;
 }
 
-/*! \brief Call `std::exchange` on the unique resource.
- *  \param other A new `task_scheduler` unique pointer.
- *  \return the old `task_scheduler` unique pointer.
- */
-::std::unique_ptr<task_scheduler> 
-exchange_task_scheduler(::std::unique_ptr<task_scheduler> other)
-{
-    return ::std::exchange(g_ts_p, ::std::move(other));
-}
-
-void runtime_reload(size_t numthr)
-{
-    toolpex::not_implemented();   
-}
-
-void runtime_reload(size_t numthr, manually_stop_type)
+void runtime_reload(runtime_init_config cfg)
 {
     toolpex::not_implemented();   
 }

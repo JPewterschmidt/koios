@@ -140,4 +140,19 @@ await_resume()
     return iouring_aw::await_resume();
 }
 
+size_t 
+ioret_for_cancel::number_canceled() const
+{
+    if (auto ec = this->error_code(); ec)
+        throw uring_exception{ ec };
+    return this->ret;
+}
+
+ioret_for_cancel
+detials::iouring_aw_for_cancel::
+await_resume()
+{
+    return iouring_aw::await_resume();
+}
+
 } // namespace koios::uring

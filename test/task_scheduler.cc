@@ -5,6 +5,7 @@
 #include "koios/task.h"
 
 #include <vector>
+#include <chrono>
 
 using namespace koios;
 
@@ -46,4 +47,45 @@ TEST(task_scheduler, basic)
         item.get();
 
     ASSERT_EQ(result, 5 * loop_size);
+}
+
+namespace
+{
+bool success1{};
+bool success2{};
+
+emitter_task<> dummy()
+{
+    co_return;
+}
+
+class loop_for_test : public user_event_loop_interface
+{
+public:
+    void thread_specific_preparation(const per_consumer_attr& attr) noexcept override 
+    { 
+        success1 = true;
+    }
+    void stop() noexcept override { }
+    void quick_stop() noexcept override { }
+    void until_done() override { }
+    ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept override 
+    { 
+        using namespace ::std::chrono_literals;
+        return 1000ms;
+    }
+
+    void do_occured_nonblk() noexcept override
+	{
+        success2 = true;
+	}
+};
+
+} // annoymous namespace
+
+TEST(event_loop, user_event_loop)
+{
+    get_task_scheduler().as_loop<user_event_loops>().add_loop(::std::make_shared<loop_for_test>());
+    dummy().result();
+    ASSERT_TRUE(success1 && success2);
 }

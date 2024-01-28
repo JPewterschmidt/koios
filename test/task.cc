@@ -4,6 +4,7 @@
 #include "koios/expected.h"
 #include "koios/task_scheduler_concept.h"
 #include "koios/runtime.h"
+#include "koios/this_task.h"
 
 using namespace koios;
 
@@ -224,4 +225,28 @@ namespace
 TEST(task, when_all)
 {
     ASSERT_FALSE(emit_when_all_tests().result());
+}
+
+namespace
+{
+
+emitter_task<bool> emit_yield_test1()
+{
+    co_await this_task::yield();
+    co_return true;
+}
+
+task<bool> emit_yield_test2()
+{
+    co_await this_task::yield();
+    co_return true;
+}
+
+}
+
+TEST(this_task, yield)
+{
+    ASSERT_TRUE(emit_yield_test1().result());
+    ASSERT_TRUE(emit_yield_test2().result());
+    ASSERT_TRUE(make_emitter(emit_yield_test2).result());
 }

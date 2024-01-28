@@ -64,6 +64,13 @@ namespace koios::uring
 
     using ioret_for_connect = typename detials::ioret_for_any_base;
 
+    class ioret_for_cancel : public detials::ioret_for_any_base
+    {
+    public:
+        using detials::ioret_for_any_base::ioret_for_any_base;
+        size_t number_canceled() const;
+    };
+
     namespace detials
     {
         class iouring_aw_for_connect : public iouring_aw
@@ -111,6 +118,13 @@ namespace koios::uring
         private:
             ::sockaddr_storage m_ss{};
             ::socklen_t m_len{};
+        };
+
+        class iouring_aw_for_cancel : public iouring_aw
+        {
+        public:
+            using iouring_aw::iouring_aw;           
+            ioret_for_cancel await_resume();           
         };
     }
 }

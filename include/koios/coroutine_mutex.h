@@ -51,6 +51,7 @@ private:
     }
 
 public:
+    unique_lock() noexcept = default;
     unique_lock(unique_lock&& other) noexcept;
     unique_lock& operator=(unique_lock&& other) noexcept;
 
@@ -68,7 +69,7 @@ public:
     ~unique_lock() noexcept { unlock(); }
 
 private:
-    mutex* m_mutex;
+    mutex* m_mutex{};
     bool m_hold{ true };
 };
 

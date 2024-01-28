@@ -20,6 +20,7 @@
 #define KOIOS_IOURING_H
 
 #include <mutex>
+#include <atomic>
 #include <shared_mutex>
 #include <liburing.h>
 #include <cassert>
@@ -45,6 +46,7 @@ namespace iel_detials
     class ioret_task
     {
     public:
+        ioret_task() = default;
         ioret_task(::std::shared_ptr<uring::ioret> retslot, 
                    task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, 
@@ -59,6 +61,7 @@ namespace iel_detials
         }
 
         void wakeup();
+        bool valid() const noexcept { return bool(m_task); }
 
     private:
         ::std::shared_ptr<uring::ioret> m_ret;

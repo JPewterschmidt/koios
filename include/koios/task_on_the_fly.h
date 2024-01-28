@@ -96,7 +96,7 @@ public:
      */
     ~task_on_the_fly() noexcept { destroy(); }
 
-    auto address() const noexcept
+    void* address() const noexcept
     {
         return m_h.address();
     }

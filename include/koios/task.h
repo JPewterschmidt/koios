@@ -91,15 +91,8 @@ public:
     {
     public:
         _task<T, DriverPolicy, Discardable, initial_suspend_type>::_type 
-        get_return_object() noexcept
-        {
-            return { *this };
-        }
-
-        void unhandled_exception()
-        {
-            this->deal_exception(::std::current_exception());
-        }
+        get_return_object() noexcept { return { *this }; }
+        void unhandled_exception() { this->deal_exception(::std::current_exception()); }
     };
 
     friend class task_scheduler;
@@ -124,29 +117,20 @@ public:
     {
     }
 
-    operator task_on_the_fly() noexcept
-    {
-        return get_handler_to_schedule();
-    }
+    operator task_on_the_fly() noexcept { return get_handler_to_schedule(); }
 
     /*! \brief Run the current task.
      *  Just call the `run()` member function.
      *  \see `run()`
      *  \see `run_and_get_future()`
      */
-    void operator()() 
-    {
-        run();
-    }
+    void operator()() { run(); }
 
     /*! \retval true The coroutine state was suspended at final state, 
      *          or the task has been executed by `run()` or other similar functions.
      *  \retval false The coroutine state was suspended at state which is NOT final.
      */
-    bool done() const noexcept 
-    {
-        return m_coro_handle.done();
-    }
+    bool done() const noexcept { return m_coro_handle.done(); }
 
     /*! \brief Run the task.
      *  
@@ -284,24 +268,13 @@ public:
      *
      *  And this is a static consteval function.
      */
-    [[nodiscard]] static consteval bool is_discardable() 
-    {
-        return ::std::same_as<Discardable, discardable>;
-    }
-
-    [[nodiscard]] static consteval bool is_eager()
-    {
-        return ::std::same_as<initial_suspend_type, eager_aw>;
-    }
+    [[nodiscard]] static consteval bool is_discardable() { return ::std::same_as<Discardable, discardable>; }
+    [[nodiscard]] static consteval bool is_eager() { return ::std::same_as<initial_suspend_type, eager_aw>; }
 
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
     [[nodiscard]] static consteval bool is_return_void() { return ::std::same_as<void, value_type>; }
-
-    [[nodiscard]] bool has_scheduled() const noexcept 
-    { 
-        return !m_coro_handle; 
-    }
+    [[nodiscard]] bool has_scheduled() const noexcept { return !m_coro_handle; }
 
     /*! \brief Take the ownership of the future object related to this task.
      *  \return the future object.

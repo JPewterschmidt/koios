@@ -51,10 +51,7 @@ namespace fp_detials
     {
     public:
         auto& exception_ptr() { return m_exception; }
-        void set_exception_ptr(::std::exception_ptr e)
-        {
-            m_exception = ::std::move(e);
-        }
+        void set_exception_ptr(::std::exception_ptr e) { m_exception = ::std::move(e); }
 
     private:
         ::std::exception_ptr m_exception;
@@ -71,15 +68,8 @@ namespace fp_detials
             new (this->value_buffer_ptr()) Ret(::std::forward<Args>(val)...);
         }
 
-        void destruct()
-        {
-            this->value_buffer_ptr()->~Ret();
-        }
-
-        Ret& ref()
-        {
-            return *value_buffer_ptr();
-        }
+        void destruct() { this->value_buffer_ptr()->~Ret(); }
+        Ret& ref() { return *value_buffer_ptr(); }
 
         auto move_out()
         {
@@ -89,10 +79,7 @@ namespace fp_detials
         }
 
     private:
-        auto* value_buffer_ptr() noexcept 
-        {
-            return reinterpret_cast<Ret*>(m_val);
-        }
+        auto* value_buffer_ptr() noexcept { return reinterpret_cast<Ret*>(m_val); }
 
     private:
         unsigned char m_val[sizeof(Ret)]{};
@@ -107,6 +94,8 @@ namespace fp_detials
     protected:
         ::std::shared_ptr<future_impl<T>> m_future_ptr;   
         auto& f_ptr_ref() noexcept { return m_future_ptr; }
+        const auto& f_ptr_ref() const noexcept { return m_future_ptr; }
+        auto get_shared_state_lock() const noexcept { return m_future_ptr->get_shared_state_lock(); }
     };
 
     template<typename T>
@@ -116,12 +105,11 @@ namespace fp_detials
         using value_type = ::std::remove_reference_t<T>;
 
     protected:
-        void send() noexcept
-        {
-            this->f_ptr_ref()->set_storage_ptr(storage());
-        }
-
+        void send() noexcept { this->f_ptr_ref()->set_storage_ptr(storage()); }
+        void send(const ::std::unique_lock<::std::mutex>& lk) noexcept { this->f_ptr_ref()->set_storage_ptr(storage(), lk); }
         auto& storage() { return m_storage; }
+        bool future_ready() const noexcept { return this->f_ptr_ref()->ready(); }
+        auto get_shared_state_lock() const noexcept { return this->counterpart_future<T>::get_shared_state_lock(); }
 
     private:
         ::std::shared_ptr<promise_storage<value_type>> m_storage{ 
@@ -139,16 +127,21 @@ namespace fp_detials
             this->storage()->construct(::std::forward<Args>(val)...);
             this->send();
         }
+
+        template<typename... Args>
+        void set_value(const ::std::unique_lock<::std::mutex>& lk, Args&&... val) 
+        {
+            this->storage()->construct(::std::forward<Args>(val)...);
+            this->send(lk);
+        }
     };
 
     template<>
     class promise_impl_base<void> : protected storage_deliver<void>
     { 
     public:
-        void set_value() noexcept
-        {
-            this->send();
-        }
+        void set_value() noexcept { this->send(); }
+        void set_value(const ::std::unique_lock<::std::mutex>& lk) noexcept { this->send(lk); }
     };
     
     template<typename T>
@@ -160,29 +153,27 @@ namespace fp_detials
         using value_type = T;
 
     public:
-        promise_impl()
-        {
-            //this->m_future_ptr = ::std::make_shared<future_impl<value_type>>();
-            this->m_future_ptr.reset(new future_impl<value_type>{});
-        }
+        promise_impl() { this->m_future_ptr.reset(new future_impl<value_type>{}); }
 
-        void weak_link_to_counterpart_future()
-        {
-        }
-
+        void weak_link_to_counterpart_future() { }
         promise_impl(promise_impl&& other) noexcept = default;
         promise_impl& operator=(promise_impl&&) noexcept = default;
-
-        auto get_future_impl_p()
-        {
-            return this->f_ptr_ref();
-        }
+        auto get_future_impl_p() { return this->f_ptr_ref(); }
 
         void set_exception(::std::exception_ptr e)
         {
             this->storage()->set_exception_ptr(::std::move(e));
             this->send();
         }
+
+        void set_exception(const ::std::unique_lock<::std::mutex>& lk, ::std::exception_ptr e)
+        {
+            this->storage()->set_exception_ptr(::std::move(e));
+            this->send(lk);
+        }
+
+        bool future_ready() const noexcept { return this->promise_impl_base<T>::future_ready(); }
+        auto get_shared_state_lock() const noexcept { return this->promise_impl_base<T>::get_shared_state_lock(); }
     };
 
     template<typename Result>
@@ -195,49 +186,36 @@ namespace fp_detials
         template<typename> friend class fp_detials::storage_deliver;
 
     public:
+        // Operations with locking
         bool ready() const noexcept
         {
-            ::std::lock_guard lk{ m_lock };
-            return ready_nolock();
+            auto lk = get_unique_lock();
+            [[assume(lk.mutex() == &m_lock)]];
+            return ready(lk);
         }
 
         auto get()
         {
             auto lk = get_unique_lock();
-            if (!ready_nolock()) 
-                m_cond.wait(lk, [this]{ return ready_nolock(); });
-
-            return get_nonblk(::std::move(lk));
+            [[assume(lk.mutex() == &m_lock)]];
+            return get(lk);
         }
 
         auto get_nonblk()
         {
             auto lk = get_unique_lock();
-            if (!ready_nolock()) [[unlikely]]
+            [[assume(lk.mutex() == &m_lock)]];
+            if (!ready(lk)) [[unlikely]]
                 throw koios::future_exception{};
-            return get_nonblk(::std::move(lk));
+            return get_nonblk(lk);
         }
 
-    private:
-        void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
-        {
-            ::std::lock_guard lk{ m_lock };
-            m_storage_ptr = ::std::move(ptr);
-            m_cond.notify_all(); 
-        }
+        // Operations needs a lock acquire from `get_shared_state_lock()`
+        auto get_shared_state_lock() const noexcept { return get_unique_lock(); }
 
-        bool ready_nolock() const noexcept
+        auto get_nonblk(const ::std::unique_lock<::std::mutex>& lk)
         {
-            return !!m_storage_ptr;
-        }
-
-        auto get_unique_lock()
-        {
-            return ::std::unique_lock{ m_lock };
-        }
-
-        auto get_nonblk(::std::unique_lock<::std::mutex> lk)
-        {
+            assert(lk.mutex() == &m_lock);
             if (auto& ex = m_storage_ptr->exception_ptr(); ex)
             {
                 ::std::rethrow_exception(ex);
@@ -246,6 +224,38 @@ namespace fp_detials
                 return;
             else return m_storage_ptr->move_out();
         }
+
+        bool ready(const ::std::unique_lock<::std::mutex>& lk) const noexcept 
+        { 
+            assert(lk.mutex() == &m_lock);
+            return !!m_storage_ptr; 
+        }
+
+        auto get(::std::unique_lock<::std::mutex>& lk)
+        {
+            assert(lk.mutex() == &m_lock);
+            if (!ready(lk)) 
+                m_cond.wait(lk, [&lk, this]{ return ready(lk); });
+            return get_nonblk(lk);
+        }
+
+    private:
+        void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
+        {
+            auto lk = get_unique_lock();
+            [[assume(lk.mutex() == &m_lock)]];
+            set_storage_ptr(::std::move(ptr), lk);
+        }
+
+        void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr, 
+                             const ::std::unique_lock<::std::mutex>& lk)
+        {
+            assert(lk.mutex() == &m_lock);
+            m_storage_ptr = ::std::move(ptr);
+            m_cond.notify_all(); 
+        }
+
+        auto get_unique_lock() const { return ::std::unique_lock{ m_lock }; }
 
     private:
         ::std::shared_ptr<fp_detials::promise_storage<value_type>> m_storage_ptr;
@@ -286,7 +296,7 @@ namespace fp_detials
          */
         bool ready() const noexcept 
         { 
-            if (!m_impl_ptr) return false;
+            if (!valid()) return false;
             return m_impl_ptr->ready(); 
         }
 
@@ -304,7 +314,7 @@ namespace fp_detials
          */
         auto get() 
         { 
-            assert(m_impl_ptr);
+            assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get();
             else return m_impl_ptr->get();
@@ -325,11 +335,41 @@ namespace fp_detials
          */
         auto get_nonblk()
         {
-            assert(m_impl_ptr);
+            assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get_nonblk();
             else return m_impl_ptr->get_nonblk();
         }
+
+        auto get_shared_state_lock() const noexcept 
+        { 
+            assert(valid());
+            return m_impl_ptr->get_shared_state_lock(); 
+        }
+
+        auto get_nonblk(const ::std::unique_lock<::std::mutex>& lk)
+        {
+            assert(valid());
+            if constexpr (::std::same_as<value_type, void>) 
+                m_impl_ptr->get_nonblk(lk);
+            else return m_impl_ptr->get_nonblk(lk);
+        }
+
+        bool ready(const ::std::unique_lock<::std::mutex>& lk) const noexcept 
+        { 
+            assert(valid());
+            return m_impl_ptr->ready(lk);
+        }
+
+        auto get(::std::unique_lock<::std::mutex>& lk)
+        {
+            assert(valid());
+            if constexpr (::std::same_as<value_type, void>) 
+                m_impl_ptr->get(lk);
+            else return m_impl_ptr->get(lk);
+        }
+
+        bool valid() const noexcept { return m_impl_ptr != nullptr; }
 
     private:
         ::std::shared_ptr<fp_detials::future_impl<value_type>> m_impl_ptr;
@@ -378,15 +418,8 @@ public:
     }
 
 public:
-    reference_type get() 
-    { 
-        return *fp_detials::future_base<pointer_type>::get();
-    }
-
-    reference_type get_nonblk()
-    {
-        return *fp_detials::future_base<pointer_type>::get_nonblk();
-    }
+    reference_type get()        { return *fp_detials::future_base<pointer_type>::get(); }
+    reference_type get_nonblk() { return *fp_detials::future_base<pointer_type>::get_nonblk(); }
 };
 
 namespace fp_detials
@@ -410,17 +443,12 @@ namespace fp_detials
         promise_base& operator=(promise_base&&) noexcept = default;
 
     public:
-        future<value_type> get_future()
-        {
-            return { m_impl_ptr->get_future_impl_p() };
-        }
-
-        void set_exception(::std::exception_ptr e)
-        {
-            m_impl_ptr->set_exception(::std::move(e));
-        }
-
+        future<value_type> get_future() { return { m_impl_ptr->get_future_impl_p() }; }
+        void set_exception(::std::exception_ptr e) { m_impl_ptr->set_exception(::std::move(e)); }
+        void set_exception(const auto& lk, ::std::exception_ptr e) { m_impl_ptr->set_exception(lk, ::std::move(e)); }
         auto& storage() noexcept { return m_impl_ptr->storage(); }
+        bool future_ready() const noexcept { return m_impl_ptr->future_ready(); }
+        auto get_shared_state_lock() const noexcept { return m_impl_ptr->get_shared_state_lock(); }
 
     protected:
         ::std::shared_ptr<fp_detials::promise_impl<value_type>> m_impl_ptr;
@@ -447,17 +475,12 @@ namespace fp_detials
         promise_base& operator=(promise_base&&) noexcept = default;
 
     public:
-        future<reference_type> get_future()
-        {
-            return { m_impl_ptr->get_future_impl_p() };
-        }
-
-        void set_exception(::std::exception_ptr e)
-        {
-            m_impl_ptr->set_exception(::std::move(e));
-        }
-
+        future<reference_type> get_future() { return { m_impl_ptr->get_future_impl_p() }; }
+        void set_exception(::std::exception_ptr e) { m_impl_ptr->set_exception(::std::move(e)); }
+        void set_exception(const auto& lk, ::std::exception_ptr e) { m_impl_ptr->set_exception(lk, ::std::move(e)); }
         auto& storage() noexcept { return m_impl_ptr->storage(); }
+        bool future_ready() const noexcept { return m_impl_ptr->future_ready(); }
+        auto get_shared_state_lock() const noexcept { return m_impl_ptr->get_shared_state_lock(); }
 
     protected:
         ::std::shared_ptr<fp_detials::promise_impl<pointer_type>> m_impl_ptr;
@@ -477,10 +500,10 @@ public:
      *  this function call will wake up the clocked future object.
      */
     template<typename T>
-    void set_value(T&& val)
-    {
-        this->m_impl_ptr->set_value(::std::forward<T>(val));
-    }
+    void set_value(T&& val) { this->m_impl_ptr->set_value(::std::forward<T>(val)); }
+
+    template<typename T>
+    void set_value(const auto& lk, T&& val) { this->m_impl_ptr->set_value(lk, ::std::forward<T>(val)); }
 };
 
 template<typename T>
@@ -489,11 +512,8 @@ class promise<T&> : public fp_detials::promise_base<T&>
 public:
     using value_type = T;
     using reference_type = T&;
-    
-    void set_value(reference_type ref)
-    {
-        this->m_impl_ptr->set_value(&ref);
-    }
+    void set_value(reference_type ref) { this->m_impl_ptr->set_value(&ref); }
+    void set_value(const auto& lk, reference_type ref) { this->m_impl_ptr->set_value(lk, &ref); }
 };
 
 template<>
@@ -505,10 +525,8 @@ public:
     /*! \brief Do nothing but tell the future object: I'm ready.
      *  \see `promise`
      */
-    void set_value() const noexcept 
-    {
-        this->m_impl_ptr->set_value();
-    }
+    void set_value() const noexcept { this->m_impl_ptr->set_value(); }
+    void set_value(const auto& lk) const noexcept { this->m_impl_ptr->set_value(lk); }
 };
 
 KOIOS_NAMESPACE_END

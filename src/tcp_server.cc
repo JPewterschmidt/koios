@@ -30,26 +30,6 @@ KOIOS_NAMESPACE_BEG
 
 using namespace toolpex;
 
-tcp_server_until_done_aw::
-tcp_server_until_done_aw(tcp_server& server)
-    : m_server{ server }
-{
-}
-
-bool 
-tcp_server_until_done_aw::
-await_ready() const noexcept 
-{ 
-    return m_server.is_stop(); 
-}
-
-void 
-tcp_server_until_done_aw::
-await_suspend(task_on_the_fly h)
-{
-    m_server.add_waiting(::std::move(h));
-}
-
 tcp_server::
 tcp_server(toolpex::ip_address::ptr addr, 
            ::in_port_t port)
@@ -57,15 +37,29 @@ tcp_server(toolpex::ip_address::ptr addr,
 {
 }
 
+tcp_server::~tcp_server() noexcept
+try
+{
+    m_stop_complete.get();
+}
+catch (const koios::exception& e)
+{
+    e.log();
+}
+catch (const ::std::exception& e)
+{
+    koios::log_error(e.what());
+}
+catch (...)
+{
+    koios::log_error("unknow exception was catched during the destruction of tcp_server");
+}
+
 void
 tcp_server::
 until_stop_blk()
 {
-    ::std::lock_guard lk{ m_futures_lock };
-    for (auto& f : m_futures)
-    {
-        f.get();
-    }
+    until_stop_async().result();
 }
 
 void tcp_server::listen()
@@ -76,14 +70,29 @@ void tcp_server::listen()
 
 void tcp_server::stop()
 {
-    m_stop.store(true);
+    //if (m_stop_src.stop_requested()) return;
+    m_stop_src.request_stop();
+    m_stop_complete = send_cancel_to_awaiting_accept().run_and_get_future();
     m_sockfd = toolpex::unique_posix_fd{};
+}
 
-    ::std::lock_guard lk{ m_waitings_lock };
-    for (auto& h : m_waitings)
+task<> tcp_server::until_stop_async()
+{
+    if (is_stop()) co_return;
+    [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
+    co_return;
+}
+
+task<> tcp_server::send_cancel_to_awaiting_accept() const noexcept
+{
+    ::std::shared_lock lk{ m_stop_related_lock };
+    for (void* handle : m_loop_handles)
     {
-        get_task_scheduler().enqueue(::std::move(h));
+        lk.unlock();
+        co_await uring::cancel_all(handle);
+        lk.lock();
     }
+    co_return;
 }
 
 KOIOS_NAMESPACE_END

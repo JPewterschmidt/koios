@@ -70,6 +70,7 @@ void tcp_server::listen()
 
 void tcp_server::stop()
 {
+    //if (m_stop_src.stop_requested()) return;
     m_stop_src.request_stop();
     m_stop_complete = send_cancel_to_awaiting_accept().run_and_get_future();
     m_sockfd = toolpex::unique_posix_fd{};

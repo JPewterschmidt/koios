@@ -97,6 +97,7 @@ private:
         assert(flag.stop_possible());
         if (flag.stop_requested()) 
         {
+            server_loop_exit();
             co_return;
         }
 
@@ -107,36 +108,36 @@ private:
         }
 
         while (!flag.stop_requested())
-        try
         {
             auto accret = co_await uring::accept(m_sockfd); // to prevent so called 
                                                             // "insufficient contextual information to determine type
-            if (auto ec = accret.error_code(); ec)
+            if (auto ec = accret.error_code(); 
+                ec.value() == ECANCELED && ec.category() == ::std::system_category())
+            {
+                break;
+            }
+            else if (ec)
             {
                 koios::log_error(ec.message());
                 continue;
             }
             make_emitter(userdefined, accret.get_client()).run();
         }
-        catch (const koios::exception& e)
-        {
-            e.log();
-        }
-        catch (...)
-        {
-            koios::log_error("tcp_server catched unknow exception");
-        }
 
-        if (m_count.fetch_sub() <= 0)
-        {
-            m_waiting_latch.unlock();
-        }
-
+        server_loop_exit();
         co_return;
     }
 
     void listen();
     task<> send_cancel_to_awaiting_accept() const noexcept;
+
+    void server_loop_exit() noexcept
+    {
+        if (m_count.fetch_sub() <= 0)
+        {
+            m_waiting_latch.unlock();
+        }
+    }
 
 private:
     toolpex::unique_posix_fd    m_sockfd;

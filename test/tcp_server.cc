@@ -21,7 +21,9 @@ namespace
         co_await uring::send(client, msg);
         ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
         if (sv.contains("stop"))
+        {
             flag.store(true), sp->stop();
+        }
 
         co_return;
     }

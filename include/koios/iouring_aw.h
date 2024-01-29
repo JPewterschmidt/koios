@@ -33,11 +33,12 @@ namespace koios::uring
     class iouring_aw
     {
     public:
-        iouring_aw() noexcept = default;
+        iouring_aw() = default;
         iouring_aw(::io_uring_sqe sqe);
 
         iouring_aw(iouring_aw&&) noexcept = default;
         iouring_aw& operator=(iouring_aw&&) noexcept = default;
+        auto* sqe_ptr() noexcept { return &m_sqe; }
 
         constexpr bool await_ready() const noexcept { return false; }
         
@@ -49,7 +50,7 @@ namespace koios::uring
         }
 
     private:
-        ::std::shared_ptr<ioret> m_ret;
+        ::std::shared_ptr<ioret> m_ret{::std::make_shared<ioret>()};
         ::io_uring_sqe m_sqe{};
     };
 }

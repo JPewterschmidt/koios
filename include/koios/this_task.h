@@ -23,6 +23,8 @@
 #include "runtime.h"
 #include <chrono>
 
+#include "toolpex/concepts_and_traits.h"
+
 KOIOS_NAMESPACE_BEG
 
 namespace this_task
@@ -52,8 +54,16 @@ namespace this_task
         Duration m_dura;
     };
 
-    auto sleep_for(auto dura)
+    auto sleep_for(toolpex::is_specialization_of<::std::chrono::duration> auto dura)
     {
+        return sleep_await{ dura };
+    }
+
+    template<typename Clock, typename Duration = typename Clock::duration>
+    auto sleep_until(::std::chrono::time_point<Clock, Duration> tp)
+    {
+        auto dura = tp - Clock::now();
+        dura = dura > Duration{} ? dura : Duration{};
         return sleep_await{ dura };
     }
 

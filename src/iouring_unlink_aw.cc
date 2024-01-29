@@ -18,11 +18,14 @@
 
 #include "koios/iouring_unlink_aw.h"
 #include <liburing.h>
+#include <cassert>
 
 namespace koios::uring { 
 
 unlink::unlink(::std::filesystem::path path, int flags)
+    : m_path_str{ path }
 {
+    assert(!m_path_str.empty());   
     ::io_uring_prep_unlink(sqe_ptr(), m_path_str.c_str(), flags);
 }
 

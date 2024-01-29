@@ -35,19 +35,12 @@ namespace koios::uring
     public:
         iouring_aw() = default;
         iouring_aw(::io_uring_sqe sqe);
-
         iouring_aw(iouring_aw&&) noexcept = default;
         iouring_aw& operator=(iouring_aw&&) noexcept = default;
         auto* sqe_ptr() noexcept { return &m_sqe; }
-
         constexpr bool await_ready() const noexcept { return false; }
-        
         void await_suspend(task_on_the_fly h);
-
-        detials::ioret_for_any_base await_resume() 
-        { 
-            return *m_ret;
-        }
+        detials::ioret_for_any_base await_resume() { return *m_ret; }
 
     private:
         ::std::shared_ptr<ioret> m_ret{::std::make_shared<ioret>()};

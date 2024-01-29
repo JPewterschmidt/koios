@@ -38,6 +38,7 @@ namespace koios::uring
 
         iouring_aw(iouring_aw&&) noexcept = default;
         iouring_aw& operator=(iouring_aw&&) noexcept = default;
+        auto* sqe_ptr() noexcept { return &m_sqe; }
 
         constexpr bool await_ready() const noexcept { return false; }
         

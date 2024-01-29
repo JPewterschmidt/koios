@@ -87,6 +87,14 @@ public:
     task<> until_stop_async();
 
 private:
+    void server_loop_exit() noexcept
+    {
+        if (m_count.fetch_sub() <= 0)
+        {
+            m_waiting_latch.unlock();
+        }
+    }
+
     friend class tcp_server_until_done_aw;
     emitter_task<void> tcp_loop(
         ::std::stop_token flag, 
@@ -130,14 +138,6 @@ private:
 
     void listen();
     task<> send_cancel_to_awaiting_accept() const noexcept;
-
-    void server_loop_exit() noexcept
-    {
-        if (m_count.fetch_sub() <= 0)
-        {
-            m_waiting_latch.unlock();
-        }
-    }
 
 private:
     toolpex::unique_posix_fd    m_sockfd;

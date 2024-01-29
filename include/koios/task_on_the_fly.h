@@ -83,6 +83,7 @@ public:
     }
 
     operator bool() const noexcept { return holds_ownership() && m_h; }
+    bool valid() const noexcept { return this->operator bool(); }
 
     bool done() const noexcept
     {

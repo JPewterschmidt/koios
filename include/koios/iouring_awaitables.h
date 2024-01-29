@@ -33,6 +33,7 @@
 #include "koios/iouring_write_aw.h"
 #include "koios/iouring_connect_aw.h"
 #include "koios/iouring_cancel_aw.h"
+#include "koios/iouring_rename_aw.h"
 #include "koios/exceptions.h"
 
 #include "koios/task.h"

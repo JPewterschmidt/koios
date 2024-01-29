@@ -24,8 +24,7 @@ KOIOS_NAMESPACE_BEG
 namespace uring { 
 
 iouring_aw::iouring_aw(::io_uring_sqe sqe) 
-    : m_ret{ ::std::make_shared<ioret>() }, 
-      m_sqe{ sqe }
+    : m_sqe{ sqe }
 {
 }
 

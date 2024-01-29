@@ -21,20 +21,9 @@
 
 namespace koios::uring { 
 
-static 
-::io_uring_sqe 
-init_helper(::std::string_view path, int flags)
-{
-    ::io_uring_sqe result{};
-    ::io_uring_prep_unlink(&result, path.data(), flags);
-
-    return result;
-}
-
 unlink::unlink(::std::filesystem::path path, int flags)
-    : m_path_str{ path.string() }
 {
-    static_cast<iouring_aw&>(*this) = iouring_aw{ init_helper(m_path_str, flags) };
+    ::io_uring_prep_unlink(sqe_ptr(), m_path_str.c_str(), flags);
 }
 
 } // namespace koios::uring

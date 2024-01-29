@@ -76,36 +76,21 @@ namespace koios::uring
         class iouring_aw_for_connect : public iouring_aw
         {
         public:
-            template<typename... Args>
-            iouring_aw_for_connect(Args&&... args)
-                : iouring_aw(::std::forward<Args>(args)...)
-            {
-            }
-
+            using iouring_aw::iouring_aw;
             ioret_for_connect await_resume();
         };
 
         class iouring_aw_for_data_deliver : public iouring_aw
         {
         public:
-            template<typename... Args>
-            iouring_aw_for_data_deliver(Args&&... args)
-                : iouring_aw(::std::forward<Args>(args)...)
-            {
-            }
-
+            using iouring_aw::iouring_aw;
             ioret_for_data_deliver await_resume();
         };
 
         class iouring_aw_for_socket : public iouring_aw
         {
         public:
-            template<typename... Args>
-            iouring_aw_for_socket(Args&&... args)
-                : iouring_aw(::std::forward<Args>(args)...)
-            {
-            }
-            
+            using iouring_aw::iouring_aw;
             ioret_for_socket await_resume();
         };
 

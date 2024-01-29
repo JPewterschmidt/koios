@@ -55,6 +55,11 @@ public:
     {
     }
 
+    exception(int ecval) noexcept
+        : exception{ ::std::error_code{ ecval, ::std::system_category() } }
+    {
+    }
+
     virtual const char* what() const noexcept override { return m_msg.c_str(); }
     void log() const noexcept;
 

@@ -22,7 +22,6 @@ namespace koios::uring {
 
 uring::socket::socket(int domain, int type, int protocal, unsigned int flags)
 {
-    errno = 0;
     ::io_uring_prep_socket(sqe_ptr(), domain, type, protocal, flags);
 }
 

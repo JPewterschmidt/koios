@@ -19,7 +19,6 @@
 #include "koios/iouring_recvmsg_aw.h"
 #include <system_error>
 #include <liburing.h>
-#include <cerrno>
 
 namespace koios::uring { 
 
@@ -27,7 +26,6 @@ recvmsg::recvmsg(const toolpex::unique_posix_fd& fd,
                  ::msghdr* msg, 
                  int flags)
 {
-    errno = 0;
     ::io_uring_prep_recvmsg(sqe_ptr(), fd, msg, flags);
 }
 

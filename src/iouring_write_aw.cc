@@ -16,7 +16,6 @@
  * foundation, inc., 51 franklin street, fifth floor, boston, ma  02110-1301, usa.
  */
 
-#include <cerrno>
 #include "koios/iouring_write_aw.h"
 
 namespace koios::uring { 
@@ -25,7 +24,6 @@ write::write(const toolpex::unique_posix_fd& fd,
              ::std::span<const ::std::byte> buffer, 
              uint64_t offset)
 {
-    errno = 0;
     ::io_uring_prep_write(
         sqe_ptr(), fd, 
         buffer.data(), static_cast<unsigned>(buffer.size_bytes()), 
@@ -37,7 +35,6 @@ write::write(const toolpex::unique_posix_fd& fd,
              ::std::string_view buffer, 
              uint64_t offset)
 {
-    errno = 0;
     ::io_uring_prep_write(
         sqe_ptr(), fd, 
         buffer.data(), static_cast<unsigned>(buffer.size()), 

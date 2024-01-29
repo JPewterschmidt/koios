@@ -19,7 +19,6 @@
 #include "koios/iouring_send_aw.h"
 #include <system_error>
 #include <liburing.h>
-#include <cerrno>
 
 namespace koios::uring { 
 
@@ -34,7 +33,6 @@ send::send(const toolpex::unique_posix_fd& fd,
            ::std::string_view buffer,
            int flags)
 {
-    errno = 0;
     ::io_uring_prep_send(sqe_ptr(), fd, buffer.data(), buffer.size(), flags);
 }
 
@@ -42,7 +40,6 @@ send::send(const toolpex::unique_posix_fd& fd,
            ::std::span<const ::std::byte> buffer, 
            int flags)
 {
-    errno = 0;
     ::io_uring_prep_send(sqe_ptr(), fd, buffer.data(), buffer.size_bytes(), flags);
 }
 

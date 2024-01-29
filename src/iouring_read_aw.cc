@@ -26,7 +26,6 @@ read::read(const toolpex::unique_posix_fd& fd,
            ::std::span<::std::byte> buffer, 
            uint64_t offset)
 {
-    errno = 0;
     ::io_uring_prep_read(
         sqe_ptr(), fd, 
         buffer.data(), 

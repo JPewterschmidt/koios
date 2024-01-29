@@ -20,7 +20,6 @@
 
 #include <system_error>
 #include <liburing.h>
-#include <cerrno>
 
 namespace koios::uring { 
 
@@ -28,7 +27,6 @@ sendmsg::sendmsg(const toolpex::unique_posix_fd& fd,
                  const ::msghdr* msg, 
                  int flags)
 {
-    errno = 0;
     ::io_uring_prep_sendmsg(sqe_ptr(), fd, msg, flags);
 }
 

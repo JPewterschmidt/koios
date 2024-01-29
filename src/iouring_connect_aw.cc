@@ -33,8 +33,6 @@ namespace koios::uring
             sqe_ptr(), fd, 
             reinterpret_cast<sockaddr*>(&m_sockaddr), len
         ); 
-        
-        errno = 0;
     }
 
     ::koios::task<toolpex::unique_posix_fd> 

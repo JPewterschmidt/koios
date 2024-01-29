@@ -19,7 +19,6 @@
 #include "koios/iouring_recv_aw.h"
 #include <system_error>
 #include <liburing.h>
-#include <cerrno>
 
 namespace koios::uring { 
 
@@ -27,7 +26,6 @@ recv::recv(const toolpex::unique_posix_fd& fd,
            ::std::span<::std::byte> buffer, 
            int flags)
 {
-    errno = 0;
     ::io_uring_prep_recv(
         sqe_ptr(), fd, 
         buffer.data(), static_cast<size_t>(buffer.size_bytes()), 

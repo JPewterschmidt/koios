@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "koios/future.h"
+#include "koios/future_concepts.h"
 
 using namespace koios;
 
@@ -72,4 +73,9 @@ TEST(future, future_ready3)
     auto f = p.get_future();
     p.set_value();
     ASSERT_TRUE(p.future_ready());
+}
+
+TEST(future, future_concept)
+{
+    ASSERT_TRUE(future_concept<koios::future<int>>);
 }

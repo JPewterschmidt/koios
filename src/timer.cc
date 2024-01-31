@@ -38,6 +38,11 @@ void timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
+    if (g_cleanning.load())
+    {
+        g_done_cond.notify_all();
+        return;
+    }
 
     ::std::shared_lock lk{ m_lk };
     if (m_timer_heap.empty() 

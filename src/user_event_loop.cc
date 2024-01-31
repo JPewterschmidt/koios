@@ -27,6 +27,7 @@ void user_event_loops::stop() noexcept
 void user_event_loops::quick_stop() noexcept
 {
     ::std::shared_lock lk{ m_mutex };
+    m_cleanning = true;
     for (auto& loop : m_loops)
     {
         loop->quick_stop();
@@ -57,6 +58,7 @@ user_event_loops::max_sleep_duration(const per_consumer_attr& attr) noexcept
 void user_event_loops::do_occured_nonblk() noexcept
 {
     ::std::shared_lock lk{ m_mutex };
+    if (m_cleanning == true) [[unlikely]] return;
     for (auto& loop : m_loops)
     {
         loop->do_occured_nonblk();

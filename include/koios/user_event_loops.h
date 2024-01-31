@@ -28,6 +28,7 @@ public:
 private:
     ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;
     ::std::vector<user_event_loop_interface::sptr> m_loops;
+    bool m_cleanning{};
     mutable ::std::shared_mutex m_mutex;
 };
 

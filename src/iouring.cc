@@ -130,6 +130,7 @@ void iouring_event_loop::
 do_occured_nonblk()
 {
     auto [lk, ptr] = shrlk_and_curthr_ptr();
+    if (m_cleaning == true) [[unlikely]] return;
     ptr->do_occured_nonblk();
 }
 
@@ -141,6 +142,7 @@ add_event(
 {
     const auto tid = ::std::this_thread::get_id();
     auto lk = get_shrlk();
+    if (m_cleaning == true) [[unlikely]] return;
     if (auto it = m_impls.find(tid); it != m_impls.end())
     {
         it->second->add_event(
@@ -175,6 +177,7 @@ iouring_event_loop::
 max_sleep_duration(const per_consumer_attr& attr) const 
 {
     auto lk = get_shrlk();
+    if (m_cleaning == true) [[unlikely]] return 10000ms;
     if (auto it = m_impls.find(attr.thread_id); it != m_impls.end())
         return ::std::min(200ms, it->second->max_sleep_duration());
     return {};

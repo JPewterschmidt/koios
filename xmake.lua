@@ -40,12 +40,12 @@ target("koios")
         "fmt", 
         "gflags", 
         "concurrentqueue", 
-        "botan"
+        "botan",
+        "spdlog"
     )
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })
     add_syslinks(
-        "spdlog", 
         "uring"
     )
     add_files( "src/*.cc")

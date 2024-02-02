@@ -70,9 +70,9 @@ lock()
 
     auto lk = co_await m_mutex->acquire();
 
-    assert(!m_hold);
+    assert(!is_hold());
     m_hold = ::std::exchange(lk.m_hold, false);
-    assert(m_hold);
+    assert(is_hold());
 
     co_return;
 }
@@ -80,7 +80,7 @@ lock()
 void unique_lock::
 unlock() noexcept
 {
-    if (m_mutex && m_hold)
+    if (m_mutex && is_hold())
     {
         m_mutex->release();
         m_hold = false;
@@ -112,7 +112,7 @@ static void wake_up(waiting_handle& h)
 void mutex::
 try_wake_up_next_impl() noexcept
 {
-    if (m_holded) return;
+    if (being_held()) return;
     m_holded = true;
 
     waiting_handle handle{};

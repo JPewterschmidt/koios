@@ -68,6 +68,8 @@ public:
     /*! \brief Automatically release the ownership. */
     ~unique_lock() noexcept { unlock(); }
 
+    bool is_hold() const noexcept { return m_hold; }
+
 private:
     mutex* m_mutex{};
     bool m_hold{ true };
@@ -123,6 +125,7 @@ private:
     void release();
     
     void try_wake_up_next_impl() noexcept;
+    bool being_held() const noexcept { return m_holded; }
 
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;

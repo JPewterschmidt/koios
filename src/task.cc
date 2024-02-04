@@ -33,5 +33,6 @@ template class koios::_task<int, run_this_async, discardable, eager_aw>;
 template class koios::_task<size_t, run_this_async, discardable, eager_aw>;
 template class koios::_task<::std::string, run_this_async, discardable, eager_aw>;
 template class koios::_task<::std::string_view, run_this_async, discardable, eager_aw>;
+template class koios::_task<::std::error_code, run_this_async, discardable, eager_aw>;
 
 KOIOS_NAMESPACE_END

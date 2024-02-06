@@ -37,7 +37,7 @@
 
 KOIOS_NAMESPACE_BEG
 
-class tcp_server
+class tcp_server : public toolpex::move_only
 {
 public:
     tcp_server(toolpex::ip_address::ptr addr, 
@@ -48,7 +48,15 @@ public:
     {
     }
 
+    tcp_server(tcp_server&& other) noexcept;
+    tcp_server& operator=(tcp_server&& other) noexcept;
     ~tcp_server() noexcept;
+
+    task<tcp_server> start(task_callable_concept auto callback) &&
+    {
+        co_await start_impl(::std::move(callback));
+        co_return ::std::move(*this);
+    }
 
     /*! \brief  Make the tcp server start working
      *
@@ -58,7 +66,19 @@ public:
      *
      *  \attention This function could be called only once !
      */
-    task<void> start(task_callable_concept auto callback)
+    task<tcp_server&> start(task_callable_concept auto callback) &
+    {
+        co_await start_impl(::std::move(callback));
+        co_return *this;
+    }
+
+    void stop();
+    void until_stop_blk();
+    bool is_stop() const noexcept;
+    task<> until_stop_async();
+
+private:
+    task<> start_impl(task_callable_concept auto callback)
     {
         m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
         this->listen();
@@ -70,23 +90,8 @@ public:
             m_count.fetch_add();
             tcp_loop(m_stop_src.get_token(), callback).run(*attr);
         }
-
-        co_return;
     }
 
-    void stop();
-    void until_stop_blk();
-    bool is_stop() const noexcept 
-    { 
-        if (m_stop_src.stop_requested())
-        {
-            return m_count.load() == 0;
-        }
-        return false;
-    }
-    task<> until_stop_async();
-
-private:
     void server_loop_exit() noexcept
     {
         if (m_count.fetch_sub() <= 0)
@@ -152,6 +157,11 @@ private:
     koios::unique_lock          m_waiting_latch;
     koios::future<void>         m_stop_complete;
 };
+
+namespace tcp_server_literals
+{
+    tcp_server operator""_tcp_s(const char* opt_ip_port, ::std::size_t len);
+}
 
 KOIOS_NAMESPACE_END
 

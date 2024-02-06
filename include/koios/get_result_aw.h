@@ -58,6 +58,7 @@ public:
 /***                          Critical Section Begin                                ***/
 /**************************************************************************************/
 /**/    lock_shared_state();                                                        /**/
+/**/    assert(m_lock);                                                             /**/
 /**/    return m_future.ready(m_lock);                                              /**/
 /**/}                                                                               /**/
 
@@ -70,12 +71,12 @@ public:
 /**/    // Dear developers:                                                         /**/
 /**/    // This function should not throw (even potentially) anything.              /**/
 /**/    // See also comments of `thread_pool::enqueue`                              /**/
-/**/                                                                                /**/
+/**/    assert(this->m_lock);                                                       /**/
+/**/    auto lk = ::std::move(m_lock);                                              /**/
 /**/    m_promise.set_caller(::std::move(h));                                       /**/
 /**/    DriverPolicy{}.scheduler().enqueue(                                         /**/
 /**/        static_cast<Task*>(this)->get_handler_to_schedule()                     /**/
 /**/    );                                                                          /**/
-/**/    unlock_shared_state();                                                      /**/
 /**************************************************************************************/
 /***                        Critical Section End **2**                              ***/
 /**************************************************************************************/
@@ -140,20 +141,17 @@ class get_result_aw
 {
 public:
     using value_type = T;
-
-    get_result_aw(promise_wrapper<value_type> promise)
-        : get_result_aw_base<T, Task, DriverPolicy>{ ::std::move(promise) }
-    {
-    }
+    using base = get_result_aw_base<T, Task, DriverPolicy>;
+    using base::get_result_aw_base;
     
 /**/decltype(auto) await_resume()                                                   /**/
 /**/{                                                                               /**/
-/**/    auto result = this->m_future.get_nonblk(this->m_lock);                      /**/
-/**/    this->unlock_shared_state();                                                /**/
+/**/    if (!this->m_lock) this->lock_shared_state();                               /**/
+/**/    auto lk = ::std::move(this->m_lock);                                        /**/
+/**/    return this->m_future.get_nonblk(lk);                                       /**/
 /**************************************************************************************/
 /***                        Critical Section End **2**                              ***/
 /**************************************************************************************/
-        return result;
     }
 };
 
@@ -163,16 +161,14 @@ class get_result_aw<void, Task, DriverPolicy>
 {
 public:
     using value_type = void;
-
-    get_result_aw(promise_wrapper<void> promise)
-        : get_result_aw_base<void, Task, DriverPolicy>{ ::std::move(promise) }
-    {
-    }
+    using base = get_result_aw_base<void, Task, DriverPolicy>;
+    using base::get_result_aw_base;
 
 /**/void await_resume()                                                             /**/
 /**/{                                                                               /**/
-/**/    this->m_future.get_nonblk(this->m_lock);                                    /**/
-/**/    this->unlock_shared_state();                                                /**/
+/**/    if (!this->m_lock) this->lock_shared_state();                               /**/
+/**/    auto lk = ::std::move(this->m_lock);                                        /**/
+/**/    this->m_future.get_nonblk(lk);                                              /**/
 /**************************************************************************************/
 /***                        Critical Section End **3**                              ***/
 /**************************************************************************************/

@@ -25,15 +25,46 @@
 #include <cassert>
 #include <netinet/in.h>
 #include <thread>
+#include <string_view>
+#include <algorithm>
 
 KOIOS_NAMESPACE_BEG
 
 using namespace toolpex;
 
+namespace tcp_server_literals
+{
+
+tcp_server operator""_tcp_s(const char* opt_ip_port, ::std::size_t len)
+{
+    const ::std::string_view str{ opt_ip_port, len };
+    const auto delima = str.rfind(':');
+    if (delima == ::std::string_view::npos) // without port
+        throw koios::exception{"tcp_server literals: port is required."};
+    const auto port  = str.substr(0, delima);
+    const auto ipstr = str.substr(delima + 1);
+    
+    const auto portnum = ::atoi(port.data());
+    return { ip_address::make(ipstr), static_cast<::in_port_t>(portnum) };
+}
+
+}
+
 tcp_server::
 tcp_server(toolpex::ip_address::ptr addr, 
            ::in_port_t port)
     : m_addr{ ::std::move(addr) }, m_port{ port }
+{
+}
+
+tcp_server::
+tcp_server(tcp_server&& other) noexcept
+    : m_sockfd{ ::std::move(other.m_sockfd) },
+      m_addr{::std::move(m_addr)},
+      m_port{::std::move(m_port)},
+      m_stop_src{::std::move(m_stop_src)},
+      m_loop_handles{::std::move(m_loop_handles)},
+      m_stop_complete{::std::move(m_stop_complete)}
 {
 }
 
@@ -60,6 +91,15 @@ tcp_server::
 until_stop_blk()
 {
     until_stop_async().result();
+}
+
+bool tcp_server::is_stop() const noexcept 
+{ 
+    if (m_stop_src.stop_requested())
+    {
+        return m_count.load() == 0;
+    }
+    return false;
 }
 
 void tcp_server::listen()

@@ -315,14 +315,14 @@ using emitter_task = async_task<T, InitialSuspendAw>;
 using taskec = task<::std::error_code>;
 using etaskec = emitter_task<::std::error_code>;
 
-extern template class koios::_task<void, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<void, run_this_async, non_discardable, eager_aw>;
-extern template class koios::_task<bool, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<int, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<size_t, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<::std::string, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<::std::string_view, run_this_async, discardable, eager_aw>;
-extern template class koios::_task<::std::error_code, run_this_async, discardable, eager_aw>;
+extern template class koios::_task<void, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<void, run_this_async, non_discardable, eager_aw>::_type;
+extern template class koios::_task<bool, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<int, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<size_t, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::string, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::string_view, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::error_code, run_this_async, discardable, eager_aw>::_type;
 
 KOIOS_NAMESPACE_END
 

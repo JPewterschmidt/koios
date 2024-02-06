@@ -420,6 +420,16 @@ public:
 public:
     reference_type get()        { return *fp_detials::future_base<pointer_type>::get(); }
     reference_type get_nonblk() { return *fp_detials::future_base<pointer_type>::get_nonblk(); }
+
+    reference_type get(const ::std::unique_lock<::std::mutex>& lk)        
+    { 
+        return *fp_detials::future_base<pointer_type>::get(lk); 
+    }
+
+    reference_type get_nonblk(::std::unique_lock<::std::mutex>& lk)
+    { 
+        return *fp_detials::future_base<pointer_type>::get_nonblk(lk); 
+    }
 };
 
 namespace fp_detials

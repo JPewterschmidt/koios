@@ -1,5 +1,5 @@
-#ifndef KOIOS_TASK_CALL_ONCE_H
-#define KOIOS_TASK_CALL_ONCE_H
+#ifndef KOIOS_TASK_RELEASE_ONCE_H
+#define KOIOS_TASK_RELEASE_ONCE_H
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"

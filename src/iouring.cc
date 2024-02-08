@@ -29,6 +29,18 @@ using namespace ::std::chrono_literals;
 
 namespace iel_detials
 {
+    void ioret_task::set_ret_and_wakeup(int32_t ret, uint32_t flags)
+    {
+        m_task_container
+            ->release()
+            .and_then([=, this](auto&& t) mutable -> ::std::optional<task_on_the_fly> { 
+                this->m_ret->ret = ret;
+                this->m_ret->flags = flags;
+                get_task_scheduler().enqueue(::std::move(t)); 
+                return ::std::nullopt;
+            });
+    }
+
     void iouring_event_loop_perthr::
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {
@@ -40,8 +52,7 @@ namespace iel_detials
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
 
-        cb.set_ret(cqep->res, cqep->flags);
-        cb.wakeup();
+        cb.set_ret_and_wakeup(cqep->res, cqep->flags);
     }
     
     void iouring_event_loop_perthr::
@@ -65,7 +76,8 @@ namespace iel_detials
         }
     }
 
-    void iouring_event_loop_perthr::
+    ::std::weak_ptr<task_release_once> 
+    iouring_event_loop_perthr::
     add_event(
         task_on_the_fly h, 
         ::std::shared_ptr<uring::ioret> retslot, 
@@ -75,21 +87,17 @@ namespace iel_detials
         sqe.user_data = addr;
         auto lk = get_lk();
         ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
-        m_suspended.insert({
-            addr, 
-            ioret_task(
-                ::std::move(retslot), 
-                ::std::move(h)
-            )
-        });
+
+        ioret_task t{ ::std::move(retslot), ::std::move(h) };
+        // Get the weak pointer to the release once task, 
+        // to allow user wake the task up eariler than the uring facility
+        auto weak_task = t.get_task_weakptr();
+
+        m_suspended.insert({ addr, ::std::move(t) });
         *sqep = sqe;
         ::io_uring_submit(&m_ring);
-    }
 
-    void ioret_task::
-    wakeup()
-    {
-        get_task_scheduler().enqueue(::std::move(m_task));
+        return weak_task;
     }
 
     ::std::chrono::milliseconds 
@@ -99,6 +107,21 @@ namespace iel_detials
         constexpr uint8_t mask = 2u;
         auto lk = get_lk();
         return static_cast<int>(mask & m_shot_record) * 50ms;
+    }
+
+    void iouring_event_loop_perthr::
+    set_timeout(::std::weak_ptr<task_release_once> taskp, 
+                ::std::chrono::milliseconds timeout) noexcept
+    {
+        if (taskp.expired()) [[unlikely]] return;
+        get_task_scheduler().add_event<timer_event_loop>(timeout, [taskp]{
+            auto tasksp = taskp.lock();
+            if (!tasksp) return;
+            tasksp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
+                get_task_scheduler().enqueue(::std::move(t));
+                return ::std::nullopt;
+            });
+        });
     }
 }
 
@@ -135,7 +158,8 @@ do_occured_nonblk()
     ptr->do_occured_nonblk();
 }
 
-void iouring_event_loop::
+::std::weak_ptr<task_release_once> 
+iouring_event_loop::
 add_event(
     task_on_the_fly h, 
     ::std::shared_ptr<uring::ioret> retslot, 
@@ -143,16 +167,16 @@ add_event(
 {
     const auto tid = ::std::this_thread::get_id();
     auto lk = get_shrlk();
-    if (m_cleaning == true) [[unlikely]] return;
+    if (m_cleaning == true) [[unlikely]] return {};
     if (auto it = m_impls.find(tid); it != m_impls.end())
     {
-        it->second->add_event(
+        return it->second->add_event(
             ::std::move(h), ::std::move(retslot), ::std::move(sqe)
         );
     }
     else
     {
-        m_impls.begin()->second->add_event(
+        return m_impls.begin()->second->add_event(
             ::std::move(h), ::std::move(retslot), ::std::move(sqe)
         );
     }

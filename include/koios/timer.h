@@ -35,6 +35,7 @@
 #include "koios/exceptions.h"
 #include "koios/per_consumer_attr.h"
 #include "toolpex/concepts_and_traits.h"
+#include "toolpex/exceptions.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -90,6 +91,11 @@ public:
             return result;
         };
         add_event(dura, to_tof(::std::move(t)));
+    }
+
+    void add_event(toolpex::is_std_chrono_duration auto dura, ::std::function<void()> f) noexcept
+    {
+        toolpex::not_implemented();
     }
 
     /*! \brief returning the maximum sleep duration of the `thread_pool`

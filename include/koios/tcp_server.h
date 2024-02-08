@@ -94,7 +94,7 @@ private:
 
     void server_loop_exit() noexcept
     {
-        if (m_count.fetch_sub() <= 0)
+        if (m_count.fetch_sub() <= 1)
         {
             m_waiting_latch.unlock();
         }
@@ -122,7 +122,8 @@ private:
 
         while (!flag.stop_requested())
         {
-            auto accret = co_await uring::accept(m_sockfd); // to prevent so called 
+            using namespace ::std::chrono_literals;
+            auto accret = co_await uring::accept(150ms, m_sockfd); // to prevent so called 
                                                             // "insufficient contextual information to determine type
             if (auto ec = accret.error_code(); 
                 ec.value() == ECANCELED && ec.category() == ::std::system_category())

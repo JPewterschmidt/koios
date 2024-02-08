@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <span>
+#include <chrono>
 
 namespace koios::uring
 {
@@ -41,10 +42,14 @@ namespace koios::uring
         constexpr bool await_ready() const noexcept { return false; }
         void await_suspend(task_on_the_fly h);
         detials::ioret_for_any_base await_resume() { return *m_ret; }
+        void set_timeout(::std::chrono::milliseconds timeout) noexcept { m_timeout = timeout; }
+        bool has_timeout() const noexcept { return m_timeout != ::std::chrono::milliseconds::max(); }
+        auto timeout_duration() const noexcept { return m_timeout; }
 
     private:
         ::std::shared_ptr<ioret> m_ret{::std::make_shared<ioret>()};
         ::io_uring_sqe m_sqe{};
+        ::std::chrono::milliseconds m_timeout{ ::std::chrono::milliseconds::max() };
     };
 }
 

@@ -65,7 +65,7 @@ public:
      *  \tparam SpecificLoop the loop you want to operate.
      */
     template<typename SpecificLoop>
-    void add_event(auto&&... data)
+    auto add_event(auto&&... data)
     {
         if (m_cleanning.load()) [[unlikely]]
         {
@@ -74,7 +74,7 @@ public:
                 "refuse further add_event operation!"
             };
         }
-        SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
+        return SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
     template<typename Loop>

@@ -35,6 +35,7 @@
 #include "koios/exceptions.h"
 #include "koios/per_consumer_attr.h"
 #include "toolpex/concepts_and_traits.h"
+#include "toolpex/exceptions.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -73,23 +74,15 @@ public:
      *  \param dura The expire time duration.
      *  \param f The callback coroutine when expired.
      */
-    void add_event(toolpex::is_std_chrono_duration auto dura, task_on_the_fly f) noexcept
+    void add_event(toolpex::is_std_chrono_duration auto dura, auto task) noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
-        add_event_impl({ now + dura, ::std::move(f) });
-    }
-
-    /*! \brief Adding a timer event.
-     *  \param dura The expire time duration.
-     *  \param f The callback coroutine when expired.
-     */
-    void add_event(toolpex::is_std_chrono_duration auto dura, task_concept auto t) noexcept
-    {
-        auto to_tof = [](auto t){ 
-            task_on_the_fly result = t;
+        auto tof = [](auto&& t)
+        {
+            task_on_the_fly result = ::std::move(t);
             return result;
         };
-        add_event(dura, to_tof(::std::move(t)));
+        add_event_impl({ now + dura, tof(::std::move(task)) });
     }
 
     /*! \brief returning the maximum sleep duration of the `thread_pool`

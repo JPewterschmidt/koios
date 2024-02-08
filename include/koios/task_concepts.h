@@ -65,7 +65,7 @@ concept emitter_task_concept =
     and ::std::same_as<typename T::initial_suspend_type, ::std::suspend_always>;
 
 template<typename Func>
-concept task_callable_concept = task_concept<toolpex::get_return_type_t<Func>>;
+concept task_callable_concept = task_concept<toolpex::get_return_type_t<::std::remove_reference_t<Func>>>;
 
 template<typename Func>
 concept emitter_task_callable_concept = 

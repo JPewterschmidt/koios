@@ -35,6 +35,7 @@
 #include "toolpex/move_only.h"
 #include "toolpex/posix_err_thrower.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/task_release_once.h"
 #include "koios/per_consumer_attr.h"
 #include "koios/iouring_detials.h"
 #include "koios/iouring_ioret.h"
@@ -50,22 +51,21 @@ namespace iel_detials
         ioret_task(::std::shared_ptr<uring::ioret> retslot, 
                    task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, 
-              m_task{ ::std::move(h) }
+              m_task_container{ ::std::make_unique<task_release_once>(::std::move(h)) }
         {
+            m_ret->ret = - ECANCELED;
         }
 
-        void set_ret(int32_t ret, uint32_t flags = 0)
-        {
-            m_ret->ret = ret;
-            m_ret->flags = flags;
-        }
+        void set_ret_and_wakeup(int32_t ret, uint32_t flags = 0);
 
-        void wakeup();
-        bool valid() const noexcept { return bool(m_task); }
+        auto get_task_shrptr() const noexcept
+        {
+            return m_task_container;
+        }
 
     private:
         ::std::shared_ptr<uring::ioret> m_ret;
-        task_on_the_fly m_task;
+        ::std::shared_ptr<task_release_once> m_task_container;
     };
 
     class iouring_event_loop_perthr : public toolpex::move_only
@@ -86,12 +86,15 @@ namespace iel_detials
 
         void do_occured_nonblk() noexcept;
 
-        void add_event(
-            task_on_the_fly h, 
-            ::std::shared_ptr<uring::ioret> retslot, 
-            ::io_uring_sqe sqe
-        );
-            
+        ::std::shared_ptr<task_release_once> 
+        add_event(task_on_the_fly h, 
+                  ::std::shared_ptr<uring::ioret> retslot, 
+                  ::io_uring_sqe sqe);
+
+        static void 
+        set_timeout(::std::shared_ptr<task_release_once> taskp, 
+                    ::std::chrono::milliseconds timeout) noexcept;
+
         ::std::chrono::milliseconds max_sleep_duration() const;
 
     private:
@@ -133,11 +136,10 @@ public:
     ::std::chrono::milliseconds 
     max_sleep_duration(const per_consumer_attr&) const;   
 
-    void add_event(
-        task_on_the_fly h, 
-        ::std::shared_ptr<uring::ioret> retslot, 
-        ::io_uring_sqe sqe
-    );
+    ::std::shared_ptr<task_release_once> 
+    add_event(task_on_the_fly h, 
+              ::std::shared_ptr<uring::ioret> retslot, 
+              ::io_uring_sqe sqe);
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);

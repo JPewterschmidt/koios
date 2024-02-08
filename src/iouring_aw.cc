@@ -18,6 +18,7 @@
 
 #include "koios/iouring_aw.h"
 #include "koios/runtime.h"
+#include "koios/iouring.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -31,9 +32,13 @@ iouring_aw::iouring_aw(::io_uring_sqe sqe)
 void iouring_aw::
 await_suspend(task_on_the_fly h) 
 {
-    koios::get_task_scheduler().add_event<iouring_event_loop>(
+    auto taskwp = koios::get_task_scheduler().add_event<iouring_event_loop>(
         ::std::move(h), m_ret, m_sqe
     );
+    if (!this->has_timeout()) return;
+
+    iel_detials::iouring_event_loop_perthr::
+        set_timeout(taskwp, this->timeout_duration());
 }
 
 } // namespace uring

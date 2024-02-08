@@ -18,6 +18,7 @@
 
 #include "koios/timer.h"
 #include "koios/runtime.h"
+#include "koios/functional.h"
 
 #include <algorithm>
 #include <functional>

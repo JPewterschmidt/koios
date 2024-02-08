@@ -22,6 +22,8 @@
 #include <thread>
 #include <chrono>
 #include "toolpex/tic_toc.h"
+#include "koios/task.h"
+#include "koios/functional.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -114,13 +116,18 @@ namespace iel_detials
                 ::std::chrono::milliseconds timeout) noexcept
     {
         if (taskwp.expired()) [[unlikely]] return;
-        get_task_scheduler().add_event<timer_event_loop>(timeout, [taskwp]{
+
+        // Until now (2024/2/8), the timer event loop still not support schedule a normal function object.
+        get_task_scheduler().add_event<timer_event_loop>(timeout, [taskwp] -> emitter_task<> {
             auto tasksp = taskwp.lock();
-            if (!tasksp) return;
+            if (!tasksp) co_return;
+
+            // `opt.and_then` needs a normal function.
             tasksp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
                 get_task_scheduler().enqueue(::std::move(t));
                 return ::std::nullopt;
             });
+            co_return; 
         });
     }
 }

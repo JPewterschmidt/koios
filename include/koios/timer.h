@@ -93,9 +93,10 @@ public:
         add_event(dura, to_tof(::std::move(t)));
     }
 
-    void add_event(toolpex::is_std_chrono_duration auto dura, ::std::function<void()> f) noexcept
+    void add_event(toolpex::is_std_chrono_duration auto dura, 
+                   auto task_callable) noexcept
     {
-        toolpex::not_implemented();
+        add_event(dura, task_callable());
     }
 
     /*! \brief returning the maximum sleep duration of the `thread_pool`

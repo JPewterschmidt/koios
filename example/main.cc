@@ -85,35 +85,26 @@ namespace
         co_return;
     }
 
+    task<> testtimer()
+    {
+        co_return;
+    }
+
     emitter_task<bool> emit_test()
     {
         using namespace tcp_server_literals;
-        auto tserver = "::1:8890"_tcp_s;
-        sp = &tserver;
-        co_await tserver.start(tcp_server_app);
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await client_app();
-        co_await tserver.until_stop_async();
-
+        get_task_scheduler().add_event<timer_event_loop>(1s, testtimer);
         co_return true;
     }
+
 }
 
 int main()
 try
 {
-    koios::task_on_the_fly t{};
-    koios::task_release_once tt{ ::std::move(t) };
-    auto ttt = tt.release();
-    ::std::cout << bool(ttt) << ::std::endl;
+    koios::runtime_init(4);
+    ::std::cout << emit_test().result() << ::std::endl;
+    koios::runtime_exit();
 
     return 0;
 }

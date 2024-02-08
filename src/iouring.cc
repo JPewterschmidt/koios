@@ -21,6 +21,7 @@
 #include <cassert>
 #include <thread>
 #include <chrono>
+#include "toolpex/tic_toc.h"
 
 KOIOS_NAMESPACE_BEG
 

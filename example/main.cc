@@ -26,6 +26,7 @@
 #include "koios/iouring_connect_aw.h"
 
 #include "koios/unique_file_state.h"
+#include "koios/task_release_once.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -36,7 +37,7 @@ using namespace ::std::string_view_literals;
 
 namespace
 {
-    ::std::unique_ptr<tcp_server> sp{};
+    tcp_server* sp{};
     ::std::atomic_bool flag{ false };
 
     emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
@@ -45,11 +46,13 @@ namespace
         ::std::string msg = "fuck you!!!!";
         ::std::array<char, 128> buffer{};
 
+        ::std::cout << "server recv" << ::std::endl;
         const auto recv_ret = co_await uring::recv(client, buffer);
+        ::std::cout << "server recv ok" << ::std::endl;
 
         co_await uring::send(client, msg);
         ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
-        if (sv.contains("stop"))
+        if (sv.contains("stop") && sp)
             flag.store(true), sp->stop();
 
         co_return;
@@ -66,6 +69,7 @@ namespace
         using namespace ::std::string_view_literals;
 
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
+
         co_await uring::send(sock, "fuck you, and stop."sv);
         co_await uring::send(sock, "fuck you, and stop."sv);
         co_await uring::send(sock, "fuck you, and stop."sv);
@@ -84,7 +88,20 @@ namespace
     emitter_task<bool> emit_test()
     {
         using namespace tcp_server_literals;
-        auto tserver = co_await "127.0.0.1:8889"_tcp_s.start(tcp_server_app);
+        auto tserver = "::1:8890"_tcp_s;
+        sp = &tserver;
+        co_await tserver.start(tcp_server_app);
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await client_app();
+        co_await tserver.until_stop_async();
 
         co_return true;
     }
@@ -93,12 +110,10 @@ namespace
 int main()
 try
 {
-    runtime_init(4);
-    ::std::cout << "runtime inited" << ::std::endl;
-
-    ::std::cout << emit_test().result() << ::std::endl;
-
-    runtime_exit();
+    koios::task_on_the_fly t{};
+    koios::task_release_once tt{ ::std::move(t) };
+    auto ttt = tt.release();
+    ::std::cout << bool(ttt) << ::std::endl;
 
     return 0;
 }

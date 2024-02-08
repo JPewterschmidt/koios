@@ -93,24 +93,14 @@ ioret_for_accept(ioret r, const ::sockaddr* addr, ::socklen_t len) noexcept
 {
 }
 
-static 
-::io_uring_sqe
-init_helper_for_accept_aw(const toolpex::unique_posix_fd& fd, int flags, 
-                          ::sockaddr_storage* addr, ::socklen_t* len) noexcept
-{
-    ::io_uring_sqe result{};
-    ::io_uring_prep_accept(
-        &result, fd, 
-        reinterpret_cast<::sockaddr*>(addr), len, 
-        flags
-    );
-    return result;
-}
-
 detials::iouring_aw_for_accept::
 iouring_aw_for_accept(const toolpex::unique_posix_fd& fd, int flags) noexcept
-    : iouring_aw{ init_helper_for_accept_aw(fd, flags, &m_ss, &m_len) }
 {
+    ::io_uring_prep_accept(
+        this->sqe_ptr(), fd, 
+        reinterpret_cast<::sockaddr*>(&m_ss), &m_len, 
+        flags
+    );
 }
 
 ioret_for_accept

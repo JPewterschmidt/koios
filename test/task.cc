@@ -5,6 +5,7 @@
 #include "koios/task_scheduler_concept.h"
 #include "koios/runtime.h"
 #include "koios/this_task.h"
+#include "koios/task_release_once.h"
 
 using namespace koios;
 
@@ -249,4 +250,14 @@ TEST(this_task, yield)
     ASSERT_TRUE(emit_yield_test1().result());
     ASSERT_TRUE(emit_yield_test2().result());
     ASSERT_TRUE(make_emitter(emit_yield_test2).result());
+}
+
+TEST(task_release_once, basic)
+{
+    koios::task_on_the_fly t{};
+    koios::task_release_once tt{ ::std::move(t) };
+    auto ttt = tt.release();
+    ASSERT_TRUE(ttt.has_value());
+    ttt = tt.release();
+    ASSERT_FALSE(ttt.has_value());
 }

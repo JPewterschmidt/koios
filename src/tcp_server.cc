@@ -41,8 +41,8 @@ tcp_server operator""_tcp_s(const char* opt_ip_port, ::std::size_t len)
     const auto delima = str.rfind(':');
     if (delima == ::std::string_view::npos) // without port
         throw koios::exception{"tcp_server literals: port is required."};
-    const auto port  = str.substr(0, delima);
-    const auto ipstr = str.substr(delima + 1);
+    const auto port  = str.substr(delima + 1);
+    const auto ipstr = str.substr(0, delima);
     
     const auto portnum = ::atoi(port.data());
     return { ip_address::make(ipstr), static_cast<::in_port_t>(portnum) };
@@ -119,6 +119,7 @@ void tcp_server::stop()
 task<> tcp_server::until_stop_async()
 {
     if (is_stop()) co_return;
+    co_await this->send_cancel_to_awaiting_accept();
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
     co_return;
 }

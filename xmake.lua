@@ -8,8 +8,7 @@ add_requires(
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark", 
-    "botan"
+    "benchmark"
 )
 
 includes("toolpex")
@@ -33,6 +32,10 @@ if is_mode("asan") then
     set_optimize("none", {force = true})
 end
 
+if is_mode("release") then
+    set_optimize("fastest", {force = true})
+end
+
 target("koios")
     set_kind("shared")
     add_deps("toolpex")
@@ -40,7 +43,6 @@ target("koios")
         "fmt", 
         "gflags", 
         "concurrentqueue", 
-        "botan",
         "spdlog"
     )
     set_warnings("all", "error")
@@ -58,8 +60,7 @@ target("test")
     add_files( "test/*.cc")
     set_warnings("all", "error")
     add_packages(
-        "gtest", "fmt", "spdlog",
-        "botan"
+        "gtest", "fmt", "spdlog"
     )
     after_build(function (target)
         os.exec(target:targetfile())
@@ -79,8 +80,7 @@ target("example")
     set_policy("build.warning", true)
     add_packages(
         "fmt", "gflags", 
-        "concurrentqueue", 
-        "botan"
+        "concurrentqueue"
     )
     
 

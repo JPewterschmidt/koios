@@ -78,7 +78,7 @@ namespace iel_detials
         }
     }
 
-    ::std::weak_ptr<task_release_once> 
+    ::std::shared_ptr<task_release_once> 
     iouring_event_loop_perthr::
     add_event(
         task_on_the_fly h, 
@@ -91,15 +91,13 @@ namespace iel_detials
         ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
 
         ioret_task t{ ::std::move(retslot), ::std::move(h) };
-        // Get the weak pointer to the release once task, 
-        // to allow user wake the task up eariler than the uring facility
-        auto weak_task = t.get_task_weakptr();
+        auto result = t.get_task_shrptr();
 
         m_suspended.insert({ addr, ::std::move(t) });
         *sqep = sqe;
         ::io_uring_submit(&m_ring);
 
-        return weak_task;
+        return result;
     }
 
     ::std::chrono::milliseconds 
@@ -111,24 +109,21 @@ namespace iel_detials
         return static_cast<int>(mask & m_shot_record) * 50ms;
     }
 
+    static emitter_task<> 
+    wake_up_timeout_task(::std::shared_ptr<task_release_once> tp)
+    {
+        tp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
+            get_task_scheduler().enqueue(::std::move(t));
+            return ::std::nullopt;
+        });
+        co_return;
+    }
+
     void iouring_event_loop_perthr::
-    set_timeout(::std::weak_ptr<task_release_once> taskwp, 
+    set_timeout(::std::shared_ptr<task_release_once> taskwp, 
                 ::std::chrono::milliseconds timeout) noexcept
     {
-        if (taskwp.expired()) [[unlikely]] return;
-
-        // Until now (2024/2/8), the timer event loop still not support schedule a normal function object.
-        get_task_scheduler().add_event<timer_event_loop>(timeout, [taskwp] -> emitter_task<> {
-            auto tasksp = taskwp.lock();
-            if (!tasksp) co_return;
-
-            // `opt.and_then` needs a normal function.
-            tasksp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
-                get_task_scheduler().enqueue(::std::move(t));
-                return ::std::nullopt;
-            });
-            co_return; 
-        });
+        get_task_scheduler().add_event<timer_event_loop>(timeout, wake_up_timeout_task(taskwp));
     }
 }
 
@@ -165,7 +160,7 @@ do_occured_nonblk()
     ptr->do_occured_nonblk();
 }
 
-::std::weak_ptr<task_release_once> 
+::std::shared_ptr<task_release_once> 
 iouring_event_loop::
 add_event(
     task_on_the_fly h, 

@@ -37,75 +37,11 @@ using namespace ::std::string_view_literals;
 
 namespace
 {
-    tcp_server* sp{};
-    ::std::atomic_bool flag{ false };
-
-    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
-    try
-    {
-        ::std::string msg = "fuck you!!!!";
-        ::std::array<char, 128> buffer{};
-
-        ::std::cout << "server recv" << ::std::endl;
-        const auto recv_ret = co_await uring::recv(client, buffer);
-        ::std::cout << "server recv ok" << ::std::endl;
-
-        co_await uring::send(client, msg);
-        ::std::string_view sv{ buffer.data(), recv_ret.nbytes_delivered() };
-        if (sv.contains("stop") && sp)
-            flag.store(true), sp->stop();
-
-        co_return;
-    }
-    catch (...)
-    {
-        co_return;
-    }
-
-    task<void> client_app() noexcept
-    try
-    {
-        using namespace toolpex::ip_address_literals;
-        using namespace ::std::string_view_literals;
-
-        auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-
-        co_return;
-    }
-    catch (...)
-    {
-        co_return;
-    }
-
-    task<> testtimer()
-    {
-        co_return;
-    }
-
-    emitter_task<bool> emit_test()
-    {
-        using namespace tcp_server_literals;
-        get_task_scheduler().add_event<timer_event_loop>(1s, testtimer);
-        co_return true;
-    }
-
 }
 
 int main()
 try
 {
-    koios::runtime_init(4);
-    ::std::cout << emit_test().result() << ::std::endl;
-    koios::runtime_exit();
-
     return 0;
 }
 catch (const ::std::exception& e)

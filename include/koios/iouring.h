@@ -58,7 +58,7 @@ namespace iel_detials
 
         void set_ret_and_wakeup(int32_t ret, uint32_t flags = 0);
 
-        ::std::weak_ptr<task_release_once> get_task_weakptr() const noexcept
+        auto get_task_shrptr() const noexcept
         {
             return m_task_container;
         }
@@ -86,13 +86,13 @@ namespace iel_detials
 
         void do_occured_nonblk() noexcept;
 
-        ::std::weak_ptr<task_release_once> 
+        ::std::shared_ptr<task_release_once> 
         add_event(task_on_the_fly h, 
                   ::std::shared_ptr<uring::ioret> retslot, 
                   ::io_uring_sqe sqe);
 
         static void 
-        set_timeout(::std::weak_ptr<task_release_once> taskp, 
+        set_timeout(::std::shared_ptr<task_release_once> taskp, 
                     ::std::chrono::milliseconds timeout) noexcept;
 
         ::std::chrono::milliseconds max_sleep_duration() const;
@@ -136,7 +136,7 @@ public:
     ::std::chrono::milliseconds 
     max_sleep_duration(const per_consumer_attr&) const;   
 
-    ::std::weak_ptr<task_release_once> 
+    ::std::shared_ptr<task_release_once> 
     add_event(task_on_the_fly h, 
               ::std::shared_ptr<uring::ioret> retslot, 
               ::io_uring_sqe sqe);

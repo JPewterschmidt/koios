@@ -71,6 +71,26 @@ namespace uring
               const toolpex::unique_posix_fd& fd, 
               ::std::string_view buffer,
               uint64_t offset = 0);
+
+        write(::std::chrono::system_clock::time_point timeout, 
+              const toolpex::unique_posix_fd& fd, 
+              ::std::span<const unsigned char> buffer, 
+              uint64_t offset = 0);
+
+        write(::std::chrono::system_clock::time_point timeout, 
+              const toolpex::unique_posix_fd& fd, 
+              ::std::span<const ::std::byte> buffer, 
+              uint64_t offset = 0);
+
+        write(::std::chrono::system_clock::time_point timeout,
+              const toolpex::unique_posix_fd& fd, 
+              ::std::span<const char> buffer, 
+              uint64_t offset = 0);
+
+        write(::std::chrono::system_clock::time_point timeout, 
+              const toolpex::unique_posix_fd& fd, 
+              ::std::string_view buffer,
+              uint64_t offset = 0);
     };
 
     // `ioret_for_data_deliver` is return type of await_resume

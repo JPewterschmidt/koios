@@ -92,4 +92,40 @@ write::write(::std::chrono::milliseconds timeout,
     set_timeout(timeout);
 }
 
+write::write(::std::chrono::system_clock::time_point timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<const unsigned char> buffer, 
+             uint64_t offset)
+    : write(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
+write::write(::std::chrono::system_clock::time_point timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<const ::std::byte> buffer, 
+             uint64_t offset)
+    : write(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
+write::write(::std::chrono::system_clock::time_point timeout,
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<const char> buffer, 
+             uint64_t offset)
+    : write(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
+write::write(::std::chrono::system_clock::time_point timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::string_view buffer,
+             uint64_t offset)
+    : write(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

@@ -40,6 +40,11 @@ namespace koios::uring
                 toolpex::ip_address::ptr addr, 
                 ::in_port_t port);
 
+        connect(::std::chrono::system_clock::time_point timeout, 
+                const toolpex::unique_posix_fd& fd, 
+                toolpex::ip_address::ptr addr, 
+                ::in_port_t port);
+
     private:
         ::sockaddr_storage m_sockaddr{};
     };

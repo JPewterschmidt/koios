@@ -38,4 +38,13 @@ recvmsg::recvmsg(::std::chrono::milliseconds timeout,
     set_timeout(timeout);
 }
 
+recvmsg::recvmsg(::std::chrono::system_clock::time_point timeout, 
+                 const toolpex::unique_posix_fd& fd, 
+                 ::msghdr* msg, 
+                 int flags)
+    : recvmsg(fd, msg, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

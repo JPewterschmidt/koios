@@ -39,4 +39,13 @@ sendmsg::sendmsg(::std::chrono::milliseconds timeout,
     set_timeout(timeout);
 }
 
+sendmsg::sendmsg(::std::chrono::system_clock::time_point timeout, 
+                 const toolpex::unique_posix_fd& fd, 
+                 const ::msghdr* msg, 
+                 int flags)
+    : sendmsg(fd, msg, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

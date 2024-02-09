@@ -39,7 +39,13 @@ namespace koios::uring
         recvmsg(const toolpex::unique_posix_fd& fd, 
                 ::msghdr* msg, 
                 int flags = 0);
+
         recvmsg(::std::chrono::milliseconds timeout, 
+                const toolpex::unique_posix_fd& fd, 
+                ::msghdr* msg, 
+                int flags = 0);
+
+        recvmsg(::std::chrono::system_clock::time_point timeout, 
                 const toolpex::unique_posix_fd& fd, 
                 ::msghdr* msg, 
                 int flags = 0);

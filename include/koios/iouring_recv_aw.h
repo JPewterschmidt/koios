@@ -61,6 +61,21 @@ namespace koios::uring
              const toolpex::unique_posix_fd& fd, 
              ::std::span<::std::byte> buffer, 
              int flags = 0);
+
+        recv(::std::chrono::system_clock::time_point timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<unsigned char> buffer, 
+             int flags = 0);
+
+        recv(::std::chrono::system_clock::time_point timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<char> buffer, 
+             int flags = 0);
+
+        recv(::std::chrono::system_clock::time_point timeout,
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<::std::byte> buffer, 
+             int flags = 0);
     };
 }
 

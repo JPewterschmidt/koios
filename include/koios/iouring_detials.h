@@ -102,6 +102,9 @@ namespace koios::uring
             iouring_aw_for_accept(::std::chrono::milliseconds timeout, 
                                   const toolpex::unique_posix_fd& fd, 
                                   int flags = 0) noexcept;
+            iouring_aw_for_accept(::std::chrono::system_clock::time_point timeout, 
+                                  const toolpex::unique_posix_fd& fd, 
+                                  int flags = 0) noexcept;
             ioret_for_accept await_resume();
 
         private:

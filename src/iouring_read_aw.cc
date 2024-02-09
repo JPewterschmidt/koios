@@ -59,4 +59,22 @@ read::read(::std::chrono::milliseconds timeout,
     set_timeout(timeout);
 }
 
+read::read(::std::chrono::system_clock::time_point timeout,
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<::std::byte> buffer, 
+           uint64_t offset)
+    : read(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
+read::read(::std::chrono::system_clock::time_point timeout,
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<char> buffer, 
+           uint64_t offset)
+    : read(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

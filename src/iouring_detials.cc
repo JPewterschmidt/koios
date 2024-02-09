@@ -112,6 +112,15 @@ iouring_aw_for_accept(::std::chrono::milliseconds timeout,
     this->set_timeout(timeout);
 }
 
+detials::iouring_aw_for_accept::
+iouring_aw_for_accept(::std::chrono::system_clock::time_point timeout, 
+                      const toolpex::unique_posix_fd& fd, 
+                      int flags) noexcept
+    : iouring_aw_for_accept(fd, flags)
+{
+    this->set_timeout(timeout);
+}
+
 ioret_for_accept
 detials::iouring_aw_for_accept::
 await_resume()

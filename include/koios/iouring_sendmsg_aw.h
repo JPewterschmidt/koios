@@ -37,6 +37,10 @@ namespace koios::uring
                 const toolpex::unique_posix_fd& fd, 
                 const ::msghdr* msg, 
                 int flags = 0);
+        sendmsg(::std::chrono::system_clock::time_point timeout, 
+                const toolpex::unique_posix_fd& fd, 
+                const ::msghdr* msg, 
+                int flags = 0);
     };
 }
 

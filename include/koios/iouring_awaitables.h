@@ -76,6 +76,45 @@ namespace koios::uring
             ::std::span{ buffer.begin(), buffer.end() }
         ), ec_out);
     }
+
+    ::koios::task<size_t>
+    recv_fill_buffer(::std::chrono::system_clock::time_point timeout,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags,
+                     ::std::error_code& ec) noexcept;
+
+    ::koios::task<size_t>
+    recv_fill_buffer(toolpex::is_std_chrono_duration auto const dura, 
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags, 
+                     ::std::error_code& ec) noexcept
+    {
+        return recv_fill_buffer(dura + ::std::chrono::system_clock::now(), 
+                                fd, buffer, flags, ec
+                               );
+    }
+
+    ::koios::task<size_t>
+    read_fill_buffer(::std::chrono::system_clock::time_point timeout,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset,
+                     ::std::error_code& ec) noexcept;
+
+    ::koios::task<size_t>
+    read_fill_buffer(toolpex::is_std_chrono_duration auto const dura,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset, 
+                     ::std::error_code& ec) noexcept
+    {
+        return read_fill_buffer(dura + ::std::chrono::system_clock::now(), 
+                                fd, buffer, offset, ec
+                               );
+    }
+
 }
 
 #endif

@@ -80,4 +80,86 @@ namespace koios::uring
             left = left.subspan(ret.nbytes_delivered());
         }
     }
+
+    static task<::std::span<::std::byte>> 
+    after_read_or_recv(auto const& op_ret,
+                       ::std::error_code& ec_out, 
+                       size_t& wrote_nbytes, 
+                       ::std::span<::std::byte> buffer)
+    {
+        switch (op_ret.error_code().value())
+        {
+            case 0:         break;
+            default:        ec_out = op_ret.error_code(); [[fallthrough]];
+            case ECANCELED: co_return {};
+        }
+        wrote_nbytes += op_ret.nbytes_delivered();
+        co_return buffer.subspan(
+            ::std::min(op_ret.nbytes_delivered(), buffer.size())
+        );
+    }
+
+    ::koios::task<size_t>
+    recv_fill_buffer(::std::chrono::system_clock::time_point timeout,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags,
+                     ::std::error_code& ec) noexcept
+    try
+    {
+        size_t wrote_nbytes{};
+        while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
+        {
+            auto op_ret = co_await uring::recv(
+                timeout, fd, buffer, flags
+            );
+            buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
+        }
+        co_return wrote_nbytes;
+    }
+    catch (const koios::exception& e)
+    {
+        ec = e.error_code();
+        co_return 0;
+    }
+    catch (...)
+    {
+        ec = ::std::error_code{ 
+            KOIOS_EXCEPTION_CATCHED, 
+            koios_category() 
+        };
+        co_return 0;
+    }
+
+    ::koios::task<size_t>
+    read_fill_buffer(::std::chrono::system_clock::time_point timeout,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset,
+                     ::std::error_code& ec) noexcept
+    try
+    {
+        size_t wrote_nbytes{};
+        while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
+        {
+            auto op_ret = co_await uring::read(
+                timeout, fd, buffer, offset + wrote_nbytes
+            );
+            buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
+        }
+        co_return wrote_nbytes;
+    }
+    catch (const koios::exception& e)
+    {
+        ec = e.error_code();
+        co_return 0;
+    }
+    catch (...)
+    {
+        ec = ::std::error_code{ 
+            KOIOS_EXCEPTION_CATCHED, 
+            koios_category() 
+        };
+        co_return 0;
+    }
 }

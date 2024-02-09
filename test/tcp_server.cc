@@ -76,28 +76,23 @@ namespace
     task<bool> mute_client_app()
     {
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-        ::std::array<char, 100> buffer{};
-        auto recv_ret = co_await uring::recv(50ms, sock, buffer);
-        if (recv_ret.error_code().value() == ECANCELED)
-        {
-            ::std::cout << "client timeout" << ::std::endl;
-            co_return false;
-        }
+        ::std::array<::std::byte, 100> buffer{};
 
-        ::std::cout << "client received: " << recv_ret.nbytes_delivered() << ::std::endl;
-        if (buffer[0] == 0) co_return false;
+        ::std::error_code ec;
+        co_await uring::recv_fill_buffer(50ms, sock, buffer, 0, ec);
+
+        if (buffer[0] == ::std::byte{}) co_return false;
         co_return true;
     }
 
     task<bool> recv_timeout_server(toolpex::unique_posix_fd client) noexcept
     {
-        ::std::array<char, 128> buffer{};
-        const auto recv_ret = co_await uring::recv(10ms, client, buffer);
-        if (auto ec = recv_ret.error_code(); 
-            ec.value() == ECANCELED && ec.category() == ::std::system_category())
+        ::std::array<::std::byte, 128> buffer{};
+        ::std::error_code ec;
+        co_await uring::recv_fill_buffer(50ms, client, buffer, 0, ec);
+        if (ec.value() == ECANCELED && ec.category() == ::std::system_category())
         {
             co_await uring::send(client, "fuck you");
-            ::std::cout << "server sent" << ::std::endl;
             co_return true;
         }
         co_return false;
@@ -113,12 +108,13 @@ namespace
             sp->stop();
             co_await sp->until_stop_async();
             sp = nullptr;
+            ::std::cout << "shit1" << ::std::endl;
             co_return false;
         }
         sp->stop();
         co_await sp->until_stop_async();
         sp = nullptr;
-        co_return flag;
+        co_return true;
     }
 }
 

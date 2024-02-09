@@ -93,7 +93,7 @@ namespace iel_detials
 
         static void 
         set_timeout(::std::shared_ptr<task_release_once> taskp, 
-                    ::std::chrono::milliseconds timeout) noexcept;
+                    ::std::chrono::system_clock::time_point timeout) noexcept;
 
         ::std::chrono::milliseconds max_sleep_duration() const;
 

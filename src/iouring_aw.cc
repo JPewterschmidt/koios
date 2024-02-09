@@ -38,7 +38,7 @@ await_suspend(task_on_the_fly h)
     if (!this->has_timeout()) return;
 
     iel_detials::iouring_event_loop_perthr::
-        set_timeout(taskwp, this->timeout_duration());
+        set_timeout(taskwp, this->timeout_point());
 }
 
 } // namespace uring

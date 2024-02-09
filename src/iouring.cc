@@ -121,7 +121,7 @@ namespace iel_detials
 
     void iouring_event_loop_perthr::
     set_timeout(::std::shared_ptr<task_release_once> taskwp, 
-                ::std::chrono::milliseconds timeout) noexcept
+                ::std::chrono::system_clock::time_point timeout) noexcept
     {
         get_task_scheduler().add_event<timer_event_loop>(timeout, wake_up_timeout_task(taskwp));
     }

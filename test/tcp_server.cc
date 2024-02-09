@@ -4,6 +4,10 @@
 #include <memory>
 
 using namespace koios;
+using namespace toolpex::ip_address_literals;
+using namespace ::std::string_view_literals;
+using namespace ::std::chrono_literals;
+
 
 namespace
 {
@@ -35,9 +39,6 @@ namespace
     task<void> client_app() noexcept
     try
     {
-        using namespace toolpex::ip_address_literals;
-        using namespace ::std::string_view_literals;
-
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
         co_await uring::send(sock, "fuck you, and stop."sv);
         co_await uring::send(sock, "fuck you, and stop."sv);
@@ -54,12 +55,8 @@ namespace
         co_return;
     }
 
-    emitter_task<bool> emit_test()
+    emitter_task<bool> emit_basic_test()
     {
-        using namespace toolpex::ip_address_literals;
-        using namespace ::std::string_view_literals;
-        using namespace ::std::chrono_literals;
-
         sp.reset(new tcp_server("::1"_ip, 8890));
         co_await sp->start(tcp_server_app);
 
@@ -75,9 +72,62 @@ namespace
         sp = nullptr;
         co_return flag;
     }
+
+    task<bool> mute_client_app()
+    {
+        auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
+        ::std::array<char, 100> buffer{};
+        auto recv_ret = co_await uring::recv(50ms, sock, buffer);
+        if (recv_ret.error_code().value() == ECANCELED)
+        {
+            ::std::cout << "client timeout" << ::std::endl;
+            co_return false;
+        }
+
+        ::std::cout << "client received: " << recv_ret.nbytes_delivered() << ::std::endl;
+        if (buffer[0] == 0) co_return false;
+        co_return true;
+    }
+
+    task<bool> recv_timeout_server(toolpex::unique_posix_fd client) noexcept
+    {
+        ::std::array<char, 128> buffer{};
+        const auto recv_ret = co_await uring::recv(10ms, client, buffer);
+        if (auto ec = recv_ret.error_code(); 
+            ec.value() == ECANCELED && ec.category() == ::std::system_category())
+        {
+            co_await uring::send(client, "fuck you");
+            ::std::cout << "server sent" << ::std::endl;
+            co_return true;
+        }
+        co_return false;
+    }
+
+    emitter_task<bool> emit_recv_timeout_test()
+    {
+        sp.reset(new tcp_server("::1"_ip, 8890));
+        co_await sp->start(recv_timeout_server);
+
+        if (!co_await mute_client_app())
+        {
+            sp->stop();
+            co_await sp->until_stop_async();
+            sp = nullptr;
+            co_return false;
+        }
+        sp->stop();
+        co_await sp->until_stop_async();
+        sp = nullptr;
+        co_return flag;
+    }
 }
 
 TEST(tcp_server, basic)
 {
-    ASSERT_TRUE(emit_test().result());
+    ASSERT_TRUE(emit_basic_test().result());
+}
+
+TEST(tcp_server, recv_timeout)
+{
+    ASSERT_TRUE(emit_recv_timeout_test().result());   
 }

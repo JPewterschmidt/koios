@@ -63,27 +63,8 @@ tcp_server(tcp_server&& other) noexcept
       m_addr{::std::move(m_addr)},
       m_port{::std::move(m_port)},
       m_stop_src{::std::move(m_stop_src)},
-      m_loop_handles{::std::move(m_loop_handles)},
-      m_stop_complete{::std::move(m_stop_complete)}
+      m_loop_handles{::std::move(m_loop_handles)}
 {
-}
-
-tcp_server::~tcp_server() noexcept
-try
-{
-    m_stop_complete.get();
-}
-catch (const koios::exception& e)
-{
-    e.log();
-}
-catch (const ::std::exception& e)
-{
-    koios::log_error(e.what());
-}
-catch (...)
-{
-    koios::log_error("unknow exception was catched during the destruction of tcp_server");
 }
 
 void
@@ -112,14 +93,12 @@ void tcp_server::stop()
 {
     //if (m_stop_src.stop_requested()) return;
     m_stop_src.request_stop();
-    m_stop_complete = send_cancel_to_awaiting_accept().run_and_get_future();
-    m_sockfd = toolpex::unique_posix_fd{};
+    send_cancel_to_awaiting_accept().run();
 }
 
 task<> tcp_server::until_stop_async()
 {
     if (is_stop()) co_return;
-    co_await this->send_cancel_to_awaiting_accept();
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
     co_return;
 }

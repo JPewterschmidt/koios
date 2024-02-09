@@ -67,10 +67,10 @@ namespace koios::uring
               ::std::error_code& ec_out) noexcept;
 
     template<typename CharT>
-    ::koios::task<>
-    inline append_all(const toolpex::unique_posix_fd& fd, 
-                      ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer,
-                      ::std::error_code& ec_out) noexcept
+    inline ::koios::task<>
+    append_all(const toolpex::unique_posix_fd& fd, 
+               ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer,
+               ::std::error_code& ec_out) noexcept
     {
         return append_all(fd, ::std::as_bytes(
             ::std::span{ buffer.begin(), buffer.end() }

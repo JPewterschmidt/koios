@@ -34,9 +34,25 @@ read::read(const toolpex::unique_posix_fd& fd,
     );
 }
 
+read::read(const toolpex::unique_posix_fd& fd, 
+           ::std::span<char> buffer, 
+           uint64_t offset)
+    : read(fd, ::std::as_writable_bytes(buffer), offset)
+{
+}
+
 read::read(::std::chrono::milliseconds timeout,
            const toolpex::unique_posix_fd& fd, 
            ::std::span<::std::byte> buffer, 
+           uint64_t offset)
+    : read(fd, buffer, offset)
+{
+    set_timeout(timeout);
+}
+
+read::read(::std::chrono::milliseconds timeout,
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<char> buffer, 
            uint64_t offset)
     : read(fd, buffer, offset)
 {

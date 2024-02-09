@@ -50,7 +50,6 @@ public:
 
     tcp_server(tcp_server&& other) noexcept;
     tcp_server& operator=(tcp_server&& other) noexcept;
-    ~tcp_server() noexcept;
 
     task<tcp_server> start(task_callable_concept auto callback) &&
     {
@@ -156,7 +155,6 @@ private:
     mutable ::std::shared_mutex m_stop_related_lock;
     mutable koios::mutex        m_waiting_queue;
     koios::unique_lock          m_waiting_latch;
-    koios::future<void>         m_stop_complete;
 };
 
 namespace tcp_server_literals

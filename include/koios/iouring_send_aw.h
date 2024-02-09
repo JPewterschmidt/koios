@@ -42,6 +42,21 @@ namespace koios::uring
         send(const toolpex::unique_posix_fd& fd, 
              ::std::span<const ::std::byte> buffer, 
              int flags = 0);
+
+        send(::std::chrono::milliseconds timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<const unsigned char> buffer, 
+             int flags = 0);
+
+        send(::std::chrono::milliseconds timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::string_view sv, 
+             int flags = 0);
+
+        send(::std::chrono::milliseconds timeout, 
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<const ::std::byte> buffer, 
+             int flags = 0);
     };
 }
 

@@ -35,6 +35,15 @@ namespace koios::uring
         ); 
     }
 
+    connect::connect(::std::chrono::milliseconds timeout, 
+                     const toolpex::unique_posix_fd& fd, 
+                     toolpex::ip_address::ptr addr, 
+                     ::in_port_t port)
+        : connect(fd, ::std::move(addr), port)
+    {
+        set_timeout(timeout);
+    }
+
     ::koios::task<toolpex::unique_posix_fd> 
     connect_get_sock(toolpex::ip_address::ptr addr, 
                      ::in_port_t port, 

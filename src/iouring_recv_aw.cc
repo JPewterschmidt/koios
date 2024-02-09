@@ -47,4 +47,31 @@ recv::recv(const toolpex::unique_posix_fd& fd,
 {
 }
 
+recv::recv(::std::chrono::milliseconds timeout, 
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<unsigned char> buffer, 
+           int flags)
+    : recv(fd, buffer, flags)
+{
+    set_timeout(timeout);
+}
+
+recv::recv(::std::chrono::milliseconds timeout, 
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<char> buffer, 
+           int flags)
+    : recv(fd, buffer, flags)
+{
+    set_timeout(timeout);
+}
+
+recv::recv(::std::chrono::milliseconds timeout,
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<::std::byte> buffer, 
+           int flags)
+    : recv(fd, buffer, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

@@ -43,4 +43,31 @@ send::send(const toolpex::unique_posix_fd& fd,
     ::io_uring_prep_send(sqe_ptr(), fd, buffer.data(), buffer.size_bytes(), flags);
 }
 
+send::send(::std::chrono::milliseconds timeout, 
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<const unsigned char> buffer, 
+           int flags)
+    : send(fd, buffer, flags)
+{
+    set_timeout(timeout);
+}
+
+send::send(::std::chrono::milliseconds timeout, 
+           const toolpex::unique_posix_fd& fd, 
+           ::std::string_view sv, 
+           int flags)
+    : send(fd, sv, flags)
+{
+    set_timeout(timeout);
+}
+
+send::send(::std::chrono::milliseconds timeout, 
+           const toolpex::unique_posix_fd& fd, 
+           ::std::span<const ::std::byte> buffer, 
+           int flags)
+    : send(fd, buffer, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

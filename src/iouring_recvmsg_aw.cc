@@ -29,4 +29,13 @@ recvmsg::recvmsg(const toolpex::unique_posix_fd& fd,
     ::io_uring_prep_recvmsg(sqe_ptr(), fd, msg, flags);
 }
 
+recvmsg::recvmsg(::std::chrono::milliseconds timeout, 
+                 const toolpex::unique_posix_fd& fd, 
+                 ::msghdr* msg, 
+                 int flags)
+    : recvmsg(fd, msg, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

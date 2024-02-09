@@ -39,6 +39,11 @@ namespace uring
         read(const toolpex::unique_posix_fd& fd, 
              ::std::span<::std::byte> buffer, 
              uint64_t offset = 0);
+
+        read(::std::chrono::milliseconds timeout,
+             const toolpex::unique_posix_fd& fd, 
+             ::std::span<::std::byte> buffer, 
+             uint64_t offset = 0);
     };
 }
 

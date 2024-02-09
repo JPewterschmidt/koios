@@ -30,4 +30,13 @@ sendmsg::sendmsg(const toolpex::unique_posix_fd& fd,
     ::io_uring_prep_sendmsg(sqe_ptr(), fd, msg, flags);
 }
 
+sendmsg::sendmsg(::std::chrono::milliseconds timeout, 
+                 const toolpex::unique_posix_fd& fd, 
+                 const ::msghdr* msg, 
+                 int flags)
+    : sendmsg(fd, msg, flags)
+{
+    set_timeout(timeout);
+}
+
 } // namespace koios::uring

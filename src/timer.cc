@@ -75,6 +75,18 @@ do_occured_nonblk() noexcept
 }
 
 void timer_event_loop_impl::
+wake_up_all() noexcept
+{
+    ::std::unique_lock ulk{ m_lk };
+    auto& schr = get_task_scheduler();
+    for (auto& timer_ev : m_timer_heap)
+    {
+        schr.enqueue(::std::move(timer_ev.task));
+    }
+    m_timer_heap.clear();
+}
+
+void timer_event_loop_impl::
 add_event_impl(timer_event te) noexcept
 {
     ::std::unique_lock lk{ m_lk };

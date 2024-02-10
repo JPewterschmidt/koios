@@ -118,6 +118,9 @@ public:
     }
 
 private:
+    void wake_up_all() noexcept;
+
+private:
     void add_event_impl(timer_event te) noexcept;
 
 private:

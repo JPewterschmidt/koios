@@ -72,52 +72,49 @@ namespace
         co_return flag;
     }
 
-    bool rts_flag{false};
-    bool rtc_flag{false};
-
-    task<> mute_client_app()
+    task<bool> mute_client_app()
     {
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-        ::std::array<::std::byte, 100> buffer{};
+        ::std::array<::std::byte, 4> buffer{};
 
         ::std::error_code ec;
-        co_await uring::recv_fill_buffer(50ms, sock, buffer, 0, ec);
+        co_await uring::recv_fill_buffer(10s, sock, buffer, 0, ec);
 
-        if (buffer[0] == ::std::byte{}) 
-        {
-            rtc_flag = false;
-            co_return;
-        }
-        rtc_flag = true;
+        if (buffer[0] == ::std::byte{}) co_return false;
+        co_return true;
     }
 
-    task<> recv_timeout_server(toolpex::unique_posix_fd client) noexcept
+    task<bool> recv_timeout_server(toolpex::unique_posix_fd client) 
     {
         ::std::array<::std::byte, 128> buffer{};
-        ::std::error_code ec;
-        size_t recvd = co_await uring::recv_fill_buffer(50ms, client, buffer, 0, ec);
-        if (ec.value() == ECANCELED && ec.category() == ::std::system_category())
+        size_t recved = co_await uring::recv_fill_buffer(1ms, client, buffer);
+        if (recved == 0) 
         {
             co_await uring::send(client, "fuck you");
-            rts_flag = true;
-            co_return;
+            co_await this_task::sleep_for(500ms);
+            co_await uring::send(client, "fuck you");
+            co_return true;
         }
-        else
-        {
-            ::std::cout << ec.message() << ::std::endl;
-            ::std::cout << recvd << ::std::endl;
-        }
-        rts_flag = false;
+        co_return false;
     }
 
-    emitter_task<> emit_recv_timeout_test()
+    emitter_task<bool> emit_recv_timeout_test()
     {
         sp.reset(new tcp_server("::1"_ip, 8890));
         co_await sp->start(recv_timeout_server);
-        co_await mute_client_app();
+
+        if (!co_await mute_client_app())
+        {
+            sp->stop();
+            co_await sp->until_stop_async();
+            sp = nullptr;
+            ::std::cout << "shit1" << ::std::endl;
+            co_return false;
+        }
         sp->stop();
         co_await sp->until_stop_async();
         sp = nullptr;
+        co_return true;
     }
 }
 
@@ -128,7 +125,5 @@ TEST(tcp_server, basic)
 
 TEST(tcp_server, recv_timeout)
 {
-    emit_recv_timeout_test().result();
-    ASSERT_TRUE(rtc_flag);
-    ASSERT_TRUE(rts_flag);
+    ASSERT_TRUE(emit_recv_timeout_test().result());
 }

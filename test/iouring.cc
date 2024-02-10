@@ -31,7 +31,7 @@ task<> delete_file()
     co_await uring::unlink(g_file_name);
 }
 
-task<bool> append_all_test()
+emitter_task<bool> append_all_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -57,7 +57,7 @@ task<bool> append_all_test()
     co_return ::std::ranges::equal(buffer, content.substr(0, 5));
 }
 
-task<bool> emit_op_fill_test()
+emitter_task<bool> emit_op_fill_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -76,7 +76,7 @@ task<bool> emit_op_fill_test()
     co_return readed_nbytes == 5;
 }
 
-task<bool> emit_op_fill_test2()
+emitter_task<bool> emit_op_fill_test2()
 {
     constexpr auto content = "123456789"sv;
     ::std::array<char, content.size() * 2> buffer{};

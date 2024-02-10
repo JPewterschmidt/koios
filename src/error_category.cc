@@ -91,4 +91,12 @@ const ::std::error_category& expected_category() noexcept
     return result;
 }
 
+const ::std::error_code& std_canceled_ec() noexcept
+{
+    static const ::std::error_code result{ 
+        ECANCELED, ::std::system_category() 
+    };
+    return result;
+}
+
 KOIOS_NAMESPACE_END

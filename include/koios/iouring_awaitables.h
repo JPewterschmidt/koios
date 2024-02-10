@@ -97,6 +97,18 @@ namespace koios::uring
     }
 
     ::koios::task<size_t>
+    recv_fill_buffer(toolpex::is_std_chrono_duration auto const dura, 
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags = 0)
+    {
+        ::std::error_code ec{};
+        auto result = co_await recv_fill_buffer(dura, fd, buffer, flags, ec);
+        if (ec && ec != std_canceled_ec()) throw uring_exception(ec);
+        co_return result;
+    }
+
+    ::koios::task<size_t>
     read_fill_buffer(::std::chrono::system_clock::time_point timeout,
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
@@ -113,6 +125,18 @@ namespace koios::uring
         return read_fill_buffer(dura + ::std::chrono::system_clock::now(), 
                                 fd, buffer, offset, ec
                                );
+    }
+
+    ::koios::task<size_t>
+    read_fill_buffer(toolpex::is_std_chrono_duration auto const dura,
+                     const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset = 0)
+    {
+        ::std::error_code ec{};
+        auto result = co_await read_fill_buffer(dura, fd, buffer, offset, ec);
+        if (ec && ec != std_canceled_ec()) throw uring_exception(ec);
+        co_return result;
     }
 
 }

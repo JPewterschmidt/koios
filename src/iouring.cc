@@ -47,10 +47,11 @@ namespace iel_detials
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {
         assert(cqep);
-        
+
         const uint64_t key = cqep->user_data;
         auto it = m_suspended.find(key);
-        assert(it != m_suspended.end());
+        //assert(it != m_suspended.end());
+        if (it == m_suspended.end()) [[unlikely]] return;
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
 
@@ -170,18 +171,11 @@ add_event(
     const auto tid = ::std::this_thread::get_id();
     auto lk = get_shrlk();
     if (m_cleaning == true) [[unlikely]] return {};
-    if (auto it = m_impls.find(tid); it != m_impls.end())
-    {
-        return it->second->add_event(
-            ::std::move(h), ::std::move(retslot), ::std::move(sqe)
-        );
-    }
-    else
-    {
-        return m_impls.begin()->second->add_event(
-            ::std::move(h), ::std::move(retslot), ::std::move(sqe)
-        );
-    }
+    auto it = m_impls.find(tid);
+    assert(it != m_impls.end());
+    return it->second->add_event(
+        ::std::move(h), ::std::move(retslot), ::std::move(sqe)
+    );
 }
 
 void iouring_event_loop::
@@ -208,6 +202,26 @@ max_sleep_duration(const per_consumer_attr& attr) const
     if (auto it = m_impls.find(attr.thread_id); it != m_impls.end())
         return ::std::min(200ms, it->second->max_sleep_duration());
     return {};
+}
+
+bool 
+iel_detials::iouring_event_loop_perthr::
+DEBUG_has_key(void* key)
+{
+    uint64_t val = (uint64_t)key;
+    return m_suspended.contains(val);
+}
+
+iel_detials::iouring_event_loop_perthr* 
+iouring_event_loop::
+DEBUG_one_who_has_key(void* key)
+{
+    for (auto& [k, v] : m_impls)
+    {
+        if (v->DEBUG_has_key(key))
+            return v.get();
+    }
+    return nullptr;
 }
 
 KOIOS_NAMESPACE_END

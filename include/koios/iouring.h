@@ -97,6 +97,8 @@ namespace iel_detials
 
         ::std::chrono::milliseconds max_sleep_duration() const;
 
+        bool DEBUG_has_key(void* key);
+
     private:
         auto get_lk() const { return ::std::unique_lock{ m_lk }; }
         void dealwith_cqe(const ::io_uring_cqe* cqep);
@@ -140,6 +142,9 @@ public:
     add_event(task_on_the_fly h, 
               ::std::shared_ptr<uring::ioret> retslot, 
               ::io_uring_sqe sqe);
+
+    iel_detials::iouring_event_loop_perthr* 
+    DEBUG_one_who_has_key(void* key);
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);

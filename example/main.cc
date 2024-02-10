@@ -34,14 +34,61 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
+using namespace toolpex::ip_address_literals;
 
 namespace
 {
+    ::std::unique_ptr<tcp_server> sp{};
+    task<bool> mute_client_app()
+    {
+        auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
+        ::std::array<::std::byte, 4> buffer{};
+
+        ::std::error_code ec;
+        co_await uring::recv_fill_buffer(50min, sock, buffer, 0, ec);
+
+        if (buffer[0] == ::std::byte{}) co_return false;
+        co_return true;
+    }
+
+    task<bool> recv_timeout_server(toolpex::unique_posix_fd client) 
+    {
+        ::std::array<::std::byte, 128> buffer{};
+        size_t recved = co_await uring::recv_fill_buffer(3s, client, buffer);
+        if (recved == 0) 
+        {
+            co_await uring::send(client, "fuck you");
+            co_return true;
+        }
+        co_return false;
+    }
+
+    emitter_task<bool> emit_recv_timeout_test()
+    {
+        sp.reset(new tcp_server("::1"_ip, 8890));
+        co_await sp->start(recv_timeout_server);
+
+        if (!co_await mute_client_app())
+        {
+            sp->stop();
+            co_await sp->until_stop_async();
+            sp = nullptr;
+            ::std::cout << "shit1" << ::std::endl;
+            co_return false;
+        }
+        sp->stop();
+        co_await sp->until_stop_async();
+        sp = nullptr;
+        co_return true;
+    }
 }
 
 int main()
 try
 {
+    koios::runtime_init(4);
+    ::std::cout << emit_recv_timeout_test().result() << ::std::endl;
+    koios::runtime_exit();
     return 0;
 }
 catch (const ::std::exception& e)

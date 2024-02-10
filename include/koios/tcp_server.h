@@ -122,19 +122,22 @@ private:
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
-            auto accret = co_await uring::accept(150ms, m_sockfd); // to prevent so called 
-                                                            // "insufficient contextual information to determine type
+            auto accret = co_await uring::accept(150ms, m_sockfd);
             if (auto ec = accret.error_code(); 
                 ec.value() == ECANCELED && ec.category() == ::std::system_category())
             {
-                break;
+                continue;
             }
             else if (ec)
             {
                 koios::log_error(ec.message());
                 continue;
             }
-            make_emitter(userdefined, accret.get_client()).run();
+            else 
+            {
+                auto client = accret.get_client();
+                make_emitter(userdefined, ::std::move(client)).run();
+            }
         }
 
         server_loop_exit();

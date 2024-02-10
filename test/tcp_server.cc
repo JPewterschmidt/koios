@@ -78,7 +78,7 @@ namespace
         ::std::array<::std::byte, 4> buffer{};
 
         ::std::error_code ec;
-        co_await uring::recv_fill_buffer(10s, sock, buffer, 0, ec);
+        co_await uring::recv_fill_buffer(10ms, sock, buffer, 0, ec);
 
         if (buffer[0] == ::std::byte{}) co_return false;
         co_return true;

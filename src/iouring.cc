@@ -50,8 +50,8 @@ namespace iel_detials
 
         const uint64_t key = cqep->user_data;
         auto it = m_suspended.find(key);
-        //assert(it != m_suspended.end());
-        if (it == m_suspended.end()) [[unlikely]] return;
+        assert(it != m_suspended.end()); // XXX TODO Likely to failed when there's a timer
+        //if (it == m_suspended.end()) [[unlikely]] return;
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
 

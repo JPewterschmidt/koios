@@ -109,7 +109,7 @@ task<> tcp_server::send_cancel_to_awaiting_accept() const noexcept
     for (void* handle : m_loop_handles)
     {
         lk.unlock();
-        co_await uring::cancel_all(handle);
+        co_await uring::cancel_any(m_sockfd, handle);
         lk.lock();
     }
     co_return;

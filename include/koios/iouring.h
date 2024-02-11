@@ -51,7 +51,7 @@ namespace iel_detials
         ioret_task(::std::shared_ptr<uring::ioret> retslot, 
                    task_on_the_fly h) noexcept
             : m_ret{ ::std::move(retslot) }, 
-              m_task_container{ ::std::make_unique<task_release_once>(::std::move(h)) }
+              m_task_container{ ::std::make_shared<task_release_once>(::std::move(h)) }
         {
             m_ret->ret = - ECANCELED;
         }
@@ -92,7 +92,7 @@ namespace iel_detials
                   ::io_uring_sqe sqe);
 
         static void 
-        set_timeout(::std::shared_ptr<task_release_once> taskp, 
+        set_timeout(int fd, void* user_data, 
                     ::std::chrono::system_clock::time_point timeout) noexcept;
 
         ::std::chrono::milliseconds max_sleep_duration() const;

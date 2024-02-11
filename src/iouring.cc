@@ -24,6 +24,7 @@
 #include "toolpex/tic_toc.h"
 #include "koios/task.h"
 #include "koios/functional.h"
+#include "koios/iouring_awaitables.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -51,7 +52,6 @@ namespace iel_detials
         const uint64_t key = cqep->user_data;
         auto it = m_suspended.find(key);
         assert(it != m_suspended.end()); // XXX TODO Likely to failed when there's a timer
-        //if (it == m_suspended.end()) [[unlikely]] return;
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
 
@@ -86,14 +86,15 @@ namespace iel_detials
         ::std::shared_ptr<uring::ioret> retslot, 
         ::io_uring_sqe sqe)
     {
-        const uint64_t addr = reinterpret_cast<uint64_t>(h.address());
-        sqe.user_data = addr;
+        const auto addr = reinterpret_cast<uint64_t>(h.address());
+        ::io_uring_sqe_set_data64(&sqe, addr);
         auto lk = get_lk();
         ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
 
         ioret_task t{ ::std::move(retslot), ::std::move(h) };
         auto result = t.get_task_shrptr();
-
+        
+        assert(!m_suspended.contains(addr));
         m_suspended.insert({ addr, ::std::move(t) });
         *sqep = sqe;
         ::io_uring_submit(&m_ring);
@@ -110,21 +111,15 @@ namespace iel_detials
         return static_cast<int>(mask & m_shot_record) * 50ms;
     }
 
-    static emitter_task<> 
-    wake_up_timeout_task(::std::shared_ptr<task_release_once> tp)
-    {
-        tp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
-            get_task_scheduler().enqueue(::std::move(t));
-            return ::std::nullopt;
-        });
-        co_return;
-    }
-
     void iouring_event_loop_perthr::
-    set_timeout(::std::shared_ptr<task_release_once> taskwp, 
+    set_timeout(int fd, void* user_data, 
                 ::std::chrono::system_clock::time_point timeout) noexcept
     {
-        get_task_scheduler().add_event<timer_event_loop>(timeout, wake_up_timeout_task(taskwp));
+        get_task_scheduler().add_event<timer_event_loop>(
+            timeout, [] (int fd, void* key) -> emitter_task<> {
+                co_await uring::cancel_any(fd, key);
+            }(fd, user_data)
+        );
     }
 }
 

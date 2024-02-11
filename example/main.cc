@@ -39,47 +39,34 @@ using namespace toolpex::ip_address_literals;
 namespace
 {
     ::std::unique_ptr<tcp_server> sp{};
-    task<bool> mute_client_app()
+    task<> mute_client_app()
     {
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
         ::std::array<::std::byte, 4> buffer{};
 
-        ::std::error_code ec;
-        co_await uring::recv_fill_buffer(50min, sock, buffer, 0, ec);
-
-        if (buffer[0] == ::std::byte{}) co_return false;
-        co_return true;
+        co_await this_task::sleep_for(1s);
+        co_await uring::send(sock, "fuck");
+        
+        co_return;
     }
 
-    task<bool> recv_timeout_server(toolpex::unique_posix_fd client) 
+    task<> recv_timeout_server(toolpex::unique_posix_fd client) 
     {
-        ::std::array<::std::byte, 128> buffer{};
-        size_t recved = co_await uring::recv_fill_buffer(3s, client, buffer);
-        if (recved == 0) 
-        {
-            co_await uring::send(client, "fuck you");
-            co_return true;
-        }
-        co_return false;
+        ::std::array<::std::byte, 4> buffer{};
+        ::std::error_code ec{};
+        size_t recved = co_await uring::recv_fill_buffer(3s, client, buffer, 0, ec);
+        ::std::cout << ec.message() << ::std::endl;
+        co_return;
     }
 
-    emitter_task<bool> emit_recv_timeout_test()
+    emitter_task<> emit_recv_timeout_test()
     {
-        sp.reset(new tcp_server("::1"_ip, 8890));
-        co_await sp->start(recv_timeout_server);
-
-        if (!co_await mute_client_app())
-        {
-            sp->stop();
-            co_await sp->until_stop_async();
-            sp = nullptr;
-            ::std::cout << "shit1" << ::std::endl;
-            co_return false;
-        }
-        sp->stop();
-        co_await sp->until_stop_async();
-        sp = nullptr;
-        co_return true;
+        tcp_server s{ "::1"_ip, 8890 };
+        co_await s.start(recv_timeout_server);
+        co_await mute_client_app();
+        s.stop();
+        co_await s.until_stop_async();
+        co_return;
     }
 }
 
@@ -87,7 +74,7 @@ int main()
 try
 {
     koios::runtime_init(4);
-    ::std::cout << emit_recv_timeout_test().result() << ::std::endl;
+    emit_recv_timeout_test().result();
     koios::runtime_exit();
     return 0;
 }

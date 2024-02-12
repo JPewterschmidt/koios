@@ -30,18 +30,15 @@ namespace koios::uring
         uint32_t flags{};
     };
 
-    namespace detials
+    class ioret_for_any_base : public ioret
     {
-        class ioret_for_any_base : public ioret
-        {
-        public:
-            ioret_for_any_base(ioret r) noexcept;
-            ::std::error_code error_code() const noexcept;
+    public:
+        ioret_for_any_base(ioret r) noexcept;
+        ::std::error_code error_code() const noexcept;
 
-        private:
-            int m_errno{};
-        };
-    }
+    private:
+        int m_errno{};
+    };
 }
 
 #endif

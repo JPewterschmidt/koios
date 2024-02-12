@@ -33,21 +33,21 @@
 
 namespace koios::uring
 {
-    class ioret_for_data_deliver : public detials::ioret_for_any_base
+    class ioret_for_data_deliver : public ioret_for_any_base
     {
     public:
         ioret_for_data_deliver(ioret r) noexcept;
         size_t nbytes_delivered() const noexcept;
     };
 
-    class ioret_for_socket : public detials::ioret_for_any_base
+    class ioret_for_socket : public ioret_for_any_base
     {
     public:
         ioret_for_socket(ioret r) noexcept;
         ::toolpex::unique_posix_fd get_socket_fd();       
     };
 
-    class ioret_for_accept : public detials::ioret_for_any_base
+    class ioret_for_accept : public ioret_for_any_base
     {
     public:
         ioret_for_accept(
@@ -63,12 +63,12 @@ namespace koios::uring
         const ::socklen_t m_len{};
     };
 
-    using ioret_for_connect = typename detials::ioret_for_any_base;
+    using ioret_for_connect = ioret_for_any_base;
 
-    class ioret_for_cancel : public detials::ioret_for_any_base
+    class ioret_for_cancel : public ioret_for_any_base
     {
     public:
-        using detials::ioret_for_any_base::ioret_for_any_base;
+        using ioret_for_any_base::ioret_for_any_base;
         size_t number_canceled() const;
     };
 

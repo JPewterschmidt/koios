@@ -41,7 +41,7 @@ namespace koios::uring
         auto* sqe_ptr() noexcept { return &m_sqe; }
         constexpr bool await_ready() const noexcept { return false; }
         void await_suspend(task_on_the_fly h);
-        detials::ioret_for_any_base await_resume() { return *m_ret; }
+        ioret_for_any_base await_resume() { return *m_ret; }
         void set_timeout(::std::chrono::milliseconds timeout) noexcept { m_timeout_point = ::std::chrono::system_clock::now() + timeout; }
         void set_timeout(::std::chrono::system_clock::time_point tp) noexcept{ m_timeout_point = tp; }
         bool has_timeout() const noexcept { return m_timeout_point != ::std::chrono::system_clock::time_point::max(); }

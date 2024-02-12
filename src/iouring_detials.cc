@@ -22,7 +22,7 @@
 
 namespace koios::uring { 
 
-detials::ioret_for_any_base::
+ioret_for_any_base::
 ioret_for_any_base(ioret r) noexcept 
     : ioret{ ::std::move(r) } 
 {
@@ -34,7 +34,7 @@ ioret_for_any_base(ioret r) noexcept
     }
 }
 
-::std::error_code detials::ioret_for_any_base::
+::std::error_code ioret_for_any_base::
 error_code() const noexcept
 {
     if (ret >= 0) [[likely]]
@@ -52,7 +52,7 @@ await_resume()
 
 ioret_for_data_deliver::
 ioret_for_data_deliver(ioret r) noexcept
-    : detials::ioret_for_any_base{ ::std::move(r) }
+    : ioret_for_any_base{ ::std::move(r) }
 {
 }
 
@@ -65,7 +65,7 @@ nbytes_delivered() const noexcept
 
 ioret_for_socket::
 ioret_for_socket(ioret r) noexcept
-    : detials::ioret_for_any_base{ ::std::move(r) }
+    : ioret_for_any_base{ ::std::move(r) }
 {
 }
 
@@ -89,7 +89,7 @@ await_resume()
 
 ioret_for_accept::
 ioret_for_accept(ioret r, const ::sockaddr* addr, ::socklen_t len) noexcept
-    : detials::ioret_for_any_base{ r }, m_addr{ addr }, m_len{ len }
+    : ioret_for_any_base{ r }, m_addr{ addr }, m_len{ len }
 {
 }
 

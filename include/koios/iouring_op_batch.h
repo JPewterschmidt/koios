@@ -27,17 +27,43 @@ public:
 
     op_batch_execute_aw execute() & noexcept;
 
+    op_batch& prep_write(const toolpex::unique_posix_fd& fd, 
+                         ::std::span<const ::std::byte> buffer, 
+                         uint64_t offset = 0) noexcept;
+
     op_batch& prep_send(const toolpex::unique_posix_fd& fd, 
                         ::std::span<const ::std::byte> buffer, 
                         int flags = 0) noexcept;
+
+
+    op_batch& prep_sendmsg(const toolpex::unique_posix_fd& fd, 
+                           const ::msghdr* msg, 
+                           int flags = 0) noexcept;
+
+    op_batch& prep_write(const toolpex::unique_posix_fd& fd, 
+                         ::std::span<const char> buffer, 
+                         uint64_t offset = 0) noexcept
+    {
+        return prep_write(fd, ::std::as_bytes(buffer), offset);
+    }
+
+    op_batch& prep_send(const toolpex::unique_posix_fd& fd, 
+                        ::std::span<const char> buffer, 
+                        int flags = 0) noexcept
+    {
+        return prep_send(fd, ::std::as_bytes(buffer), flags);
+    }
 
     op_batch& prep_recv(const toolpex::unique_posix_fd& fd, 
                         ::std::span<::std::byte> buffer, 
                         int flags = 0) noexcept;
 
-    op_batch& prep_sendmsg(const toolpex::unique_posix_fd& fd, 
-                           const ::msghdr* msg, 
-                           int flags = 0) noexcept;
+    op_batch& prep_recv(const toolpex::unique_posix_fd& fd, 
+                        ::std::span<char> buffer, 
+                        int flags = 0) noexcept
+    {
+        return prep_recv(fd, ::std::as_writable_bytes(buffer), flags);
+    }
 
     op_batch& prep_recvmsg(const toolpex::unique_posix_fd& fd, 
                            ::msghdr* msg, 
@@ -47,9 +73,12 @@ public:
                         ::std::span<::std::byte> buffer, 
                         uint64_t offset = 0) noexcept;
 
-    op_batch& prep_write(const toolpex::unique_posix_fd& fd, 
-                         ::std::span<const ::std::byte> buffer, 
-                         uint64_t offset = 0) noexcept;
+    op_batch& prep_read(const toolpex::unique_posix_fd& fd, 
+                        ::std::span<char> buffer, 
+                        uint64_t offset = 0) noexcept
+    {
+        return prep_read(fd, ::std::as_writable_bytes(buffer), offset);
+    }
 
     op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd, uint64_t userdata) noexcept;
     op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd, void* userdata) noexcept;
@@ -83,16 +112,19 @@ public:
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
-    op_batch& set_timeout(::std::chrono::system_clock::time_point timeout) noexcept;
+    op_batch& timeout(::std::chrono::system_clock::time_point tp) noexcept;
 
     template<typename Rep, typename Period>
-    op_batch& set_timeout(::std::chrono::duration<Rep, Period> timeout) noexcept
+    op_batch& timeout(::std::chrono::duration<Rep, Period> dura) noexcept
     {
-        return set_timeout(timeout + ::std::chrono::system_clock::now());
+        return timeout(dura + ::std::chrono::system_clock::now());
     }
 
     op_batch& clear() noexcept { m_rep.clear(); return *this; }
-
+    [[nodiscard]] bool all_success() const noexcept;
+    bool was_timeout_set() const noexcept{ return m_was_timeout_set; };
+    bool is_timeout() const noexcept;
+    ::std::error_code timeout_req_ec() const noexcept;
 
 private:
     op_batch_rep& rep() noexcept { return m_rep; }
@@ -101,8 +133,9 @@ private:
 private:
     op_batch_rep m_rep;
     op_peripheral m_peripheral;
+    bool m_was_timeout_set{};
 };
 
-}
+} // namespace koios::uring
 
 #endif

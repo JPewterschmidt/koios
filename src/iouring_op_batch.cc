@@ -303,7 +303,7 @@ prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept
 }
 
 op_batch& op_batch::
-set_timeout(::std::chrono::system_clock::time_point timeout) noexcept
+timeout(::std::chrono::system_clock::time_point tp) noexcept
 {
     assert(!m_rep.empty());
 
@@ -316,7 +316,7 @@ set_timeout(::std::chrono::system_clock::time_point timeout) noexcept
         }
 
         __kernel_timespec ts;
-    } *data{ m_peripheral.add<timeout_data>(timeout) };
+    } *data{ m_peripheral.add<timeout_data>(tp) };
 
     ::io_uring_prep_link_timeout(
         cur_sqe, 
@@ -324,20 +324,34 @@ set_timeout(::std::chrono::system_clock::time_point timeout) noexcept
         IORING_TIMEOUT_REALTIME | IORING_TIMEOUT_ABS
     );
     
+    m_was_timeout_set = true;
     return *this;
 }
 
-void op_batch_rep::set_user_data(void* userdata)
+bool op_batch::all_success() const noexcept
 {
-    for (auto& sqe : m_sqes)
-        ::io_uring_sqe_set_data(&sqe, userdata);
+    const auto& rets = m_rep.return_slots();
+    for (const auto& ret : rets | ::std::ranges::views::take(rets.size() - was_timeout_set()))
+    {
+        if (ret.error_code()) return false;
+    }
+    return true;
 }
 
-void op_batch_rep::set_user_data(uint64_t userdata)
+bool op_batch::is_timeout() const noexcept
 {
-    for (auto& sqe : m_sqes)
-        ::io_uring_sqe_set_data64(&sqe, userdata);
+    if (!was_timeout_set()) return false;
+    return all_success() && m_rep
+        .return_slots()
+        .back()
+        .error_code()
+        .value() != ECANCELED;
 }
 
+::std::error_code op_batch::timeout_req_ec() const noexcept
+{
+    if (!was_timeout_set()) return {};
+    return m_rep.return_slots().back().error_code();
+}
 
 } // namespace koios::uring

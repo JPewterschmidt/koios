@@ -39,11 +39,32 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
+    ::std::string g_file_name{ "testfile_for_iouring.txt" };
+    task<toolpex::unique_posix_fd> create_file()
+    {
+        toolpex::errret_thrower et;
+        co_return et << ::creat(g_file_name.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    }
+
+    task<toolpex::unique_posix_fd> open_file()
+    {
+        toolpex::errret_thrower et;
+        co_return et << ::open(g_file_name.c_str(), O_RDWR);
+    }
+
+    task<> delete_file()
+    {
+        co_await uring::unlink(g_file_name);
+    }
+
     emitter_task<> newuring_test()
     {
         auto ops = uring::op_batch{};
-        ops.prep_socket("::1"_ip->family(), SOCK_STREAM, 0);
-        const auto& rets = co_await ops.execute();
+        auto fd = co_await create_file();
+        ops.prep_write(fd, "ok");
+        co_await ops.execute();
+
+        ::std::cout << ops.all_success() << ::std::endl;
         co_return;   
     }
 }

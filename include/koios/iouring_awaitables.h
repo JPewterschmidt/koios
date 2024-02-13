@@ -42,17 +42,17 @@
 
 namespace koios::uring
 {
-    ::koios::task<toolpex::unique_posix_fd> 
+    task<toolpex::unique_posix_fd> 
     bind_get_sock(toolpex::ip_address::ptr addr, in_port_t port, 
                   bool reuse_port = true, bool reuse_addr = true,
                   unsigned int flags = 0);
 
-    ::koios::task<>
+    task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer);
 
     template<typename CharT>
-    ::koios::task<>
+    task<>
     inline append_all(const toolpex::unique_posix_fd& fd, 
                       ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer)
     {
@@ -61,13 +61,13 @@ namespace koios::uring
         ));
     }
 
-    ::koios::task<>
+    task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer, 
               ::std::error_code& ec_out) noexcept;
 
     template<typename CharT>
-    inline ::koios::task<>
+    inline task<>
     append_all(const toolpex::unique_posix_fd& fd, 
                ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer,
                ::std::error_code& ec_out) noexcept
@@ -77,14 +77,14 @@ namespace koios::uring
         ), ec_out);
     }
 
-    ::koios::task<size_t>
+    task<size_t>
     recv_fill_buffer(::std::chrono::system_clock::time_point timeout,
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int flags,
                      ::std::error_code& ec) noexcept;
 
-    ::koios::task<size_t>
+    task<size_t>
     recv_fill_buffer(toolpex::is_std_chrono_duration auto const dura, 
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
@@ -96,7 +96,7 @@ namespace koios::uring
                                );
     }
 
-    ::koios::task<size_t>
+    task<size_t>
     recv_fill_buffer(toolpex::is_std_chrono_duration auto const dura, 
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
@@ -108,14 +108,14 @@ namespace koios::uring
         co_return result;
     }
 
-    ::koios::task<size_t>
+    task<size_t>
     read_fill_buffer(::std::chrono::system_clock::time_point timeout,
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int offset,
                      ::std::error_code& ec) noexcept;
 
-    ::koios::task<size_t>
+    task<size_t>
     read_fill_buffer(toolpex::is_std_chrono_duration auto const dura,
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
@@ -127,7 +127,7 @@ namespace koios::uring
                                );
     }
 
-    ::koios::task<size_t>
+    task<size_t>
     read_fill_buffer(toolpex::is_std_chrono_duration auto const dura,
                      const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 

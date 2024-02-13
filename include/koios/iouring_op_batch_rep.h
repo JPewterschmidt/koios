@@ -1,7 +1,11 @@
 #ifndef KOIOS_IOURING_OP_BATCH_REP_H
 #define KOIOS_IOURING_OP_BATCH_REP_H
 
+#include <vector>
+#include <liburing.h>
+#include <cassert>
 #include "toolpex/move_only.h"
+#include "koios/iouring_ioret.h"
 
 namespace koios::uring
 {
@@ -27,6 +31,7 @@ public:
     bool empty() const noexcept { return m_sqes.empty(); }
 
     auto& return_slots() noexcept { return m_rets; }
+    const auto& return_slots() const noexcept { return m_rets; }
 
     void set_user_data(void* userdata);
     void set_user_data(uint64_t userdata);

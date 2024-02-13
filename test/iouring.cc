@@ -9,6 +9,7 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
+using namespace toolpex::ip_address_literals;
 
 namespace
 {
@@ -106,4 +107,25 @@ TEST(iouring, op_fill_buffer)
 {
     ASSERT_TRUE(emit_op_fill_test().result());
     ASSERT_TRUE(emit_op_fill_test2().result());
+}
+
+#include "koios/iouring_op_batch.h"
+#include "toolpex/ipaddress.h"
+namespace
+{
+    emitter_task<bool> op_batch_test_basic()
+    {
+        auto ops = uring::op_batch{};
+        ops.prep_socket("::1"_ip->family(), SOCK_STREAM, 0)
+            .timeout(1s);
+        co_await ops.execute();
+        co_return ops.all_success() 
+            && ops.timeout_req_ec()
+            && ops.was_timeout_set();
+    }
+}
+
+TEST(iouring, op_batch_basic)
+{
+    ASSERT_TRUE(op_batch_test_basic().result());
 }

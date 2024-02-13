@@ -21,11 +21,13 @@ namespace koios::uring
 class op_batch
 {
 public:
-    constexpr op_batch() = default;
+    constexpr op_batch() noexcept = default;
     op_batch(op_batch&&) noexcept = default;
     op_batch& operator=(op_batch&&) noexcept = default;
 
     op_batch_execute_aw execute() & noexcept;
+
+    op_batch& prep_accept(const toolpex::unique_posix_fd& fd) noexcept;
 
     op_batch& prep_write(const toolpex::unique_posix_fd& fd, 
                          ::std::span<const ::std::byte> buffer, 
@@ -34,7 +36,6 @@ public:
     op_batch& prep_send(const toolpex::unique_posix_fd& fd, 
                         ::std::span<const ::std::byte> buffer, 
                         int flags = 0) noexcept;
-
 
     op_batch& prep_sendmsg(const toolpex::unique_posix_fd& fd, 
                            const ::msghdr* msg, 
@@ -126,7 +127,6 @@ public:
     bool is_timeout() const noexcept;
     ::std::error_code timeout_req_ec() const noexcept;
 
-private:
     op_batch_rep& rep() noexcept { return m_rep; }
     const op_batch_rep& rep() const noexcept { return m_rep; }
 

@@ -19,7 +19,7 @@ public:
 
     constexpr bool await_ready() const noexcept { return false; }
     void await_suspend(task_on_the_fly t);
-    ::std::vector<ioret_for_any_base>& await_resume();
+    constexpr void await_resume() const noexcept {}
 
 private:
     op_batch_rep* m_rep;      

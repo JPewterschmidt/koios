@@ -36,14 +36,14 @@ namespace koios::uring
     class ioret_for_data_deliver : public ioret_for_any_base
     {
     public:
-        ioret_for_data_deliver(ioret r) noexcept;
+        using ioret_for_any_base::ioret_for_any_base;
         size_t nbytes_delivered() const noexcept;
     };
 
     class ioret_for_socket : public ioret_for_any_base
     {
     public:
-        ioret_for_socket(ioret r) noexcept;
+        using ioret_for_any_base::ioret_for_any_base;
         ::toolpex::unique_posix_fd get_socket_fd();       
     };
 
@@ -54,6 +54,8 @@ namespace koios::uring
             ioret r, 
             const ::sockaddr* addr, 
         ::socklen_t len) noexcept;
+
+        using ioret_for_any_base::ioret_for_any_base;
 
         ::toolpex::unique_posix_fd
         get_client();

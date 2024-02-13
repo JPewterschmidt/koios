@@ -65,6 +65,7 @@ namespace
         co_await ops.execute();
 
         ::std::cout << ops.all_success() << ::std::endl;
+        co_await delete_file();
         co_return;   
     }
 }

@@ -28,8 +28,7 @@ ioret_for_any_base(ioret r) noexcept
 {
     if (ret < 0) [[unlikely]]
     {
-        if (errno != 0)
-            m_errno = errno;
+        if (ret == -1 && errno) m_errno = errno;
         else m_errno = -ret;
     }
 }
@@ -50,23 +49,11 @@ await_resume()
 }
 
 
-ioret_for_data_deliver::
-ioret_for_data_deliver(ioret r) noexcept
-    : ioret_for_any_base{ ::std::move(r) }
-{
-}
-
 size_t 
 ioret_for_data_deliver::
 nbytes_delivered() const noexcept
 {
     return ret >= 0 ? static_cast<size_t>(ret) : 0;
-}
-
-ioret_for_socket::
-ioret_for_socket(ioret r) noexcept
-    : ioret_for_any_base{ ::std::move(r) }
-{
 }
 
 ::toolpex::unique_posix_fd 

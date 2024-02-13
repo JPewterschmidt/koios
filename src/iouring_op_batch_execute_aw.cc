@@ -15,11 +15,4 @@ await_suspend(task_on_the_fly t)
     );
 }
 
-::std::vector<ioret_for_any_base>& 
-op_batch_execute_aw::
-await_resume()
-{
-    return m_rep->return_slots();
-}
-
 } // namespace koios::uring

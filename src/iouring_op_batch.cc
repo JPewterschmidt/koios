@@ -18,6 +18,25 @@ execute() & noexcept
     return { m_rep };
 }
 
+struct sock_data : public op_peripheral::data_interface
+{
+    sock_data(::sockaddr_storage sock) noexcept
+        : sock{ sock }
+    {
+    }
+
+    ::sockaddr_storage sock;
+};
+
+op_batch& op_batch::
+prep_accept(const toolpex::unique_posix_fd& fd) noexcept
+{
+    auto* cur_sqe = m_rep.get_sqe();
+    ::io_uring_prep_accept(cur_sqe, fd, nullptr, nullptr, 0);
+    cur_sqe->flags |= IOSQE_IO_LINK;
+	return *this;
+}
+
 op_batch& op_batch::
 prep_send(const toolpex::unique_posix_fd& fd, 
           ::std::span<const ::std::byte> buffer, 
@@ -100,15 +119,7 @@ prep_connect(const toolpex::unique_posix_fd& fd,
              toolpex::ip_address::ptr addr, ::in_port_t port) noexcept
 {
     auto [sock, len] = addr->to_sockaddr(port);
-    struct connect_data : public op_peripheral::data_interface
-    {
-        connect_data(::sockaddr_storage sock) noexcept
-            : sock{ sock }
-        {
-        }
-
-        ::sockaddr_storage sock;
-    } *datap{m_peripheral.add<connect_data>(sock)};
+    sock_data* datap{m_peripheral.add<sock_data>(sock)};
 
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_connect(

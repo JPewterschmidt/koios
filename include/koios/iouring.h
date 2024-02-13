@@ -30,6 +30,7 @@
 #include <memory>
 #include <chrono>
 #include <unordered_map>
+#include <utility>
 
 #include "koios/macros.h"
 #include "toolpex/move_only.h"
@@ -39,6 +40,7 @@
 #include "koios/per_consumer_attr.h"
 #include "koios/iouring_detials.h"
 #include "koios/iouring_ioret.h"
+#include "koios/iouring_op_batch_rep.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -86,10 +88,16 @@ namespace iel_detials
 
         void do_occured_nonblk() noexcept;
 
+    private:
+        void do_occured_nonblk2_unsafe() noexcept;
+
+    public:
         ::std::shared_ptr<task_release_once> 
         add_event(task_on_the_fly h, 
                   ::std::shared_ptr<uring::ioret> retslot, 
                   ::io_uring_sqe sqe);
+
+        void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
         static void 
         set_timeout(int fd, void* user_data, 
@@ -106,6 +114,10 @@ namespace iel_detials
     private:
         ::io_uring m_ring;
         ::std::unordered_map<uint64_t, ioret_task> m_suspended;
+        ::std::unordered_map<
+            uint64_t, 
+            ::std::pair<uring::op_batch_rep*, task_on_the_fly>
+        > m_opreps;
         mutable ::std::mutex m_lk;
         unsigned m_shot_record{};
     };
@@ -142,6 +154,8 @@ public:
     add_event(task_on_the_fly h, 
               ::std::shared_ptr<uring::ioret> retslot, 
               ::io_uring_sqe sqe);
+
+    void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
     iel_detials::iouring_event_loop_perthr* 
     DEBUG_one_who_has_key(void* key);

@@ -34,6 +34,11 @@ namespace koios::uring
     {
     public:
         ioret_for_any_base(ioret r) noexcept;
+        ioret_for_any_base(int32_t ret, uint32_t flags) noexcept
+            : ioret_for_any_base{ ioret{ ret, flags } }
+        {
+        }
+
         ::std::error_code error_code() const noexcept;
 
     private:

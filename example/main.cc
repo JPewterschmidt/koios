@@ -27,6 +27,7 @@
 
 #include "koios/unique_file_state.h"
 #include "koios/task_release_once.h"
+#include "koios/iouring_op_batch.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -38,35 +39,12 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    ::std::unique_ptr<tcp_server> sp{};
-    task<> mute_client_app()
+    emitter_task<> newuring_test()
     {
-        auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-        ::std::array<::std::byte, 4> buffer{};
-
-        co_await this_task::sleep_for(1s);
-        co_await uring::send(sock, "fuck");
-        
-        co_return;
-    }
-
-    task<> recv_timeout_server(toolpex::unique_posix_fd client) 
-    {
-        ::std::array<::std::byte, 4> buffer{};
-        ::std::error_code ec{};
-        size_t recved = co_await uring::recv_fill_buffer(3s, client, buffer, 0, ec);
-        ::std::cout << ec.message() << ::std::endl;
-        co_return;
-    }
-
-    emitter_task<> emit_recv_timeout_test()
-    {
-        tcp_server s{ "::1"_ip, 8890 };
-        co_await s.start(recv_timeout_server);
-        co_await mute_client_app();
-        s.stop();
-        co_await s.until_stop_async();
-        co_return;
+        auto ops = uring::op_batch{};
+        ops.prep_socket("::1"_ip->family(), SOCK_STREAM, 0);
+        const auto& rets = co_await ops.execute();
+        co_return;   
     }
 }
 
@@ -74,7 +52,7 @@ int main()
 try
 {
     koios::runtime_init(4);
-    emit_recv_timeout_test().result();
+    newuring_test().result();
     koios::runtime_exit();
     return 0;
 }

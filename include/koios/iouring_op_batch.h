@@ -11,6 +11,9 @@
 #include "koios/traits.h"
 #include "koios/task.h"
 #include "koios/iouring_ioret.h"
+#include "koios/iouring_op_batch_rep.h"
+#include "koios/iouring_op_peripheral.h"
+#include "koios/iouring_op_batch_execute_aw.h"
 
 namespace koios::uring
 {
@@ -18,6 +21,12 @@ namespace koios::uring
 class op_batch
 {
 public:
+    constexpr op_batch() = default;
+    op_batch(op_batch&&) noexcept = default;
+    op_batch& operator=(op_batch&&) noexcept = default;
+
+    op_batch_execute_aw execute() & noexcept;
+
     op_batch& prep_send(const toolpex::unique_posix_fd& fd, 
                         ::std::span<const ::std::byte> buffer, 
                         int flags = 0) noexcept;
@@ -55,11 +64,15 @@ public:
 
     op_batch& prep_rename(const ::std::filesystem::path& from, 
                           const ::std::filesystem::path& to) noexcept;
+
     op_batch& prep_renameat(const toolpex::unique_posix_fd& olddir, const ::std::filesystem::path& oldname, 
                             const toolpex::unique_posix_fd& newdir, const ::std::filesystem::path& newname, 
                             int flags = 0) noexcept;
-    op_batch& prep_renameat_noreplace(const toolpex::unique_posix_fd& olddir, const ::std::filesystem::path& oldname, 
-                                      const toolpex::unique_posix_fd& newdir, const ::std::filesystem::path& newname) noexcept;
+
+    op_batch& prep_renameat_noreplace(const toolpex::unique_posix_fd& olddir, 
+                                      const ::std::filesystem::path& oldname, 
+                                      const toolpex::unique_posix_fd& newdir, 
+                                      const ::std::filesystem::path& newname) noexcept;
 
     op_batch& prep_socket(int domain, int type, int protocal, unsigned int flags = 0) noexcept;
     op_batch& prep_connect(const toolpex::unique_posix_fd& fd, 
@@ -70,37 +83,24 @@ public:
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
-    op_batch& set_timeout(::std::chrono::system_clock::time_point timeout) noexcept
-    {
-        m_timeout = timeout;
-        return *this;
-    }
-    
+    op_batch& set_timeout(::std::chrono::system_clock::time_point timeout) noexcept;
+
     template<typename Rep, typename Period>
     op_batch& set_timeout(::std::chrono::duration<Rep, Period> timeout) noexcept
     {
-        return set_timeout(::std::chrono::system_clock::now() + timeout);
+        return set_timeout(timeout + ::std::chrono::system_clock::now());
     }
 
-    op_batch& clear_timeout() noexcept 
-    { 
-        m_timeout = ::std::chrono::system_clock::time_point::max(); 
-        return *this; 
-    }
+    op_batch& clear() noexcept { m_rep.clear(); return *this; }
 
-    op_batch& clear() noexcept { m_sqes.clear(); return *this; }
-
-    task<::std::vector<ioret_for_any_base>&> execute() &;
-
-    class peripheral_data { };
 
 private:
-    ::std::vector<::io_uring_sqe> m_sqes;
-    ::std::vector<ioret_for_any_base> m_rets;
-    ::std::chrono::system_clock::time_point m_timeout{
-        ::std::chrono::system_clock::time_point::max()
-    };
-    ::std::vector<::std::unique_ptr<peripheral_data>> m_peripheral_datas;
+    op_batch_rep& rep() noexcept { return m_rep; }
+    const op_batch_rep& rep() const noexcept { return m_rep; }
+
+private:
+    op_batch_rep m_rep;
+    op_peripheral m_peripheral;
 };
 
 }

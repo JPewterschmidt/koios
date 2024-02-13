@@ -51,7 +51,7 @@ namespace iel_detials
 
         const uint64_t key = cqep->user_data;
         auto it = m_suspended.find(key);
-        assert(it != m_suspended.end()); // XXX TODO Likely to failed when there's a timer
+        if (it == m_suspended.end()) return; // new impl case
         auto cb = ::std::move(it->second);
         m_suspended.erase(it);
 
@@ -63,6 +63,9 @@ namespace iel_detials
     {
         ::io_uring_cqe* cqep{};
         auto lk = get_lk();
+        // TODO
+        do_occured_nonblk2_unsafe();
+        //TODO
         m_shot_record <<= 1u;
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
@@ -75,6 +78,33 @@ namespace iel_detials
                 break;
             }
             dealwith_cqe(cqep);
+            ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
+        }
+    }
+
+    void iouring_event_loop_perthr::
+    do_occured_nonblk2_unsafe() noexcept
+    {
+        // TODO : move outter lock in.
+        const size_t left = ::io_uring_cq_ready(&m_ring);
+        if (left == 0) m_shot_record |= 1u;
+        ::io_uring_cqe* cqep{};
+        auto& schr = get_task_scheduler();
+        for (size_t i{}; i < left; ++i)
+        {
+            int e = ::io_uring_peek_cqe(&m_ring, &cqep);
+            if (e == - EAGAIN) [[unlikely]] // no any CQE available
+            {
+                break;
+            }
+            const uint64_t key = cqep->user_data;
+            auto it = m_opreps.find(key);
+            assert(it != m_opreps.end() || m_suspended.contains(key));
+            if (it == m_opreps.end()) return;
+            auto& [batch_rep, task] = it->second;
+            batch_rep->add_ret(cqep->res, cqep->flags);
+            if (batch_rep->has_enough_ret())
+                schr.enqueue(::std::move(::std::move(task)));
             ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
         }
     }
@@ -100,6 +130,19 @@ namespace iel_detials
         ::io_uring_submit(&m_ring);
 
         return result;
+    }
+
+    void 
+    iouring_event_loop_perthr::
+    add_event(task_on_the_fly h, uring::op_batch_rep& ops)
+    {
+        const uint64_t addrkey = reinterpret_cast<uint64_t>(h.address());
+        auto lk = get_lk();
+        assert(!m_opreps.contains(addrkey));
+        m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
+        for (const auto& sqe : ops)
+            *::io_uring_get_sqe(&m_ring) = sqe;
+        ::io_uring_submit(&m_ring);
     }
 
     ::std::chrono::milliseconds 
@@ -171,6 +214,18 @@ add_event(
     return it->second->add_event(
         ::std::move(h), ::std::move(retslot), ::std::move(sqe)
     );
+}
+
+void 
+iouring_event_loop::
+add_event(task_on_the_fly h, uring::op_batch_rep& ops)
+{
+    const auto tid = ::std::this_thread::get_id();
+    auto lk = get_shrlk();
+    if (m_cleaning == true) [[unlikely]] return;
+    auto it = m_impls.find(tid);
+    assert(it != m_impls.end());
+    return it->second->add_event(::std::move(h), ops);
 }
 
 void iouring_event_loop::

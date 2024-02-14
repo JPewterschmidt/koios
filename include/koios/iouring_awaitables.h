@@ -19,7 +19,6 @@
 #ifndef KOIOS_IOURING_AWAITABLES_H
 #define KOIOS_IOURING_AWAITABLES_H
 
-#include "koios/iouring_aw.h"
 #include "koios/exceptions.h"
 #include "koios/iouring_op_functions.h"
 
@@ -82,37 +81,20 @@ namespace koios::uring
                      ::std::span<::std::byte> buffer, 
                      int flags, 
                      ::std::error_code& ec, 
-                     ::std::chrono::milliseconds dura) noexcept
-    {
-        return recv_fill_buffer(fd, buffer, flags, ec,
-                                dura + ::std::chrono::system_clock::now()
-                               );
-    }
+                     ::std::chrono::milliseconds dura) noexcept;
 
     task<size_t>
     recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int flags = 0, 
                      ::std::chrono::system_clock::time_point timeout 
-                         = ::std::chrono::system_clock::time_point::max())
-    {
-        ::std::error_code ec{};
-        auto result = co_await recv_fill_buffer(fd, buffer, flags, ec, timeout);
-        if (ec && ec != std_canceled_ec()) throw uring_exception(ec);
-        co_return result;
-    }
+                         = ::std::chrono::system_clock::time_point::max());
 
     task<size_t>
     recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int flags, 
-                     ::std::chrono::milliseconds dura)
-    {
-        ::std::error_code ec{};
-        auto result = co_await recv_fill_buffer(fd, buffer, flags, ec, dura);
-        if (ec && ec != std_canceled_ec()) throw uring_exception(ec);
-        co_return result;
-    }
+                     ::std::chrono::milliseconds dura);
 
     task<size_t>
     read_fill_buffer(const toolpex::unique_posix_fd& fd, 
@@ -127,25 +109,14 @@ namespace koios::uring
                      ::std::span<::std::byte> buffer, 
                      int offset, 
                      ::std::error_code& ec, 
-                     ::std::chrono::milliseconds dura) noexcept
-    {
-        return read_fill_buffer(fd, buffer, offset, ec,
-                                dura + ::std::chrono::system_clock::now()
-                               );
-    }
+                     ::std::chrono::milliseconds dura) noexcept;
 
     task<size_t>
     read_fill_buffer(const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int offset = 0, 
                      ::std::chrono::system_clock::time_point timeout 
-                         = ::std::chrono::system_clock::time_point::max())
-    {
-        ::std::error_code ec{};
-        auto result = co_await read_fill_buffer(fd, buffer, offset, ec, timeout);
-        if (ec && ec != std_canceled_ec()) throw uring_exception(ec);
-        co_return result;
-    }
+                         = ::std::chrono::system_clock::time_point::max());
 
 }
 

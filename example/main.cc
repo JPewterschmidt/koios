@@ -23,7 +23,6 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/coroutine_mutex.h"
 #include <string_view>
-#include "koios/iouring_connect_aw.h"
 
 #include "koios/unique_file_state.h"
 #include "koios/task_release_once.h"

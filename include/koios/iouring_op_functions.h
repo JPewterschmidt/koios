@@ -11,165 +11,109 @@
 namespace koios::uring
 {
 
-inline read_write_aw 
+read_write_aw 
 read(const toolpex::unique_posix_fd& fd, 
      ::std::span<::std::byte> buffer, 
      uint64_t offset = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    read_write_aw result;
-    result.batch().prep_read(fd, buffer, offset).timeout(tmot);
-    return result;
-}
+     ::std::chrono::system_clock::time_point tmot 
+         = ::std::chrono::system_clock::time_point::max());
 
-inline read_write_aw 
+read_write_aw 
 read(const toolpex::unique_posix_fd& fd, 
      ::std::span<::std::byte> buffer, 
      uint64_t offset,
-     ::std::chrono::milliseconds tmot)
-{
-    read_write_aw result;
-    result.batch().prep_read(fd, buffer, offset).timeout(tmot);
-    return result;
-}
+     ::std::chrono::milliseconds tmot);
 
-inline read_write_aw 
+read_write_aw 
 read(const toolpex::unique_posix_fd& fd, 
      ::std::span<char> buffer, 
      uint64_t offset = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    return read(fd, ::std::as_writable_bytes(buffer), offset, tmot);
-}
+     ::std::chrono::system_clock::time_point tmot 
+        = ::std::chrono::system_clock::time_point::max());
 
-inline read_write_aw 
+read_write_aw 
 read(const toolpex::unique_posix_fd& fd, 
      ::std::span<char> buffer, 
      uint64_t offset, 
-     ::std::chrono::milliseconds tmot)
-{
-    return read(fd, ::std::as_writable_bytes(buffer), offset, tmot + ::std::chrono::system_clock::now());
-}
+     ::std::chrono::milliseconds tmot);
 
-inline read_write_aw 
+read_write_aw 
 write(const toolpex::unique_posix_fd& fd, 
       ::std::span<const ::std::byte> buffer, 
       uint64_t offset = 0, 
-      ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    read_write_aw result{};
-    result.batch().prep_write(fd, buffer, offset).timeout(tmot);
-    return result;
-}
+      ::std::chrono::system_clock::time_point tmot 
+          = ::std::chrono::system_clock::time_point::max());
 
-inline read_write_aw 
+read_write_aw 
 write(const toolpex::unique_posix_fd& fd, 
       ::std::span<const ::std::byte> buffer, 
       uint64_t offset, 
-      ::std::chrono::milliseconds tmot)
-{
-    read_write_aw result{};
-    result.batch().prep_write(fd, buffer, offset).timeout(tmot);
-    return result;
-}
+      ::std::chrono::milliseconds tmot);
 
-inline read_write_aw 
+read_write_aw 
 write(const toolpex::unique_posix_fd& fd, 
       ::std::span<const char> buffer, 
       uint64_t offset = 0, 
-      ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    return write(fd, ::std::as_bytes(buffer), offset, tmot);
-}
+      ::std::chrono::system_clock::time_point tmot 
+          = ::std::chrono::system_clock::time_point::max());
 
-inline read_write_aw 
+read_write_aw 
 write(const toolpex::unique_posix_fd& fd, 
       ::std::span<const char> buffer, 
       uint64_t offset, 
-      ::std::chrono::milliseconds tmot)
-{
-    return write(fd, ::std::as_bytes(buffer), offset, tmot + ::std::chrono::system_clock::now());
-}
+      ::std::chrono::milliseconds tmot);
 
-inline recv_send_aw
+recv_send_aw
 send(const toolpex::unique_posix_fd& fd, 
      ::std::span<const ::std::byte> buffer, 
      int flags = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    recv_send_aw result{};
-    result.batch().prep_send(fd, buffer, flags).timeout(tmot);
-    return result;
-}
+     ::std::chrono::system_clock::time_point tmot 
+        = ::std::chrono::system_clock::time_point::max());
 
-inline recv_send_aw
+recv_send_aw
 send(const toolpex::unique_posix_fd& fd, 
      ::std::span<const char> buffer, 
      int flags = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    return send(fd, ::std::as_bytes(buffer), flags, tmot);
-}
+     ::std::chrono::system_clock::time_point tmot 
+        = ::std::chrono::system_clock::time_point::max());
 
-inline recv_send_aw
+recv_send_aw
 send(const toolpex::unique_posix_fd& fd, 
      ::std::span<const ::std::byte> buffer, 
      int flags, 
-     ::std::chrono::milliseconds tmot)
-{
-    recv_send_aw result{};
-    result.batch().prep_send(fd, buffer, flags).timeout(tmot);
-    return result;
-}
+     ::std::chrono::milliseconds tmot);
 
-inline recv_send_aw
+recv_send_aw
 send(const toolpex::unique_posix_fd& fd, 
      ::std::span<const char> buffer, 
      int flags, 
-     ::std::chrono::milliseconds tmot)
-{
-    return send(fd, ::std::as_bytes(buffer), flags, tmot + ::std::chrono::system_clock::now());
-}
+     ::std::chrono::milliseconds tmot);
 
-inline recv_send_aw
+recv_send_aw
 recv(const toolpex::unique_posix_fd& fd, 
      ::std::span<::std::byte> buffer, 
      int flags = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    recv_send_aw result{};
-    result.batch().prep_recv(fd, buffer, flags).timeout(tmot);
-    return result;
-}
+     ::std::chrono::system_clock::time_point tmot 
+        = ::std::chrono::system_clock::time_point::max());
 
-inline recv_send_aw
+recv_send_aw
 recv(const toolpex::unique_posix_fd& fd, 
      ::std::span<char> buffer, 
      int flags = 0, 
-     ::std::chrono::system_clock::time_point tmot = ::std::chrono::system_clock::time_point::max())
-{
-    return recv(fd, ::std::as_writable_bytes(buffer), flags, tmot);
-}
+     ::std::chrono::system_clock::time_point tmot 
+        = ::std::chrono::system_clock::time_point::max());
 
-inline recv_send_aw
+recv_send_aw
 recv(const toolpex::unique_posix_fd& fd, 
      ::std::span<::std::byte> buffer, 
      int flags, 
-     ::std::chrono::milliseconds tmot)
-{
-    recv_send_aw result{};
-    result.batch().prep_recv(fd, buffer, flags).timeout(tmot);
-    return result;
-}
+     ::std::chrono::milliseconds tmot);
 
-inline recv_send_aw
+recv_send_aw
 recv(const toolpex::unique_posix_fd& fd, 
      ::std::span<char> buffer, 
      int flags, 
-     ::std::chrono::milliseconds tmot)
-{
-    return recv(fd, ::std::as_writable_bytes(buffer), flags, tmot + ::std::chrono::system_clock::now());
-}
+     ::std::chrono::milliseconds tmot);
 
 normal_aw 
 rename(const ::std::filesystem::path& from, 

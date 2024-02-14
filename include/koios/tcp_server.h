@@ -124,7 +124,7 @@ private:
             using namespace ::std::chrono_literals;
             auto accret = co_await uring::accept(m_sockfd, 150ms);
             if (auto ec = accret.error_code(); 
-                ec.value() == ECANCELED && ec.category() == ::std::system_category())
+                (ec.value() == ECANCELED || ec.value() == ETIME) && ec.category() == ::std::system_category())
             {
                 continue;
             }

@@ -88,9 +88,6 @@ namespace iel_detials
 
         void do_occured_nonblk() noexcept;
 
-    private:
-        void do_occured_nonblk2_unsafe() noexcept;
-
     public:
         ::std::shared_ptr<task_release_once> 
         add_event(task_on_the_fly h, 
@@ -99,13 +96,7 @@ namespace iel_detials
 
         void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
-        static void 
-        set_timeout(int fd, void* user_data, 
-                    ::std::chrono::system_clock::time_point timeout) noexcept;
-
         ::std::chrono::milliseconds max_sleep_duration() const;
-
-        bool DEBUG_has_key(void* key);
 
     private:
         auto get_lk() const { return ::std::unique_lock{ m_lk }; }
@@ -113,7 +104,6 @@ namespace iel_detials
 
     private:
         ::io_uring m_ring;
-        ::std::unordered_map<uint64_t, ioret_task> m_suspended;
         ::std::unordered_map<
             uint64_t, 
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
@@ -150,15 +140,7 @@ public:
     ::std::chrono::milliseconds 
     max_sleep_duration(const per_consumer_attr&) const;   
 
-    ::std::shared_ptr<task_release_once> 
-    add_event(task_on_the_fly h, 
-              ::std::shared_ptr<uring::ioret> retslot, 
-              ::io_uring_sqe sqe);
-
     void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
-
-    iel_detials::iouring_event_loop_perthr* 
-    DEBUG_one_who_has_key(void* key);
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);

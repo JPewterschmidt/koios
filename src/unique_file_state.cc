@@ -18,8 +18,8 @@
 
 #include "koios/unique_file_state.h"
 #include "toolpex/exceptions.h"
-#include "koios/iouring_write_aw.h"
 #include "koios/error_category.h"
+#include "koios/iouring_awaitables.h"
 #include <cerrno>
 
 KOIOS_NAMESPACE_BEG

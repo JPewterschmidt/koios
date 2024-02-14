@@ -72,7 +72,7 @@ emitter_task<bool> emit_op_fill_test()
 
     ::std::error_code ec;
     size_t readed_nbytes = co_await koios::uring::read_fill_buffer(
-        10ms, fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec
+        fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec, 10ms
     );
     co_return readed_nbytes == 5;
 }
@@ -91,7 +91,7 @@ emitter_task<bool> emit_op_fill_test2()
 
     ::std::error_code ec;
     size_t readed_nbytes = co_await koios::uring::read_fill_buffer(
-        10ms, fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec
+        fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec, 10ms
     );
     co_return readed_nbytes == content.size();
 }

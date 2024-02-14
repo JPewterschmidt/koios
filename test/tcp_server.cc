@@ -78,7 +78,7 @@ namespace
         ::std::array<::std::byte, 4> buffer{};
 
         ::std::error_code ec;
-        co_await uring::recv_fill_buffer(10ms, sock, buffer, 0, ec);
+        co_await uring::recv_fill_buffer(sock, buffer, 0, ec, 10ms);
 
         if (buffer[0] == ::std::byte{}) co_return false;
         co_return true;
@@ -87,7 +87,7 @@ namespace
     task<bool> recv_timeout_server(toolpex::unique_posix_fd client) 
     {
         ::std::array<::std::byte, 128> buffer{};
-        size_t recved = co_await uring::recv_fill_buffer(1ms, client, buffer);
+        size_t recved = co_await uring::recv_fill_buffer(client, buffer, 0, 1ms);
         if (recved == 0) 
         {
             co_await uring::send(client, "fuck you");

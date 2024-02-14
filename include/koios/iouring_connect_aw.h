@@ -49,9 +49,5 @@ namespace koios::uring
         ::sockaddr_storage m_sockaddr{};
     };
 
-    ::koios::task<toolpex::unique_posix_fd> 
-    connect_get_sock(toolpex::ip_address::ptr addr, 
-                     ::in_port_t port, 
-                     unsigned int socket_flags = 0);
 }
 #endif

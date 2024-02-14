@@ -23,6 +23,22 @@ namespace koios::uring
 {
     using namespace toolpex;
 
+    task<toolpex::unique_posix_fd> 
+    connect_get_sock(toolpex::ip_address::ptr addr, 
+                     ::in_port_t port, 
+                     unsigned int flags)
+    {
+        auto sock_ret = co_await uring::socket(addr->family(), SOCK_STREAM, 0, flags);
+        if (auto ec = sock_ret.error_code(); ec)
+            throw koios::uring_exception{ ec };
+        auto sock = sock_ret.get_socket_fd();
+        auto conn_ret = co_await uring::connect(sock, ::std::move(addr), port);
+        if (auto ec = conn_ret.error_code(); ec)
+            throw koios::uring_exception{ ec };
+
+        co_return sock;
+    }
+
     ::koios::task<unique_posix_fd> 
     bind_get_sock(ip_address::ptr addr, in_port_t port, 
                   bool reuse_port, bool reuse_addr,
@@ -98,17 +114,17 @@ namespace koios::uring
     }
 
     ::koios::task<size_t>
-    recv_fill_buffer(::std::chrono::system_clock::time_point timeout,
-                     const toolpex::unique_posix_fd& fd, 
+    recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int flags,
-                     ::std::error_code& ec) noexcept
+                     ::std::error_code& ec, 
+                     ::std::chrono::system_clock::time_point timeout) noexcept
     try
     {
         size_t wrote_nbytes{};
         while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
         {
-            auto op_ret = co_await uring::recv(timeout, fd, buffer, flags);
+            auto op_ret = co_await uring::recv(fd, buffer, flags, timeout);
             buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
         }
         co_return wrote_nbytes;
@@ -125,17 +141,17 @@ namespace koios::uring
     }
 
     ::koios::task<size_t>
-    read_fill_buffer(::std::chrono::system_clock::time_point timeout,
-                     const toolpex::unique_posix_fd& fd, 
+    read_fill_buffer(const toolpex::unique_posix_fd& fd, 
                      ::std::span<::std::byte> buffer, 
                      int offset,
-                     ::std::error_code& ec) noexcept
+                     ::std::error_code& ec, 
+                     ::std::chrono::system_clock::time_point timeout) noexcept
     try
     {
         size_t wrote_nbytes{};
         while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
         {
-            auto op_ret = co_await uring::read(timeout, fd, buffer, offset + wrote_nbytes);
+            auto op_ret = co_await uring::read(fd, buffer, offset + wrote_nbytes, timeout);
             buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
         }
         co_return wrote_nbytes;
@@ -150,4 +166,5 @@ namespace koios::uring
         ec = ::std::error_code{ KOIOS_EXCEPTION_CATCHED, koios_category() };
         co_return 0;
     }
-}
+
+} // namespace koios::uring

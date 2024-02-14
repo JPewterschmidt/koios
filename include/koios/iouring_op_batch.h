@@ -86,7 +86,7 @@ public:
     op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_cancel_all(uint64_t userdata) noexcept;
     op_batch& prep_cancel_all(void* userdata) noexcept;
-    op_batch& prep_cancel_first(uint64_t* userdata) noexcept;
+    op_batch& prep_cancel_first(uint64_t userdata) noexcept;
     op_batch& prep_cancel_first(void* userdata) noexcept;
 
     op_batch& prep_unlink(const ::std::filesystem::path& path, 
@@ -118,6 +118,7 @@ public:
     template<typename Rep, typename Period>
     op_batch& timeout(::std::chrono::duration<Rep, Period> dura) noexcept
     {
+        if (dura == decltype(dura)::max()) return *this;
         return timeout(dura + ::std::chrono::system_clock::now());
     }
 

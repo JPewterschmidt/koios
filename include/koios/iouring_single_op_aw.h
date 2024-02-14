@@ -21,6 +21,16 @@ namespace koios::uring
         op_batch m_batch;
     };
 
+    class normal_aw : public op_aw_base, public op_batch_execute_aw
+    {
+    public:
+        normal_aw() noexcept;
+        ioret_for_any_base await_resume() noexcept
+        {
+            return this->resume_template<ioret_for_any_base>();
+        }
+    };
+
     class read_write_aw : public op_aw_base, public op_batch_execute_aw
     {
     public:

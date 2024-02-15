@@ -1,9 +1,28 @@
+/* Koios, A c++ async runtime library.
+ * Copyright (C) 2024  Jeremy Pewterschmidt
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 #ifndef KOIOS_IOURING_OP_PERIPHERAL_H
 #define KOIOS_IOURING_OP_PERIPHERAL_H
 
 #include <vector>
 #include <concepts>
 #include <memory>
+#include <type_traits>
 #include "toolpex/move_only.h"
 
 namespace koios::uring
@@ -42,16 +61,8 @@ class op_peripheral : public toolpex::move_only
 public:
     constexpr op_peripheral() noexcept = default;
 
-    class data_interface 
-    { 
-    public:
-        constexpr data_interface() noexcept = default;
-        data_interface(data_interface&&) noexcept = default;
-        data_interface& operator=(data_interface&&) noexcept = default;
-        data_interface(const data_interface&) = delete;
-    };
-
-    template<::std::derived_from<data_interface> DataT, typename... Args>
+    template<typename DataT, typename... Args>
+    requires (::std::is_nothrow_move_constructible_v<DataT>)
     DataT* add(Args&&... args)
     {
         auto elem = op_peripheral_element(DataT(::std::forward<Args>(args)...));

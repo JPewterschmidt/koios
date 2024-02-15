@@ -24,6 +24,7 @@
 #include "toolpex/tic_toc.h"
 #include "koios/task.h"
 #include "koios/functional.h"
+#include "koios/iouring_awaitables.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -31,41 +32,33 @@ using namespace ::std::chrono_literals;
 
 namespace iel_detials
 {
-    void ioret_task::set_ret_and_wakeup(int32_t ret, uint32_t flags)
-    {
-        m_task_container
-            ->release()
-            .and_then([=, this](auto&& t) mutable -> ::std::optional<task_on_the_fly> { 
-                this->m_ret->ret = ret;
-                this->m_ret->flags = flags;
-                get_task_scheduler().enqueue(::std::move(t)); 
-                return ::std::nullopt;
-            });
-    }
-
     void iouring_event_loop_perthr::
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {
         assert(cqep);
-        
-        const uint64_t key = cqep->user_data;
-        auto it = m_suspended.find(key);
-        assert(it != m_suspended.end());
-        auto cb = ::std::move(it->second);
-        m_suspended.erase(it);
+        auto& schr = get_task_scheduler();
 
-        cb.set_ret_and_wakeup(cqep->res, cqep->flags);
+        const uint64_t key = cqep->user_data;
+        auto it = m_opreps.find(key);
+        assert(it != m_opreps.end());
+        auto& [batch_rep, task] = it->second;
+        batch_rep->add_ret(cqep->res, cqep->flags);
+        if (batch_rep->has_enough_ret())
+        {
+            auto t = ::std::move(task);
+            m_opreps.erase(it);
+            schr.enqueue(::std::move(t));
+        }
     }
     
     void iouring_event_loop_perthr::
     do_occured_nonblk() noexcept
     {
-        ::io_uring_cqe* cqep{};
         auto lk = get_lk();
-        m_shot_record <<= 1u;
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
         if (left == 0) m_shot_record |= 1u;
+        ::io_uring_cqe* cqep{};
         for (size_t i{}; i < left; ++i)
         {
             int e = ::io_uring_peek_cqe(&m_ring, &cqep);
@@ -73,31 +66,23 @@ namespace iel_detials
             {
                 break;
             }
+
             dealwith_cqe(cqep);
             ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
         }
     }
 
-    ::std::shared_ptr<task_release_once> 
+    void 
     iouring_event_loop_perthr::
-    add_event(
-        task_on_the_fly h, 
-        ::std::shared_ptr<uring::ioret> retslot, 
-        ::io_uring_sqe sqe)
+    add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     {
-        const uint64_t addr = reinterpret_cast<uint64_t>(h.address());
-        sqe.user_data = addr;
+        const uint64_t addrkey = reinterpret_cast<uint64_t>(h.address());
         auto lk = get_lk();
-        ::io_uring_sqe* sqep = ::io_uring_get_sqe(&m_ring);
-
-        ioret_task t{ ::std::move(retslot), ::std::move(h) };
-        auto result = t.get_task_shrptr();
-
-        m_suspended.insert({ addr, ::std::move(t) });
-        *sqep = sqe;
+        assert(!m_opreps.contains(addrkey));
+        m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
+        for (const auto& sqe : ops)
+            *::io_uring_get_sqe(&m_ring) = sqe;
         ::io_uring_submit(&m_ring);
-
-        return result;
     }
 
     ::std::chrono::milliseconds 
@@ -107,23 +92,6 @@ namespace iel_detials
         constexpr uint8_t mask = 2u;
         auto lk = get_lk();
         return static_cast<int>(mask & m_shot_record) * 50ms;
-    }
-
-    static emitter_task<> 
-    wake_up_timeout_task(::std::shared_ptr<task_release_once> tp)
-    {
-        tp->release().and_then([](auto&& t) -> ::std::optional<task_on_the_fly> { 
-            get_task_scheduler().enqueue(::std::move(t));
-            return ::std::nullopt;
-        });
-        co_return;
-    }
-
-    void iouring_event_loop_perthr::
-    set_timeout(::std::shared_ptr<task_release_once> taskwp, 
-                ::std::chrono::milliseconds timeout) noexcept
-    {
-        get_task_scheduler().add_event<timer_event_loop>(timeout, wake_up_timeout_task(taskwp));
     }
 }
 
@@ -160,28 +128,16 @@ do_occured_nonblk()
     ptr->do_occured_nonblk();
 }
 
-::std::shared_ptr<task_release_once> 
+void 
 iouring_event_loop::
-add_event(
-    task_on_the_fly h, 
-    ::std::shared_ptr<uring::ioret> retslot, 
-    ::io_uring_sqe sqe)
+add_event(task_on_the_fly h, uring::op_batch_rep& ops)
 {
     const auto tid = ::std::this_thread::get_id();
     auto lk = get_shrlk();
-    if (m_cleaning == true) [[unlikely]] return {};
-    if (auto it = m_impls.find(tid); it != m_impls.end())
-    {
-        return it->second->add_event(
-            ::std::move(h), ::std::move(retslot), ::std::move(sqe)
-        );
-    }
-    else
-    {
-        return m_impls.begin()->second->add_event(
-            ::std::move(h), ::std::move(retslot), ::std::move(sqe)
-        );
-    }
+    if (m_cleaning == true) [[unlikely]] return;
+    auto it = m_impls.find(tid);
+    assert(it != m_impls.end());
+    return it->second->add_event(::std::move(h), ops);
 }
 
 void iouring_event_loop::

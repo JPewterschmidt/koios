@@ -19,22 +19,8 @@
 #ifndef KOIOS_IOURING_AWAITABLES_H
 #define KOIOS_IOURING_AWAITABLES_H
 
-#include "koios/iouring_accept_aw.h"
-#include "koios/iouring_aw.h"
-#include "koios/iouring_read_aw.h"
-#include "koios/iouring_recv_aw.h"
-#include "koios/iouring_recvmsg_aw.h"
-#include "koios/iouring_send_aw.h"
-#include "koios/iouring_sendmsg_aw.h"
-#include "koios/iouring_socket_aw.h"
-#include "koios/iouring_sync_file_range_aw.h"
-#include "koios/iouring_fsync_aw.h"
-#include "koios/iouring_unlink_aw.h"
-#include "koios/iouring_write_aw.h"
-#include "koios/iouring_connect_aw.h"
-#include "koios/iouring_cancel_aw.h"
-#include "koios/iouring_rename_aw.h"
 #include "koios/exceptions.h"
+#include "koios/iouring_op_functions.h"
 
 #include "koios/task.h"
 #include "toolpex/ipaddress.h"
@@ -42,17 +28,22 @@
 
 namespace koios::uring
 {
-    ::koios::task<toolpex::unique_posix_fd> 
+    task<toolpex::unique_posix_fd> 
+    connect_get_sock(toolpex::ip_address::ptr addr, 
+                     ::in_port_t port, 
+                     unsigned int socket_flags = 0);
+
+    task<toolpex::unique_posix_fd> 
     bind_get_sock(toolpex::ip_address::ptr addr, in_port_t port, 
                   bool reuse_port = true, bool reuse_addr = true,
                   unsigned int flags = 0);
 
-    ::koios::task<>
+    task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer);
 
     template<typename CharT>
-    ::koios::task<>
+    task<>
     inline append_all(const toolpex::unique_posix_fd& fd, 
                       ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer)
     {
@@ -61,21 +52,72 @@ namespace koios::uring
         ));
     }
 
-    ::koios::task<>
+    task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer, 
               ::std::error_code& ec_out) noexcept;
 
     template<typename CharT>
-    ::koios::task<>
-    inline append_all(const toolpex::unique_posix_fd& fd, 
-                      ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer,
-                      ::std::error_code& ec_out) noexcept
+    inline task<>
+    append_all(const toolpex::unique_posix_fd& fd, 
+               ::std::basic_string_view<CharT, ::std::char_traits<CharT>> buffer,
+               ::std::error_code& ec_out) noexcept
     {
         return append_all(fd, ::std::as_bytes(
             ::std::span{ buffer.begin(), buffer.end() }
         ), ec_out);
     }
+
+    task<size_t>
+    recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags,
+                     ::std::error_code& ec, 
+                     ::std::chrono::system_clock::time_point timeout 
+                         = ::std::chrono::system_clock::time_point::max()) noexcept;
+
+    task<size_t>
+    recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags, 
+                     ::std::error_code& ec, 
+                     ::std::chrono::milliseconds dura) noexcept;
+
+    task<size_t>
+    recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags = 0, 
+                     ::std::chrono::system_clock::time_point timeout 
+                         = ::std::chrono::system_clock::time_point::max());
+
+    task<size_t>
+    recv_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int flags, 
+                     ::std::chrono::milliseconds dura);
+
+    task<size_t>
+    read_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset,
+                     ::std::error_code& ec, 
+                     ::std::chrono::system_clock::time_point timeout 
+                         = ::std::chrono::system_clock::time_point::max()) noexcept;
+
+    task<size_t>
+    read_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset, 
+                     ::std::error_code& ec, 
+                     ::std::chrono::milliseconds dura) noexcept;
+
+    task<size_t>
+    read_fill_buffer(const toolpex::unique_posix_fd& fd, 
+                     ::std::span<::std::byte> buffer, 
+                     int offset = 0, 
+                     ::std::chrono::system_clock::time_point timeout 
+                         = ::std::chrono::system_clock::time_point::max());
+
 }
 
 #endif

@@ -43,6 +43,7 @@ enum expected_state_t : int
 
 const ::std::error_category& koios_category() noexcept;
 const ::std::error_category& expected_category() noexcept;
+const ::std::error_code& std_canceled_ec() noexcept;
 
 KOIOS_NAMESPACE_END
 

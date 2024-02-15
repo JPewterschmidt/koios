@@ -23,10 +23,10 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/coroutine_mutex.h"
 #include <string_view>
-#include "koios/iouring_connect_aw.h"
 
 #include "koios/unique_file_state.h"
 #include "koios/task_release_once.h"
+#include "koios/iouring_op_batch.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -34,14 +34,23 @@
 using namespace koios;
 using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
+using namespace toolpex::ip_address_literals;
 
 namespace
 {
+    emitter_task<> newuring_test()
+    {
+
+        co_return;   
+    }
 }
 
 int main()
 try
 {
+    koios::runtime_init(4);
+    newuring_test().result();
+    koios::runtime_exit();
     return 0;
 }
 catch (const ::std::exception& e)

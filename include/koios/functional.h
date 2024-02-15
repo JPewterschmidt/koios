@@ -36,25 +36,25 @@ template<typename Func, typename... Args>
 requires (
     task_callable_concept<Func> 
     and !emitter_task_callable_concept<Func>)
-auto make_emitter(Func&& f, Args&&... args) 
+auto make_emitter(Func f, Args... args) 
     -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
-    co_return co_await ::std::forward<Func>(f)(::std::forward<Args>(args)...);
+    co_return co_await f(::std::move(args)...);
 }
 
 template<typename Func, typename... Args>
 requires (emitter_task_callable_concept<Func>)
-auto make_emitter(Func&& f, Args&&... args)
+auto make_emitter(Func f, Args... args)
     -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
-    return ::std::forward<Func>(f)(::std::forward<Args>(args)...);
+    return f(::std::move(args)...);
 }
 
 template<awaitible_concept... Aws>
-auto when_all(Aws&&... aws)
+auto when_all(Aws... aws)
     -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
 {
-    co_return ::std::make_tuple((co_await aws)...);
+    co_return ::std::make_tuple((co_await ::std::move(aws))...);
 }
 
 KOIOS_NAMESPACE_END

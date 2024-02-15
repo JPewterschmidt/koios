@@ -30,6 +30,7 @@
 #include <memory>
 #include <chrono>
 #include <unordered_map>
+#include <utility>
 
 #include "koios/macros.h"
 #include "toolpex/move_only.h"
@@ -39,35 +40,12 @@
 #include "koios/per_consumer_attr.h"
 #include "koios/iouring_detials.h"
 #include "koios/iouring_ioret.h"
+#include "koios/iouring_op_batch_rep.h"
 
 KOIOS_NAMESPACE_BEG
 
 namespace iel_detials
 {
-    class ioret_task
-    {
-    public:
-        ioret_task() = default;
-        ioret_task(::std::shared_ptr<uring::ioret> retslot, 
-                   task_on_the_fly h) noexcept
-            : m_ret{ ::std::move(retslot) }, 
-              m_task_container{ ::std::make_unique<task_release_once>(::std::move(h)) }
-        {
-            m_ret->ret = - ECANCELED;
-        }
-
-        void set_ret_and_wakeup(int32_t ret, uint32_t flags = 0);
-
-        auto get_task_shrptr() const noexcept
-        {
-            return m_task_container;
-        }
-
-    private:
-        ::std::shared_ptr<uring::ioret> m_ret;
-        ::std::shared_ptr<task_release_once> m_task_container;
-    };
-
     class iouring_event_loop_perthr : public toolpex::move_only
     {
     public:
@@ -86,14 +64,13 @@ namespace iel_detials
 
         void do_occured_nonblk() noexcept;
 
+    public:
         ::std::shared_ptr<task_release_once> 
         add_event(task_on_the_fly h, 
                   ::std::shared_ptr<uring::ioret> retslot, 
                   ::io_uring_sqe sqe);
 
-        static void 
-        set_timeout(::std::shared_ptr<task_release_once> taskp, 
-                    ::std::chrono::milliseconds timeout) noexcept;
+        void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
         ::std::chrono::milliseconds max_sleep_duration() const;
 
@@ -103,7 +80,10 @@ namespace iel_detials
 
     private:
         ::io_uring m_ring;
-        ::std::unordered_map<uint64_t, ioret_task> m_suspended;
+        ::std::unordered_map<
+            uint64_t, 
+            ::std::pair<uring::op_batch_rep*, task_on_the_fly>
+        > m_opreps;
         mutable ::std::mutex m_lk;
         unsigned m_shot_record{};
     };
@@ -136,10 +116,7 @@ public:
     ::std::chrono::milliseconds 
     max_sleep_duration(const per_consumer_attr&) const;   
 
-    ::std::shared_ptr<task_release_once> 
-    add_event(task_on_the_fly h, 
-              ::std::shared_ptr<uring::ioret> retslot, 
-              ::io_uring_sqe sqe);
+    void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);

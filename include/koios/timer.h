@@ -77,12 +77,21 @@ public:
     void add_event(toolpex::is_std_chrono_duration auto dura, auto task) noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
+        add_event(now + dura, ::std::move(task));
+    }
+
+    /*! \brief Adding a timer event.
+     *  \param tp The expire time point.
+     *  \param f The callback coroutine when expired.
+     */
+    void add_event(toolpex::is_std_chrono_time_point auto tp, auto task) noexcept
+    {
         auto tof = [](auto&& t)
         {
             task_on_the_fly result = ::std::move(t);
             return result;
         };
-        add_event_impl({ now + dura, tof(::std::move(task)) });
+        add_event_impl({ tp, tof(::std::move(task)) });
     }
 
     /*! \brief returning the maximum sleep duration of the `thread_pool`
@@ -107,6 +116,9 @@ public:
         ::std::shared_lock lk{ m_lk };
         return m_timer_heap.empty();
     }
+
+private:
+    void wake_up_all() noexcept;
 
 private:
     void add_event_impl(timer_event te) noexcept;

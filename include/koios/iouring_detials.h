@@ -20,7 +20,6 @@
 #define KOIOS_IOURING_DETIALS_H
 
 #include "koios/macros.h"
-#include "koios/iouring_aw.h"
 #include "koios/iouring_ioret.h"
 #include "toolpex/unique_posix_fd.h"
 #include "toolpex/ipaddress.h"
@@ -33,27 +32,29 @@
 
 namespace koios::uring
 {
-    class ioret_for_data_deliver : public detials::ioret_for_any_base
+    class ioret_for_data_deliver : public ioret_for_any_base
     {
     public:
-        ioret_for_data_deliver(ioret r) noexcept;
+        using ioret_for_any_base::ioret_for_any_base;
         size_t nbytes_delivered() const noexcept;
     };
 
-    class ioret_for_socket : public detials::ioret_for_any_base
+    class ioret_for_socket : public ioret_for_any_base
     {
     public:
-        ioret_for_socket(ioret r) noexcept;
+        using ioret_for_any_base::ioret_for_any_base;
         ::toolpex::unique_posix_fd get_socket_fd();       
     };
 
-    class ioret_for_accept : public detials::ioret_for_any_base
+    class ioret_for_accept : public ioret_for_any_base
     {
     public:
         ioret_for_accept(
             ioret r, 
             const ::sockaddr* addr, 
         ::socklen_t len) noexcept;
+
+        using ioret_for_any_base::ioret_for_any_base;
 
         ::toolpex::unique_posix_fd
         get_client();
@@ -63,59 +64,17 @@ namespace koios::uring
         const ::socklen_t m_len{};
     };
 
-    using ioret_for_connect = typename detials::ioret_for_any_base;
+    using ioret_for_connect = ioret_for_any_base;
 
-    class ioret_for_cancel : public detials::ioret_for_any_base
+    class ioret_for_cancel : public ioret_for_any_base
     {
     public:
-        using detials::ioret_for_any_base::ioret_for_any_base;
+        using ioret_for_any_base::ioret_for_any_base;
         size_t number_canceled() const;
     };
-
-    namespace detials
-    {
-        class iouring_aw_for_connect : public iouring_aw
-        {
-        public:
-            using iouring_aw::iouring_aw;
-            ioret_for_connect await_resume();
-        };
-
-        class iouring_aw_for_data_deliver : public iouring_aw
-        {
-        public:
-            using iouring_aw::iouring_aw;
-            ioret_for_data_deliver await_resume();
-        };
-
-        class iouring_aw_for_socket : public iouring_aw
-        {
-        public:
-            using iouring_aw::iouring_aw;
-            ioret_for_socket await_resume();
-        };
-
-        class iouring_aw_for_accept : public iouring_aw
-        {
-        public:
-            iouring_aw_for_accept(const toolpex::unique_posix_fd& fd, int flags = 0) noexcept;
             iouring_aw_for_accept(::std::chrono::milliseconds timeout, 
                                   const toolpex::unique_posix_fd& fd, 
                                   int flags = 0) noexcept;
-            ioret_for_accept await_resume();
-
-        private:
-            ::sockaddr_storage m_ss{};
-            ::socklen_t m_len{};
-        };
-
-        class iouring_aw_for_cancel : public iouring_aw
-        {
-        public:
-            using iouring_aw::iouring_aw;           
-            ioret_for_cancel await_resume();           
-        };
-    }
 }
 
 #endif

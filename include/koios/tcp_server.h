@@ -50,7 +50,6 @@ public:
 
     tcp_server(tcp_server&& other) noexcept;
     tcp_server& operator=(tcp_server&& other) noexcept;
-    ~tcp_server() noexcept;
 
     task<tcp_server> start(task_callable_concept auto callback) &&
     {
@@ -123,19 +122,22 @@ private:
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
-            auto accret = co_await uring::accept(150ms, m_sockfd); // to prevent so called 
-                                                            // "insufficient contextual information to determine type
+            auto accret = co_await uring::accept(m_sockfd, 150ms);
             if (auto ec = accret.error_code(); 
-                ec.value() == ECANCELED && ec.category() == ::std::system_category())
+                (ec.value() == ECANCELED || ec.value() == ETIME) && ec.category() == ::std::system_category())
             {
-                break;
+                continue;
             }
             else if (ec)
             {
                 koios::log_error(ec.message());
                 continue;
             }
-            make_emitter(userdefined, accret.get_client()).run();
+            else 
+            {
+                auto client = accret.get_client();
+                make_emitter(userdefined, ::std::move(client)).run();
+            }
         }
 
         server_loop_exit();
@@ -156,7 +158,6 @@ private:
     mutable ::std::shared_mutex m_stop_related_lock;
     mutable koios::mutex        m_waiting_queue;
     koios::unique_lock          m_waiting_latch;
-    koios::future<void>         m_stop_complete;
 };
 
 namespace tcp_server_literals

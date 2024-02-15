@@ -27,7 +27,7 @@ public:
     DataT* add(Args&&... args)
     {
         DataT* result{};
-        m_peripheral_datas.emplace_back(result = new DataT(::std::forward<Args>(args)...));
+        m_peripheral_datas.emplace_back(::std::unique_ptr<DataT>(result = new DataT(::std::forward<Args>(args)...)));
         return result;
     }
 

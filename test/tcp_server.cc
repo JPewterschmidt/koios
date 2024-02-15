@@ -91,8 +91,6 @@ namespace
         if (recved == 0) 
         {
             co_await uring::send(client, "fuck you");
-            co_await this_task::sleep_for(500ms);
-            co_await uring::send(client, "fuck you");
             co_return true;
         }
         co_return false;

@@ -32,18 +32,6 @@ using namespace ::std::chrono_literals;
 
 namespace iel_detials
 {
-    void ioret_task::set_ret_and_wakeup(int32_t ret, uint32_t flags)
-    {
-        m_task_container
-            ->release()
-            .and_then([=, this](auto&& t) mutable -> ::std::optional<task_on_the_fly> { 
-                this->m_ret->ret = ret;
-                this->m_ret->flags = flags;
-                get_task_scheduler().enqueue(::std::move(t)); 
-                return ::std::nullopt;
-            });
-    }
-
     void iouring_event_loop_perthr::
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {

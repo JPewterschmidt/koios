@@ -41,7 +41,6 @@ error_code() const noexcept
     return { m_errno, ::std::system_category() };
 }
 
-
 size_t 
 ioret_for_data_deliver::
 nbytes_delivered() const noexcept

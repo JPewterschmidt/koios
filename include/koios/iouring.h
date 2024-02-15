@@ -46,30 +46,6 @@ KOIOS_NAMESPACE_BEG
 
 namespace iel_detials
 {
-    class ioret_task
-    {
-    public:
-        ioret_task() = default;
-        ioret_task(::std::shared_ptr<uring::ioret> retslot, 
-                   task_on_the_fly h) noexcept
-            : m_ret{ ::std::move(retslot) }, 
-              m_task_container{ ::std::make_shared<task_release_once>(::std::move(h)) }
-        {
-            m_ret->ret = - ECANCELED;
-        }
-
-        void set_ret_and_wakeup(int32_t ret, uint32_t flags = 0);
-
-        auto get_task_shrptr() const noexcept
-        {
-            return m_task_container;
-        }
-
-    private:
-        ::std::shared_ptr<uring::ioret> m_ret;
-        ::std::shared_ptr<task_release_once> m_task_container;
-    };
-
     class iouring_event_loop_perthr : public toolpex::move_only
     {
     public:

@@ -93,25 +93,12 @@ void tcp_server::stop()
 {
     //if (m_stop_src.stop_requested()) return;
     m_stop_src.request_stop();
-    send_cancel_to_awaiting_accept().run();
 }
 
 task<> tcp_server::until_stop_async()
 {
     if (is_stop()) co_return;
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
-    co_return;
-}
-
-task<> tcp_server::send_cancel_to_awaiting_accept() const noexcept
-{
-    ::std::shared_lock lk{ m_stop_related_lock };
-    for (void* handle : m_loop_handles)
-    {
-        lk.unlock();
-        co_await uring::cancel_any(m_sockfd, handle);
-        lk.lock();
-    }
     co_return;
 }
 

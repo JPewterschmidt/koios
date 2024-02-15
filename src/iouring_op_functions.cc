@@ -234,6 +234,13 @@ normal_aw fsync(const toolpex::unique_posix_fd& fd)
     return result;
 }
 
+normal_aw fdatasync(const toolpex::unique_posix_fd& fd)
+{
+    normal_aw result{};
+    result.batch().prep_fdatasync(fd);
+    return result;
+}
+
 normal_aw 
 sync_file_range(const toolpex::unique_posix_fd& fd, 
                 unsigned len, uint64_t offset, int flags)

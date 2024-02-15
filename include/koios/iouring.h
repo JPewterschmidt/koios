@@ -38,7 +38,6 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/task_release_once.h"
 #include "koios/per_consumer_attr.h"
-#include "koios/iouring_detials.h"
 #include "koios/iouring_ioret.h"
 #include "koios/iouring_op_batch_rep.h"
 

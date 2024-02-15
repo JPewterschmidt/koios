@@ -21,6 +21,9 @@
 
 #include <cstdint>
 #include <system_error>
+#include <sys/socket.h>
+
+#include "toolpex/unique_posix_fd.h"
 
 namespace koios::uring
 {

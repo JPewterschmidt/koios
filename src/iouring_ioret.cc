@@ -16,7 +16,7 @@
  * foundation, inc., 51 franklin street, fifth floor, boston, ma  02110-1301, usa.
  */
 
-#include "koios/iouring_detials.h"
+#include "koios/iouring_ioret.h"
 #include "koios/exceptions.h"
 #include "toolpex/unique_posix_fd.h"
 

@@ -2,7 +2,6 @@
 #include "koios/iouring_op_batch.h"
 #include "toolpex/exceptions.h"
 #include "toolpex/convert_to_systime.h"
-#include "toolpex/bits_manipulator.h"
 
 namespace koios::uring
 {
@@ -12,9 +11,6 @@ op_batch::
 execute() & noexcept 
 { 
     assert(!m_rep.empty());
-    auto& last_sqe = m_rep.back();
-    last_sqe.flags = toolpex::bits_manipulator{last_sqe.flags}
-       .remove(static_cast<uint8_t>(IOSQE_IO_LINK));
     return { m_rep };
 }
 
@@ -57,7 +53,7 @@ prep_recv(const toolpex::unique_posix_fd& fd,
           ::std::span<::std::byte> buffer, int flags) noexcept
 {
     auto* cur_sqe = m_rep.get_sqe();
-    ::io_uring_prep_send(
+    ::io_uring_prep_recv(
         cur_sqe, fd, 
         buffer.data(), static_cast<size_t>(buffer.size_bytes()), 
         flags
@@ -81,7 +77,7 @@ prep_recvmsg(const toolpex::unique_posix_fd& fd,
              ::msghdr* msg, int flags) noexcept
 {
 	auto* cur_sqe = m_rep.get_sqe();
-    ::io_uring_prep_sendmsg(cur_sqe, fd, msg, flags);
+    ::io_uring_prep_recvmsg(cur_sqe, fd, msg, flags);
 	cur_sqe->flags |= IOSQE_IO_LINK;
 	return *this;
 }
@@ -338,7 +334,7 @@ timeout(::std::chrono::system_clock::time_point tp) noexcept
         IORING_TIMEOUT_REALTIME | IORING_TIMEOUT_ABS
     );
     
-    m_was_timeout_set = true;
+    m_rep.set_timeout();
     return *this;
 }
 

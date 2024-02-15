@@ -53,7 +53,6 @@ namespace iel_detials
         const uint64_t key = cqep->user_data;
         auto it = m_opreps.find(key);
         assert(it != m_opreps.end());
-        if (it == m_opreps.end()) return;
         auto& [batch_rep, task] = it->second;
         batch_rep->add_ret(cqep->res, cqep->flags);
         if (batch_rep->has_enough_ret())

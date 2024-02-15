@@ -17,7 +17,7 @@ namespace
     try
     {
         ::std::string msg = "fuck you!!!!";
-        ::std::array<char, 128> buffer{};
+        ::std::array<char, 126> buffer{};
 
         const auto recv_ret = co_await uring::recv(client, buffer);
 
@@ -78,7 +78,7 @@ namespace
         ::std::array<::std::byte, 4> buffer{};
 
         ::std::error_code ec;
-        co_await uring::recv_fill_buffer(sock, buffer, 0, ec, 10ms);
+        co_await uring::recv_fill_buffer(sock, buffer, 0, ec, 10min);
 
         if (buffer[0] == ::std::byte{}) co_return false;
         co_return true;

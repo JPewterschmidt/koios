@@ -107,7 +107,8 @@ namespace koios::uring
         {
             case 0:         break;
             default:        ec_out = op_ret.error_code(); [[fallthrough]];
-            case ECANCELED: co_return {};
+            case ECANCELED: [[fallthrough]];
+            case ETIME:     co_return {}; // TODO
         }
         wrote_nbytes += op_ret.nbytes_delivered();
         co_return buffer.subspan(::std::min(op_ret.nbytes_delivered(), buffer.size()));

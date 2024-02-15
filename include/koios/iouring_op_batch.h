@@ -124,7 +124,7 @@ public:
 
     op_batch& clear() noexcept { m_rep.clear(); return *this; }
     [[nodiscard]] bool all_success() const noexcept;
-    bool was_timeout_set() const noexcept{ return m_was_timeout_set; };
+    bool was_timeout_set() const noexcept{ return m_rep.was_timeout_set(); };
     bool is_timeout() const noexcept;
     ::std::error_code timeout_req_ec() const noexcept;
 
@@ -134,7 +134,6 @@ public:
 private:
     op_batch_rep m_rep;
     op_peripheral m_peripheral;
-    bool m_was_timeout_set{};
 };
 
 } // namespace koios::uring

@@ -182,6 +182,7 @@ connect(const toolpex::unique_posix_fd& fd,
 
 normal_aw unlink(::std::filesystem::path path, int flags = 0);
 normal_aw fsync(const toolpex::unique_posix_fd& fd);
+normal_aw fdatasync(const toolpex::unique_posix_fd& fd);
 
 normal_aw 
 sync_file_range(const toolpex::unique_posix_fd& fd, 

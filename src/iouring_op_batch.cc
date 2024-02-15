@@ -32,12 +32,14 @@ execute() & noexcept
     return { m_rep };
 }
 
-struct sock_data : public op_peripheral::data_interface
+struct sock_data
 {
     sock_data(::sockaddr_storage sock) noexcept
         : sock{ sock }
     {
     }
+
+    sock_data(sock_data&&) noexcept = default;
 
     ::sockaddr_storage sock;
 };
@@ -217,9 +219,10 @@ op_batch& op_batch::
 prep_unlink(const ::std::filesystem::path& path, 
             int flags) noexcept
 {
-    struct unlink_data : op_peripheral::data_interface
+    struct unlink_data
     {
         unlink_data(const ::std::filesystem::path& p) noexcept : path{ p } {}
+        unlink_data(unlink_data&&) noexcept = default;
         ::std::string path;
     } *data{m_peripheral.add<unlink_data>(path)};
 
@@ -229,12 +232,13 @@ prep_unlink(const ::std::filesystem::path& path,
 	return *this;
 }
 
-struct rename_data : public op_peripheral::data_interface
+struct rename_data 
 {
     rename_data(const auto&f, const auto& t) noexcept
         : from{ f }, to{ t }
     {
     }
+    rename_data(rename_data&&) noexcept = default;
 
     ::std::string from, to;
 };
@@ -336,12 +340,14 @@ timeout(::std::chrono::system_clock::time_point tp) noexcept
     assert(!m_rep.empty());
 
     auto* cur_sqe = m_rep.get_sqe();
-    struct timeout_data : public op_peripheral::data_interface
+    struct timeout_data     
     {
         timeout_data(::std::chrono::system_clock::time_point const& tp) noexcept 
             : ts{ toolpex::convert_to_timespec<__kernel_timespec>(tp) } 
         {
         }
+
+        timeout_data(timeout_data&&) noexcept = default;
 
         __kernel_timespec ts;
     } *data{ m_peripheral.add<timeout_data>(tp) };

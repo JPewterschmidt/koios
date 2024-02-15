@@ -22,6 +22,7 @@
 #include <vector>
 #include <concepts>
 #include <memory>
+#include <type_traits>
 #include "toolpex/move_only.h"
 
 namespace koios::uring
@@ -60,16 +61,8 @@ class op_peripheral : public toolpex::move_only
 public:
     constexpr op_peripheral() noexcept = default;
 
-    class data_interface 
-    { 
-    public:
-        constexpr data_interface() noexcept = default;
-        data_interface(data_interface&&) noexcept = default;
-        data_interface& operator=(data_interface&&) noexcept = default;
-        data_interface(const data_interface&) = delete;
-    };
-
-    template<::std::derived_from<data_interface> DataT, typename... Args>
+    template<typename DataT, typename... Args>
+    requires (::std::is_nothrow_move_constructible_v<DataT>)
     DataT* add(Args&&... args)
     {
         auto elem = op_peripheral_element(DataT(::std::forward<Args>(args)...));

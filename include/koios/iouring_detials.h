@@ -72,9 +72,6 @@ namespace koios::uring
         using ioret_for_any_base::ioret_for_any_base;
         size_t number_canceled() const;
     };
-            iouring_aw_for_accept(::std::chrono::milliseconds timeout, 
-                                  const toolpex::unique_posix_fd& fd, 
-                                  int flags = 0) noexcept;
 }
 
 #endif

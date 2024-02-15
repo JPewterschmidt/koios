@@ -97,7 +97,7 @@ namespace koios::uring
         }
     }
 
-    static task<::std::span<::std::byte>> 
+    static ::std::span<::std::byte>
     after_read_or_recv(auto const& op_ret,
                        ::std::error_code& ec_out, 
                        size_t& wrote_nbytes, 
@@ -107,10 +107,10 @@ namespace koios::uring
         {
             case 0:         break;
             default:        ec_out = op_ret.error_code(); [[fallthrough]];
-            case ETIME:     co_return {};
+            case ETIME:     return {};
         }
         wrote_nbytes += op_ret.nbytes_delivered();
-        co_return buffer.subspan(::std::min(op_ret.nbytes_delivered(), buffer.size()));
+        return buffer.subspan(::std::min(op_ret.nbytes_delivered(), buffer.size()));
     }
 
     ::koios::task<size_t>
@@ -125,7 +125,7 @@ namespace koios::uring
         while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
         {
             auto op_ret = co_await uring::recv(fd, buffer, flags, timeout);
-            buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
+            buffer = after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
         }
         co_return wrote_nbytes;
     }
@@ -152,7 +152,7 @@ namespace koios::uring
         while (!ec && !buffer.empty() && ::std::chrono::system_clock::now() < timeout)
         {
             auto op_ret = co_await uring::read(fd, buffer, offset + wrote_nbytes, timeout);
-            buffer = co_await after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
+            buffer = after_read_or_recv(op_ret, ec, wrote_nbytes, buffer);
         }
         co_return wrote_nbytes;
     }

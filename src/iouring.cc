@@ -112,19 +112,22 @@ shrlk_and_curthr_ptr()
 {
     const auto id = ::std::this_thread::get_id();
     auto lk = get_shrlk();
-    auto* ptr = m_impls[id].get();
-    if (!m_impls.contains(id))
-    {
-        ptr = m_impls.begin()->second.get();
-    }
-    return ::std::make_pair(::std::move(lk), ptr);
+    auto it = m_impls.find(id);
+    return ::std::make_pair(::std::move(lk), (it != m_impls.end() ? it->second.get() : nullptr));
 }
 
 void iouring_event_loop::
 do_occured_nonblk()
 {
     auto [lk, ptr] = shrlk_and_curthr_ptr();
-    if (m_cleaning == true) [[unlikely]] return;
+    if (!ptr && m_cleaning) [[unlikely]] return;
+    else if (!ptr && !m_cleaning)
+    {
+        throw uring_exception{
+            "you should call async uring operation "
+            "in a emitter_task or any subsequent normal task."
+        };
+    }
     ptr->do_occured_nonblk();
 }
 
@@ -132,12 +135,16 @@ void
 iouring_event_loop::
 add_event(task_on_the_fly h, uring::op_batch_rep& ops)
 {
-    const auto tid = ::std::this_thread::get_id();
-    auto lk = get_shrlk();
-    if (m_cleaning == true) [[unlikely]] return;
-    auto it = m_impls.find(tid);
-    assert(it != m_impls.end());
-    return it->second->add_event(::std::move(h), ops);
+    auto [lk, impl] = shrlk_and_curthr_ptr();
+    if (!impl && m_cleaning) [[unlikely]] return;
+    else if (!impl) 
+    {
+        throw uring_exception{
+            "you should call async uring operation "
+            "in a emitter_task or any subsequent normal task."
+        };
+    }
+    return impl->add_event(::std::move(h), ops);
 }
 
 void iouring_event_loop::

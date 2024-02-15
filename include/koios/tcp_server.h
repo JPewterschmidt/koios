@@ -122,7 +122,7 @@ private:
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
-            auto accret = co_await uring::accept(m_sockfd, 150ms);
+            auto accret = co_await uring::accept(m_sockfd, 50ms);
             if (auto ec = accret.error_code(); 
                 (ec.value() == ECANCELED || ec.value() == ETIME) && ec.category() == ::std::system_category())
             {
@@ -145,7 +145,6 @@ private:
     }
 
     void listen();
-    task<> send_cancel_to_awaiting_accept() const noexcept;
 
 private:
     toolpex::unique_posix_fd    m_sockfd;

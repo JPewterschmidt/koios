@@ -1,7 +1,7 @@
 #ifndef KOIOS_IOURING_SINGLE_OP_AW_H
 #define KOIOS_IOURING_SINGLE_OP_AW_H
 
-#include "koios/iouring_detials.h"
+#include "koios/iouring_ioret.h"
 #include "koios/iouring_op_batch.h"
 
 namespace koios::uring

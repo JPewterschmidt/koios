@@ -74,6 +74,7 @@ emitter_task<bool> emit_op_fill_test()
     size_t readed_nbytes = co_await koios::uring::read_fill_buffer(
         fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec, 10ms
     );
+    co_await delete_file();
     co_return readed_nbytes == 5;
 }
 
@@ -93,6 +94,7 @@ emitter_task<bool> emit_op_fill_test2()
     size_t readed_nbytes = co_await koios::uring::read_fill_buffer(
         fd, ::std::as_writable_bytes(::std::span{buffer}), 0, ec, 10ms
     );
+    co_await delete_file();
     co_return readed_nbytes == content.size();
 }
 

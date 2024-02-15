@@ -90,6 +90,10 @@ emitter_task<> test_sleep_until_3ms()
 
 TEST(timer, several_events)
 {
+    flag1 = flag2 = false;
+    ivec = ::std::vector<int>{};
+    //bs = ::std::binary_semaphore{0};
+
     mainfunc().run();
     bs.acquire();
     ::std::vector correct_result{1,2,3,4,5,6};
@@ -98,5 +102,9 @@ TEST(timer, several_events)
 
 TEST(timer, sleep_until_3ms_later)
 {
+    flag1 = flag2 = false;
+    ivec = ::std::vector<int>{};
+    //bs = ::std::binary_semaphore{0};
+
     test_sleep_until_3ms().result();
 }

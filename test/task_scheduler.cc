@@ -85,6 +85,8 @@ public:
 
 TEST(event_loop, user_event_loop)
 {
+    success1 = success2 = false;
+    result.store(0);
     get_task_scheduler().as_loop<user_event_loops>().add_loop(::std::make_shared<loop_for_test>());
     dummy().result();
     ASSERT_TRUE(success1 && success2);

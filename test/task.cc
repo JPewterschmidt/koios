@@ -39,6 +39,9 @@ namespace
 
 TEST(task, basic)
 {
+    flag = 0;
+    referd_obj = 0;
+
     for_basic_test().run_and_get_future().get();
     ASSERT_EQ(flag, 1);
 
@@ -52,6 +55,8 @@ TEST(task, basic)
 
 TEST(task, nodiscard)
 {
+    flag = 0;
+    referd_obj = 0;
     ASSERT_EQ(for_nodiscard().run_and_get_future().get(), 1);
 }
 
@@ -97,6 +102,7 @@ task<void> emit_func()
 
 TEST(task, exception)
 {
+    flag2 = flag3 = 0;
     emit_func().result();
     ASSERT_EQ(flag2, 1);
     ASSERT_EQ(flag3, 1);
@@ -158,12 +164,14 @@ namespace
 
 TEST(expected_task, basic)
 {
+    ec = ::std::error_code{ EINVAL, ::std::system_category() };
     ASSERT_TRUE(emit_exp_basic().result());
     ASSERT_TRUE(emitter_void().result());
 }
 
 TEST(expected_task, failed)
 {
+    ec = ::std::error_code{ EINVAL, ::std::system_category() };
     ASSERT_TRUE(emit_failed_exp().result());
     ASSERT_FALSE(emit_failed_exp_hasvalue().result());
 }

@@ -32,46 +32,6 @@
 
 namespace koios::uring
 {
-    class ioret_for_data_deliver : public ioret_for_any_base
-    {
-    public:
-        using ioret_for_any_base::ioret_for_any_base;
-        size_t nbytes_delivered() const noexcept;
-    };
-
-    class ioret_for_socket : public ioret_for_any_base
-    {
-    public:
-        using ioret_for_any_base::ioret_for_any_base;
-        ::toolpex::unique_posix_fd get_socket_fd();       
-    };
-
-    class ioret_for_accept : public ioret_for_any_base
-    {
-    public:
-        ioret_for_accept(
-            ioret r, 
-            const ::sockaddr* addr, 
-        ::socklen_t len) noexcept;
-
-        using ioret_for_any_base::ioret_for_any_base;
-
-        ::toolpex::unique_posix_fd
-        get_client();
-
-    private:
-        const ::sockaddr* m_addr{};
-        const ::socklen_t m_len{};
-    };
-
-    using ioret_for_connect = ioret_for_any_base;
-
-    class ioret_for_cancel : public ioret_for_any_base
-    {
-    public:
-        using ioret_for_any_base::ioret_for_any_base;
-        size_t number_canceled() const;
-    };
 }
 
 #endif

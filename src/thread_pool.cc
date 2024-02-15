@@ -86,7 +86,10 @@ void thread_pool::consumer(
             ::std::unique_lock lk{ m_lock };
             const auto max_waiting_time = max_sleep_duration(cattr);
             constexpr auto waiting_latch = 50ms;
-            m_cond.wait_for(lk, waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time);
+            const auto actual_waiting_time = 
+                waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
+
+            m_cond.wait_for(lk, actual_waiting_time);
         }
         else try 
         { 

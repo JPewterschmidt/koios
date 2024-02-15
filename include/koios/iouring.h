@@ -84,7 +84,6 @@ namespace iel_detials
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
         > m_opreps;
         mutable ::std::mutex m_lk;
-        unsigned m_shot_record{};
     };
 }
 

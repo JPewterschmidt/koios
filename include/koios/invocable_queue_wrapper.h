@@ -134,10 +134,11 @@ public:
     ~invocable_queue_wrapper() noexcept;
     invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept;
 
-    void enqueue(invocable_type&& func) const;
-    void enqueue(const per_consumer_attr&, invocable_type&&) const;
-    ::std::optional<invocable_type> dequeue(const per_consumer_attr& attr) const;
-    bool empty() const;
+    void enqueue(invocable_type&& func) const { m_enqueue_impl(m_storage.get(), nullptr, ::std::move(func)); }
+    void enqueue(const per_consumer_attr& ca, invocable_type&& func) const { m_enqueue_impl(m_storage.get(), &ca, ::std::move(func)); }
+    ::std::optional<invocable_type> dequeue(const per_consumer_attr& attr) const { return m_dequeue_impl(m_storage.get(), attr); }
+
+    bool empty() const { return m_empty_impl(m_storage.get()); }
     size_t size() const noexcept { return m_size_impl(m_storage.get()); }
     void thread_specific_preparation(const per_consumer_attr& attr)
     {

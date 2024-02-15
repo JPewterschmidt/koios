@@ -48,6 +48,8 @@ static koios::task<void> func3()
 
 TEST(coro_lock, move_func)
 {
+    g_val = g_val2 = 0;
+
     ::std::vector<koios::future<void>> fvec;
     for (size_t i{}; i < g_test_count; ++i)
         fvec.emplace_back(func3().run_and_get_future());

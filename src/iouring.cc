@@ -57,7 +57,6 @@ namespace iel_detials
         auto lk = get_lk();
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
-        if (left == 0) m_shot_record |= 1u;
         ::io_uring_cqe* cqep{};
         for (size_t i{}; i < left; ++i)
         {
@@ -89,9 +88,8 @@ namespace iel_detials
     iouring_event_loop_perthr::
     max_sleep_duration() const
     {
-        constexpr uint8_t mask = 2u;
         auto lk = get_lk();
-        return static_cast<int>(mask & m_shot_record) * 50ms;
+        return m_opreps.empty() * 50ms;
     }
 }
 

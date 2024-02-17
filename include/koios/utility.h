@@ -29,15 +29,6 @@ inline auto from_result(auto&& r)
     return identity(::std::forward<decltype(r)>(r));
 }
 
-inline consteval bool is_profiling_mode()
-{
-#ifdef KOIOS_PROFILING
-    return true;
-#else
-    return false;
-#endif
-}
-
 KOIOS_NAMESPACE_END
 
 #endif

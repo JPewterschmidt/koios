@@ -23,6 +23,7 @@
 #include <coroutine>
 #include <memory>
 #include <utility>
+#include <exception>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
@@ -56,7 +57,7 @@ public:
 #include "koios/runtime.h"
     ~return_value_or_void_base() noexcept
     {
-        if (!caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning()) [[unlikely]]
+        if (!caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning() && !::std::current_exception()) [[unlikely]]
         {
             ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
             ::std::terminate();

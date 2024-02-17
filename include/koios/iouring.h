@@ -76,6 +76,9 @@ namespace iel_detials
     private:
         auto get_lk() const { return ::std::unique_lock{ m_lk }; }
         void dealwith_cqe(const ::io_uring_cqe* cqep);
+        size_t mis_shot_indicator() const noexcept { return m_num_mis_shot - 1; }
+        void mis_shot_this_time() noexcept { m_num_mis_shot <<= 1; }
+        void shot_this_time() noexcept { m_num_mis_shot = 1; }
 
     private:
         ::io_uring m_ring;
@@ -84,6 +87,7 @@ namespace iel_detials
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
         > m_opreps;
         mutable ::std::mutex m_lk;
+        ::std::size_t m_num_mis_shot{1};
     };
 }
 

@@ -131,6 +131,7 @@ public:
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
+    op_batch& prep_nop() noexcept;
     op_batch& timeout(::std::chrono::system_clock::time_point tp) noexcept;
 
     template<typename Rep, typename Period>

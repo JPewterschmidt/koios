@@ -21,6 +21,12 @@ namespace koios::uring
         op_batch m_batch;
     };
 
+    class nop_aw : public op_aw_base, public op_batch_execute_aw
+    {
+    public:
+        nop_aw() noexcept;
+    };
+
     class normal_aw : public op_aw_base, public op_batch_execute_aw
     {
     public:

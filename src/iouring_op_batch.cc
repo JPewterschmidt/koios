@@ -332,6 +332,15 @@ prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept
 }
 
 op_batch& op_batch::
+prep_nop() noexcept
+{
+	auto* cur_sqe = m_rep.get_sqe();
+    ::io_uring_prep_nop(cur_sqe);
+	cur_sqe->flags |= IOSQE_IO_LINK;
+	return *this;
+}
+
+op_batch& op_batch::
 timeout(::std::chrono::system_clock::time_point tp) noexcept
 {
     if (tp == ::std::chrono::system_clock::time_point::max())

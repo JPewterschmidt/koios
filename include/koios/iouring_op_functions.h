@@ -210,6 +210,8 @@ inline cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, void* userdata =
 cancel_aw cancel_first(uint64_t userdata);
 cancel_aw cancel_all(uint64_t userdata);
 
+nop_aw nop();
+
 } // koios::uring
 
 #endif

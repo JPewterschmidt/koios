@@ -314,4 +314,11 @@ cancel_aw cancel_all(uint64_t userdata)
     return result;
 }
 
+nop_aw nop() 
+{
+    nop_aw result{};
+    result.batch().prep_nop();
+    return result;
+}
+
 } // namespace koios::uring

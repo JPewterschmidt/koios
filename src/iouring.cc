@@ -57,6 +57,13 @@ namespace iel_detials
         auto lk = get_lk();
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
+        if (left == 0) 
+        {
+            mis_shot_this_time();
+            return;
+        }
+        shot_this_time();
+
         ::io_uring_cqe* cqep{};
         for (size_t i{}; i < left; ++i)
         {
@@ -79,6 +86,7 @@ namespace iel_detials
         auto lk = get_lk();
         assert(!m_opreps.contains(addrkey));
         m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
+        shot_this_time();
         for (const auto& sqe : ops)
             *::io_uring_get_sqe(&m_ring) = sqe;
         ::io_uring_submit(&m_ring);
@@ -89,7 +97,7 @@ namespace iel_detials
     max_sleep_duration() const
     {
         auto lk = get_lk();
-        return m_opreps.empty() * 50ms;
+        return m_opreps.empty() * mis_shot_indicator() * 25ms;
     }
 }
 

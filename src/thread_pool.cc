@@ -19,6 +19,7 @@
 #include <chrono>
 #include "koios/thread_pool.h"
 #include "koios/exceptions.h"
+#include "koios/utility.h"
 #include "spdlog/spdlog.h"
 
 using namespace ::std::chrono_literals;
@@ -85,7 +86,7 @@ void thread_pool::consumer(
             if (done(token)) break;
             ::std::unique_lock lk{ m_lock };
             const auto max_waiting_time = max_sleep_duration(cattr);
-            constexpr auto waiting_latch = 50ms;
+            constexpr auto waiting_latch = is_profiling_mode() ? 1ms : 100ms;
             const auto actual_waiting_time = 
                 waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
 

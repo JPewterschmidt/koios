@@ -25,6 +25,7 @@
 #include "koios/per_consumer_attr.h"
 #include "koios/task.h"
 #include "toolpex/move_only.h"
+#include "toolpex/spin_lock.h"
 
 #undef BLOCK_SIZE
 #include "concurrentqueue/concurrentqueue.h"
@@ -130,7 +131,7 @@ private:
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
 
-    ::std::mutex m_lock;  
+    toolpex::spin_lock m_lock;  
     bool m_holded{false};
 };
 

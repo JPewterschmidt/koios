@@ -31,3 +31,10 @@ TEST(thread_pool, basic)
     tp.stop();
     ASSERT_EQ(count.load(), 0);
 }
+
+TEST(thread_pool, actual_threads)
+{
+    const size_t num = get_task_scheduler().number_of_threads();
+    ASSERT_EQ(num, get_task_scheduler().consumer_attrs().size());
+    ASSERT_NE(num, 0);
+}

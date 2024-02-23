@@ -190,21 +190,18 @@ namespace fp_detials
         bool ready() const noexcept
         {
             auto lk = get_unique_lock();
-            [[assume(lk.mutex() == &m_lock)]];
             return ready(lk);
         }
 
         auto get()
         {
             auto lk = get_unique_lock();
-            [[assume(lk.mutex() == &m_lock)]];
             return get(lk);
         }
 
         auto get_nonblk()
         {
             auto lk = get_unique_lock();
-            [[assume(lk.mutex() == &m_lock)]];
             if (!ready(lk)) [[unlikely]]
                 throw koios::future_exception{};
             return get_nonblk(lk);
@@ -243,7 +240,6 @@ namespace fp_detials
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
         {
             auto lk = get_unique_lock();
-            [[assume(lk.mutex() == &m_lock)]];
             set_storage_ptr(::std::move(ptr), lk);
         }
 

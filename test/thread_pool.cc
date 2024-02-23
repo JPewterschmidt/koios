@@ -16,16 +16,16 @@ TEST(thread_pool, basic)
 
     for (size_t i = 0; i < test_size / 10; ++i)
     {
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
-        tp.enqueue_no_future([&]{ --count; });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
+        tp.enqueue_no_future([&]{ count.fetch_sub(1, ::std::memory_order_relaxed); });
     }
     
     tp.stop();

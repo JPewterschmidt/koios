@@ -21,8 +21,6 @@
 #include "toolpex/errret_thrower.h"
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
-#include "koios/this_task.h"
-#include <cassert>
 #include <netinet/in.h>
 #include <thread>
 #include <string_view>
@@ -62,16 +60,15 @@ tcp_server(tcp_server&& other) noexcept
     : m_sockfd{ ::std::move(other.m_sockfd) },
       m_addr{::std::move(m_addr)},
       m_port{::std::move(m_port)},
-      m_stop_src{::std::move(m_stop_src)},
-      m_loop_handles{::std::move(m_loop_handles)}
+      m_stop_src{::std::move(m_stop_src)}
 {
 }
 
 void
 tcp_server::
-until_stop_blk()
+until_done_blk()
 {
-    until_stop_async().result();
+    until_done_async().result();
 }
 
 bool tcp_server::is_stop() const noexcept 
@@ -91,11 +88,10 @@ void tcp_server::listen()
 
 void tcp_server::stop()
 {
-    //if (m_stop_src.stop_requested()) return;
     m_stop_src.request_stop();
 }
 
-task<> tcp_server::until_stop_async()
+task<> tcp_server::until_done_async()
 {
     if (is_stop()) co_return;
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();

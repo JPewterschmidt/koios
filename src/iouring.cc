@@ -131,7 +131,7 @@ do_occured_nonblk()
     {
         throw uring_exception{
             "you should call async uring operation "
-            "in a emitter_task or any subsequent normal task."
+            "in a eager_task or any subsequent normal task."
         };
     }
     ptr->do_occured_nonblk();
@@ -147,7 +147,7 @@ add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     {
         throw uring_exception{
             "you should call async uring operation "
-            "in a emitter_task or any subsequent normal task."
+            "in a eager_task or any subsequent normal task."
         };
     }
     return impl->add_event(::std::move(h), ops);

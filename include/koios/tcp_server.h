@@ -28,7 +28,8 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
-#include "koios/get_handle_aw.h"
+#include "koios/get_id_aw.h"
+#include "koios/error_category.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
@@ -51,11 +52,10 @@ public:
     tcp_server(tcp_server&& other) noexcept;
     tcp_server& operator=(tcp_server&& other) noexcept;
 
-    task<tcp_server> start(task_callable_concept auto callback) &&
-    {
-        co_await start_impl(::std::move(callback));
-        co_return ::std::move(*this);
-    }
+    void stop();
+    void until_done_blk();
+    bool is_stop() const noexcept;
+    task<> until_done_async();
 
     /*! \brief  Make the tcp server start working
      *
@@ -65,21 +65,9 @@ public:
      *
      *  \attention This function could be called only once !
      */
-    task<tcp_server&> start(task_callable_concept auto callback) &
+    task<> start(task_callable_concept auto callback)
     {
-        co_await start_impl(::std::move(callback));
-        co_return *this;
-    }
-
-    void stop();
-    void until_stop_blk();
-    bool is_stop() const noexcept;
-    task<> until_stop_async();
-
-private:
-    task<> start_impl(task_callable_concept auto callback)
-    {
-        m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
+        m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
         this->listen();
         m_waiting_latch = co_await m_waiting_queue.acquire();
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
@@ -91,40 +79,20 @@ private:
         }
     }
 
-    void server_loop_exit() noexcept
-    {
-        if (m_count.fetch_sub() <= 1)
-        {
-            m_waiting_latch.unlock();
-        }
-    }
-
+private:
     friend class tcp_server_until_done_aw;
-    emitter_task<void> tcp_loop(
+    eager_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept
     {
         using namespace ::std::string_literals;
-
-        assert(flag.stop_possible());
-        if (flag.stop_requested()) 
-        {
-            server_loop_exit();
-            co_return;
-        }
-
-        {
-            void* addr = co_await get_handle_aw{};
-            ::std::unique_lock lk{ m_stop_related_lock };       
-            m_loop_handles.push_back(addr);       
-        }
 
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
             auto accret = co_await uring::accept(m_sockfd, 50ms);
             if (auto ec = accret.error_code(); 
-                (ec.value() == ECANCELED || ec.value() == ETIME) && ec.category() == ::std::system_category())
+                is_timeout_ec(ec))
             {
                 continue;
             }
@@ -136,11 +104,13 @@ private:
             else 
             {
                 auto client = accret.get_client();
-                make_emitter(userdefined, ::std::move(client)).run();
+                make_eager(userdefined, ::std::move(client)).run();
             }
         }
 
-        server_loop_exit();
+        if (m_count.fetch_sub() <= 1)
+            m_waiting_latch.unlock();
+
         co_return;
     }
 
@@ -153,7 +123,6 @@ private:
     ::std::stop_source          m_stop_src;
     toolpex::ref_count          m_count{};
 
-    ::std::vector<void*>        m_loop_handles;
     mutable ::std::shared_mutex m_stop_related_lock;
     mutable koios::mutex        m_waiting_queue;
     koios::unique_lock          m_waiting_latch;

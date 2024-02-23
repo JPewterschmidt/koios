@@ -74,7 +74,6 @@ public:
 
     void enqueue(const per_consumer_attr& ca, invocable_type i)
     {
-        
         auto tid = ca.thread_id;
         ::std::shared_lock lk{ m_queues_lk };
         if (!m_consumers.contains(tid))

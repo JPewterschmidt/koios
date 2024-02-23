@@ -45,6 +45,11 @@ const ::std::error_category& koios_category() noexcept;
 const ::std::error_category& expected_category() noexcept;
 const ::std::error_code& std_canceled_ec() noexcept;
 
+inline bool is_timeout_ec(const ::std::error_code& ec) noexcept
+{
+    return ec.value() == ETIME && ec.category() == ::std::system_category();
+}
+
 KOIOS_NAMESPACE_END
 
 #endif

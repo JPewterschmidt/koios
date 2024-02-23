@@ -1,9 +1,9 @@
-#include "koios/get_handle_aw.h"
+#include "koios/get_id_aw.h"
 #include "koios/runtime.h"
 
 KOIOS_NAMESPACE_BEG
 
-void get_handle_aw::await_suspend(task_on_the_fly h) noexcept
+void get_id_aw::await_suspend(task_on_the_fly h) noexcept
 {
     m_result = h.address();
     get_task_scheduler().enqueue(::std::move(h));

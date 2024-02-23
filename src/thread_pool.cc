@@ -19,7 +19,7 @@
 #include <chrono>
 #include "koios/thread_pool.h"
 #include "koios/exceptions.h"
-#include "koios/utility.h"
+#include "koios/env.h"
 #include "spdlog/spdlog.h"
 
 using namespace ::std::chrono_literals;

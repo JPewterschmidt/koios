@@ -34,9 +34,9 @@ namespace koios::uring
                      unsigned int socket_flags = 0);
 
     task<toolpex::unique_posix_fd> 
-    bind_get_sock(toolpex::ip_address::ptr addr, in_port_t port, 
-                  bool reuse_port = true, bool reuse_addr = true,
-                  unsigned int flags = 0);
+    bind_get_sock_tcp(toolpex::ip_address::ptr addr, in_port_t port, 
+                      bool reuse_port = true, bool reuse_addr = true,
+                      unsigned int flags = 0);
 
     task<>
     append_all(const toolpex::unique_posix_fd& fd, 

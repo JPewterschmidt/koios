@@ -54,7 +54,7 @@ namespace
 bool success1{};
 bool success2{};
 
-emitter_task<> dummy()
+eager_task<> dummy()
 {
     co_return;
 }

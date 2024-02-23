@@ -122,7 +122,7 @@ namespace
         co_return unexpected(ec);
     }
 
-    emitter_task<bool> emitter_void()
+    eager_task<bool> emitter_void()
     {
         auto ret1 = co_await expvoid_succeed();
         auto ret2 = co_await expvoid_failed();
@@ -221,7 +221,7 @@ namespace
         co_return ret;
     }
 
-    emitter_task<bool> emit_when_all_tests()
+    eager_task<bool> emit_when_all_tests()
     {
         auto [i, d, f] = co_await when_all(when_all1(), when_all2(), when_all3());
         (void)i;
@@ -239,7 +239,7 @@ TEST(task, when_all)
 namespace
 {
 
-emitter_task<bool> emit_yield_test1()
+eager_task<bool> emit_yield_test1()
 {
     co_await this_task::yield();
     co_return true;
@@ -257,7 +257,7 @@ TEST(this_task, yield)
 {
     ASSERT_TRUE(emit_yield_test1().result());
     ASSERT_TRUE(emit_yield_test2().result());
-    ASSERT_TRUE(make_emitter(emit_yield_test2).result());
+    ASSERT_TRUE(make_eager(emit_yield_test2).result());
 }
 
 TEST(task_release_once, basic)

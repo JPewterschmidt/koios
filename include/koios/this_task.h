@@ -19,8 +19,8 @@
 #ifndef KOIOS_THIS_TASK_H
 #define KOIOS_THIS_TASK_H
 
-#include "macros.h"
-#include "runtime.h"
+#include "koios/macros.h"
+#include "koios/runtime.h"
 #include <chrono>
 
 #include "toolpex/concepts_and_traits.h"
@@ -54,11 +54,21 @@ namespace this_task
         Duration m_dura;
     };
 
+    /*! \brief  Awatiable: Yield the current task, after user determined duration, 
+     *          the `timer_event_loop` will wake this task up.
+     *
+     *          Similary to ::std::this_task::sleep_for.
+     */
     auto sleep_for(toolpex::is_specialization_of<::std::chrono::duration> auto dura)
     {
         return sleep_await{ dura };
     }
 
+    /*! \brief  Awatiable: Yield the current task, after user determined time point,
+     *          the `timer_event_loop` will wake this task up.
+     *
+     *          Similary to ::std::this_task::sleep_until.
+     */
     template<typename Clock, typename Duration = typename Clock::duration>
     auto sleep_until(::std::chrono::time_point<Clock, Duration> tp)
     {
@@ -67,6 +77,11 @@ namespace this_task
         return sleep_await{ dura };
     }
 
+    /*! \brief  Awatiable: Yield the current task. 
+     *          
+     *          Guarantee the yielded task will go through the `task_scheduler`.
+     *          Similary to `::std::this_task::yield`.
+     */
     inline auto yield()
     {
         class yield_aw

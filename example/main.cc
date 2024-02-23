@@ -38,10 +38,9 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    emitter_task<> newuring_test()
+    eager_task<> newuring_test()
     {
-        co_await this_task::sleep_for(30s);
-        co_return;   
+        co_return;
     }
 }
 

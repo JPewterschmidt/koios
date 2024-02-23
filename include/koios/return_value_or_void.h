@@ -29,6 +29,8 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
 
+#include "toolpex/move_only.h"
+
 KOIOS_NAMESPACE_BEG
 
 /*! \brief store the return value. Wake this caller coroutine.
@@ -38,7 +40,7 @@ KOIOS_NAMESPACE_BEG
  *  \tparam The DriverPolicy of the promise type of inherited class.
  */
 template<typename T, typename Promise, typename DriverPolicy>
-class return_value_or_void_base 
+class return_value_or_void_base : public toolpex::move_only // See also https://devblogs.microsoft.com/oldnewthing/20210504-00/?p=105176
 {
 public:
     /*! Set the caller coroutine handle which coroutine represented will be wake up after this task done.  

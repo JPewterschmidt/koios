@@ -3,18 +3,23 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 
 KOIOS_NAMESPACE_BEG
 
-class get_handle_aw
+using task_id = void*;
+
+class get_id_aw
 {
 public:
     constexpr bool await_ready() const noexcept { return false; }
     void await_suspend(task_on_the_fly h) noexcept;
-    void* await_resume() const noexcept { return m_result; }
+    task_id await_resume() const noexcept { return m_result; }
 
 private:
-    void* m_result{};
+    task_id m_result{};
 };
 
 KOIOS_NAMESPACE_END

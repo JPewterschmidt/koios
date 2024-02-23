@@ -81,9 +81,12 @@ emitter_task<void> mainfunc()
     co_return;
 }
 
-emitter_task<> test_sleep_until_3ms()
+emitter_task<bool> test_sleep_until_3ms()
 {
-    co_await this_task::sleep_until(::std::chrono::system_clock::now() + 3ms);
+    auto now = ::std::chrono::system_clock::now();
+    co_await this_task::sleep_until(now + 3ms);
+    co_return ::std::chrono::duration_cast<::std::chrono::milliseconds>(
+        ::std::chrono::system_clock::now() - now) == 3ms;
 }
 
 }
@@ -92,7 +95,6 @@ TEST(timer, several_events)
 {
     flag1 = flag2 = false;
     ivec = ::std::vector<int>{};
-    //bs = ::std::binary_semaphore{0};
 
     mainfunc().run();
     bs.acquire();
@@ -104,7 +106,6 @@ TEST(timer, sleep_until_3ms_later)
 {
     flag1 = flag2 = false;
     ivec = ::std::vector<int>{};
-    //bs = ::std::binary_semaphore{0};
 
-    test_sleep_until_3ms().result();
+    ASSERT_TRUE(test_sleep_until_3ms().result());
 }

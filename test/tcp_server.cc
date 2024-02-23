@@ -67,7 +67,7 @@ namespace
                                    //
                                    // ioruing_event_loop take the credit. It should not to be work-stealing
 
-        co_await sp->until_stop_async();
+        co_await sp->until_done_async();
         sp = nullptr;
         co_return flag;
     }
@@ -104,13 +104,13 @@ namespace
         if (!co_await mute_client_app())
         {
             sp->stop();
-            co_await sp->until_stop_async();
+            co_await sp->until_done_async();
             sp = nullptr;
             ::std::cout << "shit1" << ::std::endl;
             co_return false;
         }
         sp->stop();
-        co_await sp->until_stop_async();
+        co_await sp->until_done_async();
         sp = nullptr;
         co_return true;
     }

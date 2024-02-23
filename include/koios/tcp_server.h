@@ -28,7 +28,8 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
-#include "koios/get_handle_aw.h"
+#include "koios/get_id_aw.h"
+#include "koios/error_category.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
@@ -72,9 +73,9 @@ public:
     }
 
     void stop();
-    void until_stop_blk();
+    void until_done_blk();
     bool is_stop() const noexcept;
-    task<> until_stop_async();
+    task<> until_done_async();
 
 private:
     task<> start_impl(task_callable_concept auto callback)
@@ -114,7 +115,7 @@ private:
         }
 
         {
-            void* addr = co_await get_handle_aw{};
+            void* addr = co_await get_id_aw{};
             ::std::unique_lock lk{ m_stop_related_lock };       
             m_loop_handles.push_back(addr);       
         }
@@ -124,7 +125,7 @@ private:
             using namespace ::std::chrono_literals;
             auto accret = co_await uring::accept(m_sockfd, 50ms);
             if (auto ec = accret.error_code(); 
-                (ec.value() == ECANCELED || ec.value() == ETIME) && ec.category() == ::std::system_category())
+                is_timeout_ec(ec))
             {
                 continue;
             }

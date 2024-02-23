@@ -40,7 +40,13 @@ namespace
 {
     emitter_task<> newuring_test()
     {
-        co_await this_task::sleep_for(30s);
+        co_await uring::nop();
+        co_await uring::nop();
+        co_await uring::nop();
+        co_await uring::nop();
+        co_await uring::nop();
+        co_await uring::nop();
+        co_await uring::nop();
         co_return;   
     }
 }

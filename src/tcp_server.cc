@@ -69,9 +69,9 @@ tcp_server(tcp_server&& other) noexcept
 
 void
 tcp_server::
-until_stop_blk()
+until_done_blk()
 {
-    until_stop_async().result();
+    until_done_async().result();
 }
 
 bool tcp_server::is_stop() const noexcept 
@@ -91,11 +91,10 @@ void tcp_server::listen()
 
 void tcp_server::stop()
 {
-    //if (m_stop_src.stop_requested()) return;
     m_stop_src.request_stop();
 }
 
-task<> tcp_server::until_stop_async()
+task<> tcp_server::until_done_async()
 {
     if (is_stop()) co_return;
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();

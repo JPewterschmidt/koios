@@ -92,33 +92,12 @@ private:
         }
     }
 
-    void server_loop_exit() noexcept
-    {
-        if (m_count.fetch_sub() <= 1)
-        {
-            m_waiting_latch.unlock();
-        }
-    }
-
     friend class tcp_server_until_done_aw;
     emitter_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept
     {
         using namespace ::std::string_literals;
-
-        assert(flag.stop_possible());
-        if (flag.stop_requested()) 
-        {
-            server_loop_exit();
-            co_return;
-        }
-
-        {
-            void* addr = co_await get_id_aw{};
-            ::std::unique_lock lk{ m_stop_related_lock };       
-            m_loop_handles.push_back(addr);       
-        }
 
         while (!flag.stop_requested())
         {
@@ -141,7 +120,9 @@ private:
             }
         }
 
-        server_loop_exit();
+        if (m_count.fetch_sub() <= 1)
+            m_waiting_latch.unlock();
+
         co_return;
     }
 
@@ -154,7 +135,6 @@ private:
     ::std::stop_source          m_stop_src;
     toolpex::ref_count          m_count{};
 
-    ::std::vector<void*>        m_loop_handles;
     mutable ::std::shared_mutex m_stop_related_lock;
     mutable koios::mutex        m_waiting_queue;
     koios::unique_lock          m_waiting_latch;

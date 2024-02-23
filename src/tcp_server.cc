@@ -62,8 +62,7 @@ tcp_server(tcp_server&& other) noexcept
     : m_sockfd{ ::std::move(other.m_sockfd) },
       m_addr{::std::move(m_addr)},
       m_port{::std::move(m_port)},
-      m_stop_src{::std::move(m_stop_src)},
-      m_loop_handles{::std::move(m_loop_handles)}
+      m_stop_src{::std::move(m_stop_src)}
 {
 }
 

@@ -28,6 +28,8 @@
 #include <cassert>
 #include <thread>
 #include <shared_mutex>
+#include <stop_token>
+#include <latch>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
@@ -62,6 +64,11 @@ struct timer_event
 class timer_event_loop_impl
 {
 public:
+    timer_event_loop_impl(::std::stop_token tk) noexcept
+        : m_stop_tk{ ::std::move(tk) } 
+    {
+    }
+
     /*! \brief Satisfy the requirement of `event_loop`
      *
      *  It will schedule all the expired time event callback 
@@ -126,6 +133,7 @@ private:
 private:
     ::std::vector<timer_event> m_timer_heap;
     mutable ::std::shared_mutex m_lk;
+    ::std::stop_token m_stop_tk;
 };
 
 /*! \brief A wrap class of timer event.
@@ -172,21 +180,23 @@ public:
     } 
 
     void quick_stop() noexcept;
-    void stop();
+    void stop() noexcept { m_stop_src.request_stop(); }
 
     /*! \attention should only be called by `event_loop`.*/
-    void until_done();
+    constexpr void until_done() const noexcept {}
 
     void thread_specific_preparation(const per_consumer_attr& attr)  
     { 
         ::std::unique_lock lk{ m_ptrs_lock };
         m_impl_ptrs.insert({
             attr.thread_id, 
-            ::std::make_unique<timer_event_loop_impl>()
+            ::std::make_unique<timer_event_loop_impl>(
+                m_stop_src.get_token() 
+            )
         });
     }
 
-    bool is_cleanning() const;
+    bool is_cleanning() const { return m_stop_src.stop_requested(); }
     bool done();
 
 private:
@@ -211,6 +221,7 @@ private:
         ::std::unique_ptr<timer_event_loop_impl>
     > m_impl_ptrs;
     mutable ::std::shared_mutex m_ptrs_lock;
+    ::std::stop_source m_stop_src;
 };
 
 KOIOS_NAMESPACE_END

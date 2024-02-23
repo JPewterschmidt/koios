@@ -20,7 +20,7 @@ int flag2{};
 
 ::std::binary_semaphore bs{0};
 
-emitter_task<void> func()
+eager_task<void> func()
 {
     co_await this_task::sleep_for(5ms);
     flag1 = 1;
@@ -72,16 +72,16 @@ task<> func3()
     co_return;
 }
 
-emitter_task<void> mainfunc()
+eager_task<void> mainfunc()
 {
     // add_event should never be called in main thread.
-    get_task_scheduler().add_event<timer_event_loop>(5ms, make_emitter(func1));
-    get_task_scheduler().add_event<timer_event_loop>(10ms, make_emitter(func2));
-    get_task_scheduler().add_event<timer_event_loop>(15ms, make_emitter(func3));
+    get_task_scheduler().add_event<timer_event_loop>(5ms, make_eager(func1));
+    get_task_scheduler().add_event<timer_event_loop>(10ms, make_eager(func2));
+    get_task_scheduler().add_event<timer_event_loop>(15ms, make_eager(func3));
     co_return;
 }
 
-emitter_task<bool> test_sleep_until_3ms()
+eager_task<bool> test_sleep_until_3ms()
 {
     auto now = ::std::chrono::system_clock::now();
     co_await this_task::sleep_until(now + 3ms);

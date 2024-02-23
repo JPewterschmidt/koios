@@ -35,17 +35,17 @@ auto identity(auto arg) -> task<decltype(arg)>
 template<typename Func, typename... Args>
 requires (
     task_callable_concept<Func> 
-    and !emitter_task_callable_concept<Func>)
-auto make_emitter(Func f, Args... args) 
-    -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
+    and !eager_task_callable_concept<Func>)
+auto make_eager(Func f, Args... args) 
+    -> eager_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
     co_return co_await f(::std::move(args)...);
 }
 
 template<typename Func, typename... Args>
-requires (emitter_task_callable_concept<Func>)
-auto make_emitter(Func f, Args... args)
-    -> emitter_task<typename toolpex::get_return_type_t<Func>::value_type>
+requires (eager_task_callable_concept<Func>)
+auto make_eager(Func f, Args... args)
+    -> eager_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
     return f(::std::move(args)...);
 }

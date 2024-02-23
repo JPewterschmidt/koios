@@ -52,11 +52,10 @@ public:
     tcp_server(tcp_server&& other) noexcept;
     tcp_server& operator=(tcp_server&& other) noexcept;
 
-    task<tcp_server> start(task_callable_concept auto callback) &&
-    {
-        co_await start_impl(::std::move(callback));
-        co_return ::std::move(*this);
-    }
+    void stop();
+    void until_done_blk();
+    bool is_stop() const noexcept;
+    task<> until_done_async();
 
     /*! \brief  Make the tcp server start working
      *
@@ -66,21 +65,9 @@ public:
      *
      *  \attention This function could be called only once !
      */
-    task<tcp_server&> start(task_callable_concept auto callback) &
+    task<> start(task_callable_concept auto callback)
     {
-        co_await start_impl(::std::move(callback));
-        co_return *this;
-    }
-
-    void stop();
-    void until_done_blk();
-    bool is_stop() const noexcept;
-    task<> until_done_async();
-
-private:
-    task<> start_impl(task_callable_concept auto callback)
-    {
-        m_sockfd = co_await uring::bind_get_sock(m_addr, m_port);
+        m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
         this->listen();
         m_waiting_latch = co_await m_waiting_queue.acquire();
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
@@ -92,8 +79,9 @@ private:
         }
     }
 
+private:
     friend class tcp_server_until_done_aw;
-    emitter_task<void> tcp_loop(
+    eager_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept
     {
@@ -116,7 +104,7 @@ private:
             else 
             {
                 auto client = accret.get_client();
-                make_emitter(userdefined, ::std::move(client)).run();
+                make_eager(userdefined, ::std::move(client)).run();
             }
         }
 

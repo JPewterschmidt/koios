@@ -32,7 +32,7 @@ task<> delete_file()
     co_await uring::unlink(g_file_name);
 }
 
-emitter_task<bool> append_all_test()
+eager_task<bool> append_all_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -58,7 +58,7 @@ emitter_task<bool> append_all_test()
     co_return ::std::ranges::equal(buffer, content.substr(0, 5));
 }
 
-emitter_task<bool> emit_op_fill_test()
+eager_task<bool> emit_op_fill_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -78,7 +78,7 @@ emitter_task<bool> emit_op_fill_test()
     co_return readed_nbytes == 5;
 }
 
-emitter_task<bool> emit_op_fill_test2()
+eager_task<bool> emit_op_fill_test2()
 {
     constexpr auto content = "123456789"sv;
     ::std::array<char, content.size() * 2> buffer{};
@@ -115,7 +115,7 @@ TEST(iouring, op_fill_buffer)
 #include "toolpex/ipaddress.h"
 namespace
 {
-    emitter_task<bool> op_batch_test_basic()
+    eager_task<bool> op_batch_test_basic()
     {
         auto ops = uring::op_batch{};
         ops.prep_socket("::1"_ip->family(), SOCK_STREAM, 0)

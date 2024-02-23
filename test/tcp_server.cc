@@ -13,7 +13,7 @@ namespace
     ::std::unique_ptr<tcp_server> sp{};
     ::std::atomic_bool flag{ false };
 
-    emitter_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
+    eager_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
     try
     {
         ::std::string msg = "fuck you!!!!";
@@ -54,7 +54,7 @@ namespace
         co_return;
     }
 
-    emitter_task<bool> emit_basic_test()
+    eager_task<bool> emit_basic_test()
     {
         sp.reset(new tcp_server("::1"_ip, 8890));
 
@@ -90,7 +90,7 @@ namespace
         co_return false;
     }
 
-    emitter_task<bool> emit_recv_timeout_test()
+    eager_task<bool> emit_recv_timeout_test()
     {
         sp.reset(new tcp_server("::1"_ip, 8890));
         co_await sp->start(recv_timeout_server);

@@ -28,20 +28,13 @@
 
 KOIOS_NAMESPACE_BEG
 
-namespace
-{
-    ::std::mutex g_cond_mutex;
-    ::std::condition_variable g_done_cond;
-    ::std::atomic_bool g_cleanning{ false };
-}
-
 void timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
-    if (g_cleanning.load())
+
+    if (m_stop_tk.stop_requested()) 
     {
-        g_done_cond.notify_all();
         return;
     }
 
@@ -67,11 +60,6 @@ do_occured_nonblk() noexcept
         schr.enqueue(::std::move(i->task));
     }
     m_timer_heap.erase(heap_end, m_timer_heap.end());
-
-    if (m_timer_heap.empty() && g_cleanning.load()) 
-    {
-        g_done_cond.notify_all();
-    }
 }
 
 void timer_event_loop_impl::
@@ -99,13 +87,6 @@ add_event_impl(timer_event te) noexcept
 }
 
 void timer_event_loop::
-until_done()
-{
-    ::std::unique_lock lk{ g_cond_mutex };
-    g_done_cond.wait(lk, [this] { return done(); });
-}
-
-void timer_event_loop::
 quick_stop() noexcept
 {
     ::std::unique_lock lk{ m_ptrs_lock };
@@ -114,18 +95,6 @@ quick_stop() noexcept
         ptrs->quick_stop();
     }
     stop();
-}
-
-bool timer_event_loop::
-is_cleanning() const
-{
-    return g_cleanning.load();
-}
-
-void timer_event_loop::
-stop()
-{
-    g_cleanning.store(true);
 }
 
 bool timer_event_loop::

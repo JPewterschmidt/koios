@@ -85,6 +85,10 @@ public:
     using future_type = koios::future<value_type>;
     using initial_suspend_type = InitialSuspendAw;
 
+    // This should be always a move only object, 
+    // `return_value_or_void` was derived from `toolpex::move_only`
+    // See blog https://devblogs.microsoft.com/oldnewthing/20210504-00/?p=105176
+    // by Raymond Chen
     class promise_type 
         : public promise_base<InitialSuspendAw, destroy_aw>, 
           public return_value_or_void<T, promise_type, DriverPolicy>
@@ -106,7 +110,7 @@ protected:
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
           m_std_promise_p{ p.get_std_promise_pointer() }
     {
-        if constexpr (is_eager()) m_coro_handle.give_up_ownership();
+        if constexpr (is_lazy()) m_coro_handle.give_up_ownership();
     }
 
 public:
@@ -158,7 +162,7 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!is_eager())
+        if constexpr (!is_lazy())
         {
             if (!this->future().ready())
             {   
@@ -175,7 +179,7 @@ public:
         static_assert(is_return_void() || is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!is_eager())
+        if constexpr (!is_lazy())
         {
             if (!this->future().ready())
             {   
@@ -209,7 +213,7 @@ public:
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if constexpr (!is_eager())
+        if constexpr (!is_lazy())
         {
             if (!has_scheduled() && !result.ready())
             {   
@@ -225,7 +229,7 @@ public:
         const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
         auto result = get_future();
-        if constexpr (!is_eager())
+        if constexpr (!is_lazy())
         {
             if (!has_scheduled() && !result.ready())
             {   
@@ -269,7 +273,7 @@ public:
      *  And this is a static consteval function.
      */
     [[nodiscard]] static consteval bool is_discardable() { return ::std::same_as<Discardable, discardable>; }
-    [[nodiscard]] static consteval bool is_eager() { return ::std::same_as<initial_suspend_type, eager_aw>; }
+    [[nodiscard]] static consteval bool is_lazy() { return ::std::same_as<initial_suspend_type, lazy_aw>; }
 
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
@@ -285,7 +289,7 @@ private:
      */
     [[nodiscard]] future_type get_future()
     {
-        if constexpr (!is_eager())
+        if constexpr (!is_lazy())
         {
             if (has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
         }
@@ -300,29 +304,29 @@ private:
     ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 
-template<typename T = void, typename InitialSuspendAw = eager_aw>
+template<typename T = void, typename InitialSuspendAw = lazy_aw>
 using async_task = typename _task<T, run_this_async, discardable, InitialSuspendAw>::_type;
 
-template<typename T = void, typename InitialSuspendAw = eager_aw>
+template<typename T = void, typename InitialSuspendAw = lazy_aw>
 using nodiscard_task = typename _task<T, run_this_async, non_discardable, InitialSuspendAw>::_type;
 
-template<typename T = void, typename InitialSuspendAw = eager_aw>
+template<typename T = void, typename InitialSuspendAw = lazy_aw>
 using task = async_task<T, InitialSuspendAw>;
 
 template<typename T = void, typename InitialSuspendAw = ::std::suspend_always>
-using emitter_task = async_task<T, InitialSuspendAw>;
+using eager_task = async_task<T, InitialSuspendAw>;
 
 using taskec = task<::std::error_code>;
-using etaskec = emitter_task<::std::error_code>;
+using etaskec = eager_task<::std::error_code>;
 
-extern template class koios::_task<void, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<void, run_this_async, non_discardable, eager_aw>::_type;
-extern template class koios::_task<bool, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<int, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<size_t, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<::std::string, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<::std::string_view, run_this_async, discardable, eager_aw>::_type;
-extern template class koios::_task<::std::error_code, run_this_async, discardable, eager_aw>::_type;
+extern template class koios::_task<void, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<void, run_this_async, non_discardable, lazy_aw>::_type;
+extern template class koios::_task<bool, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<int, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<size_t, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::string, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::string_view, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::error_code, run_this_async, discardable, lazy_aw>::_type;
 
 KOIOS_NAMESPACE_END
 

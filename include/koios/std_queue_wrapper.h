@@ -22,6 +22,7 @@
 #include <queue>
 #include <mutex>
 #include "koios/macros.h"
+#include "toolpex/spin_lock.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -72,7 +73,7 @@ public:
 
 private:
     queue_type m_q;   
-    mutable ::std::mutex m_lock;
+    mutable toolpex::spin_lock m_lock;
 };
 
 KOIOS_NAMESPACE_END

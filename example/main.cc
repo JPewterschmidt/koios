@@ -38,16 +38,9 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    emitter_task<> newuring_test()
+    eager_task<> newuring_test()
     {
-        co_await uring::nop();
-        co_await uring::nop();
-        co_await uring::nop();
-        co_await uring::nop();
-        co_await uring::nop();
-        co_await uring::nop();
-        co_await uring::nop();
-        co_return;   
+        co_return;
     }
 }
 

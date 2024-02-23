@@ -40,9 +40,9 @@ namespace koios::uring
     }
 
     ::koios::task<unique_posix_fd> 
-    bind_get_sock(ip_address::ptr addr, in_port_t port, 
-                  bool reuse_port, bool reuse_addr,
-                  unsigned int flags)
+    bind_get_sock_tcp(ip_address::ptr addr, in_port_t port, 
+                      bool reuse_port, bool reuse_addr,
+                      unsigned int flags)
     {
         auto sockret = co_await uring::socket(addr->family(), SOCK_STREAM, 0);
         if (auto ec = sockret.error_code(); ec)

@@ -21,8 +21,6 @@
 #include "toolpex/errret_thrower.h"
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
-#include "koios/this_task.h"
-#include <cassert>
 #include <netinet/in.h>
 #include <thread>
 #include <string_view>

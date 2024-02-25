@@ -23,6 +23,13 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief check wether the compiling mode is profiling mode.
+ *
+ *  Koios would be hinted by this to reduce some uncertain observation result.
+ *  For example, the thread_pool would evaluate the `max_sleep_duration`, 
+ *  this time value are uncertain each called.
+ *  Would probably diturb the profiling result.
+ */
 inline consteval bool is_profiling_mode()
 {
 #ifdef KOIOS_PROFILING

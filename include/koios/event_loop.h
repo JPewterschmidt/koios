@@ -56,6 +56,13 @@ public:
     {
     }
 
+    /*! \brief Call the function with same name of each event loop.
+     *
+     *  By the same order of `Loops` template arguments list.
+     *
+     *  \attention  We assume that this function will return immediately, 
+     *              any blocking subcall are prohibited.
+     */
     void do_occured_nonblk() noexcept
     {
         (Loops::do_occured_nonblk(), ...);
@@ -63,6 +70,12 @@ public:
 
     /*! \brief Add event to specific event loop. 
      *  \tparam SpecificLoop the loop you want to operate.
+     *  \return something determined by the actual event loop.
+     *
+     *  This function typically forward all the arguments 
+     *  to the same name member function of the determined loop.
+     *  But only when the whole event loop are not in the cleanning mode (going to die).
+     *  Or it throws an exception.
      */
     template<typename SpecificLoop>
     auto add_event(auto&&... data)
@@ -77,6 +90,7 @@ public:
         return SpecificLoop::add_event(::std::forward<decltype(data)>(data)...);
     }
 
+    /*! \brief Get the reference of this determined loop. */
     template<typename Loop>
     auto& as_loop()
     {
@@ -85,7 +99,8 @@ public:
 
     /*! \brief  Stop receiving any other event
      *  
-     *  And call this function would stop all the sub eventloop working.
+     *  And call this function would stop all the sub eventloop working, 
+     *  prohibit all the subsequent `add_event()` operation.
      */
     virtual void stop() noexcept override
     {

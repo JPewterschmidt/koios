@@ -49,7 +49,7 @@ await_suspend(task_on_the_fly h)
 
 bool
 acq_lk_aw::
-await_ready() const
+await_ready() const noexcept
 {
     return m_mutex.hold_this_immediately();
 }
@@ -90,7 +90,7 @@ unlock() noexcept
 // ================================================
 
 bool mutex::
-hold_this_immediately()
+hold_this_immediately() noexcept
 {
     ::std::lock_guard lk{ m_lock };
     return m_holded ? false : (m_holded = true);

@@ -27,14 +27,37 @@
 
 KOIOS_NAMESPACE_BEG
 
+/*! \brief A general async resource dispatcher queue
+ *
+ *  This class allows you to implements your async resource dispatcher queue,
+ *  will clearly it's based on a concurrent queue, namely `moodycamel::ConcurrentQueue`.
+ *  This queue will store those task handler (`task_on_the_fly`) 
+ *  which want to get the specific resource asynchronously.
+ *  For example, the coroutine mutex could be implemented by deriving from this class
+ *  (bu the actual practice may not,)
+ *
+ *  Those classes derived from this are typically awaitable object class.
+ *  More detials see those doc on each member functions.
+ */
 class async_awaiting_hub
 {
 public:
+    /*! \brief add a task (handler) to the (a)waiting queue.
+     *  \param y the task handler
+     *
+     *  This function should be called by `await_suspend` of the derived class.
+     */
     void add_awaiting(task_on_the_fly y) noexcept
     {
         m_awaitings.enqueue(::std::move(y));
     }
 
+    /*! \brief Wake up the task on the front of the waiting queue.
+     *
+     *  user should implement a guard which utilizes the RAII feature of C++
+     *  to call this function in the destructor of that RAII guard, 
+     *  to wake up the next waiting task. 
+     */
     void may_wake_next() noexcept
     {
         task_on_the_fly f{};

@@ -34,7 +34,6 @@
 #include "koios/return_value_or_void.h"
 #include "koios/task_scheduler_wrapper.h"
 #include "koios/get_result_aw.h"
-#include "koios/driver_policy.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
 #include "koios/per_consumer_attr.h"
@@ -45,10 +44,9 @@ KOIOS_NAMESPACE_BEG
  *  Prevent ADL lookup.
  *
  *  \tparam T The return value type just like a regular function.
- *  \tparam DriverPolicy One of `run_this_async` or `run_this_sync`.
  *  \tparam Discardable One of `discardable` or `non_discardable`.
  */
-template<typename, driver_policy_concept, typename, typename>
+template<typename, typename, typename>
 struct _task
 {
     struct [[nodiscard]] _type;
@@ -71,14 +69,13 @@ struct non_discardable{};
  */
 template<
     typename T, 
-    driver_policy_concept DriverPolicy,
     typename Discardable, 
     typename InitialSuspendAw>
-class _task<T, DriverPolicy, Discardable, InitialSuspendAw>::_type 
-    : public get_result_aw<T, _type, DriverPolicy>
+class _task<T, Discardable, InitialSuspendAw>::_type 
+    : public get_result_aw<T, _type>
 {
 private:
-    using get_result_aw_type = get_result_aw<T, _type, DriverPolicy>;
+    using get_result_aw_type = get_result_aw<T, _type>;
 
 public:
     using value_type = T;
@@ -91,17 +88,17 @@ public:
     // by Raymond Chen
     class promise_type 
         : public promise_base<InitialSuspendAw, destroy_aw>, 
-          public return_value_or_void<T, promise_type, DriverPolicy>
+          public return_value_or_void<T, promise_type>
     {
     public:
-        _task<T, DriverPolicy, Discardable, initial_suspend_type>::_type 
+        _task<T, Discardable, initial_suspend_type>::_type 
         get_return_object() noexcept { return { *this }; }
         void unhandled_exception() { this->deal_exception(::std::current_exception()); }
     };
 
     friend class task_scheduler;
 
-    template<typename, typename, typename>
+    template<typename, typename>
     friend class get_result_aw_base;
 
 protected:
@@ -138,7 +135,7 @@ public:
 
     /*! \brief Run the task.
      *  
-     *  Run the task on a scheduler which specified by the `DriverPolicy`.
+     *  Run the task on the scheduler.
      *  If you call this function with a `nodiscard_task`,
      *  the static_assert will stop the compiling.
      *  
@@ -146,14 +143,12 @@ public:
      */
     void run()
     {
-        auto schr = DriverPolicy{}.scheduler();
-        run_on(schr);
+        run_on(get_task_scheduler());
     }
 
     void run(const per_consumer_attr& attr)
     {
-        auto schr = DriverPolicy{}.scheduler();
-        run_on(attr, schr);
+        run_on(attr, get_task_scheduler());
     }
 
     void 
@@ -200,14 +195,12 @@ public:
      */
     [[nodiscard]] future_type run_and_get_future()
     {
-        auto schr = DriverPolicy{}.scheduler();
-        return run_and_get_future_on(schr);
+        return run_and_get_future_on(get_task_scheduler());
     }
 
     [[nodiscard]] future_type run_and_get_future(const per_consumer_attr& attr)
     {
-        auto schr = DriverPolicy{}.scheduler();
-        return run_and_get_future_on(attr, schr);
+        return run_and_get_future_on(attr, get_task_scheduler());
     }
 
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
@@ -243,14 +236,12 @@ public:
 
     [[nodiscard]] auto result()
     {
-        auto schr = DriverPolicy{}.scheduler();
-        return result_on(schr);
+        return result_on(get_task_scheduler());
     }
 
     [[nodiscard]] auto result(const per_consumer_attr& attr)
     {
-        auto schr = DriverPolicy{}.scheduler();
-        return result_on(attr, schr);
+        return result_on(attr, get_task_scheduler());
     }
 
     [[nodiscard]] auto result_on(const task_scheduler_wrapper& schr)
@@ -294,7 +285,7 @@ private:
             if (has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
         }
 
-        return get_result_aw<T, _type, DriverPolicy>::get_future();
+        return get_result_aw<T, _type>::get_future();
     }
 
     auto get_handler_to_schedule() noexcept { return ::std::exchange(m_coro_handle, {}); }
@@ -305,10 +296,10 @@ private:
 };
 
 template<typename T = void, typename InitialSuspendAw = lazy_aw>
-using async_task = typename _task<T, run_this_async, discardable, InitialSuspendAw>::_type;
+using async_task = typename _task<T, discardable, InitialSuspendAw>::_type;
 
 template<typename T = void, typename InitialSuspendAw = lazy_aw>
-using nodiscard_task = typename _task<T, run_this_async, non_discardable, InitialSuspendAw>::_type;
+using nodiscard_task = typename _task<T, non_discardable, InitialSuspendAw>::_type;
 
 template<typename T = void, typename InitialSuspendAw = lazy_aw>
 using task = async_task<T, InitialSuspendAw>;
@@ -319,14 +310,14 @@ using eager_task = async_task<T, InitialSuspendAw>;
 using taskec = task<::std::error_code>;
 using etaskec = eager_task<::std::error_code>;
 
-extern template class koios::_task<void, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<void, run_this_async, non_discardable, lazy_aw>::_type;
-extern template class koios::_task<bool, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<int, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<size_t, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::string, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::string_view, run_this_async, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::error_code, run_this_async, discardable, lazy_aw>::_type;
+extern template class koios::_task<void, discardable, lazy_aw>::_type;
+extern template class koios::_task<void, non_discardable, lazy_aw>::_type;
+extern template class koios::_task<bool, discardable, lazy_aw>::_type;
+extern template class koios::_task<int, discardable, lazy_aw>::_type;
+extern template class koios::_task<size_t, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::string, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::string_view, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::error_code, discardable, lazy_aw>::_type;
 
 KOIOS_NAMESPACE_END
 

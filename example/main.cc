@@ -40,7 +40,7 @@ namespace
 {
     eager_task<> newuring_test()
     {
-        auto e = uring_exception{};
+
         co_return;
     }
 }

@@ -31,7 +31,7 @@ KOIOS_NAMESPACE_BEG
 template<typename Queue>
 concept base_queue = requires(Queue q)
 {
-    { &Queue::enqueue };
+    //{ &Queue::enqueue };  // overloading 
     { q.empty()     } -> ::std::same_as<bool>;
     { q.size()      } -> ::std::integral;
 };

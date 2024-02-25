@@ -42,7 +42,9 @@ public:
 
 public:
     void enqueue(invocable_type&& func);
+    void enqueue(const per_consumer_attr& ca, invocable_type&& func);
     ::std::optional<invocable_type> dequeue();
+    ::std::optional<invocable_type> dequeue(const per_consumer_attr& ca);
     bool empty() const;
     size_t size() const noexcept { return m_q.size_approx(); }
 

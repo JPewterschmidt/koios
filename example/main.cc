@@ -40,6 +40,7 @@ namespace
 {
     eager_task<> newuring_test()
     {
+
         co_return;
     }
 }

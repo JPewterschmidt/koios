@@ -5,6 +5,7 @@
 #include "koios/task.h"
 #include "koios/this_task.h"
 #include "koios/functional.h"
+#include "toolpex/spin_lock.h"
 
 #include <semaphore>
 #include <vector>
@@ -35,7 +36,7 @@ TEST(timer, awaitable)
     ASSERT_EQ(flag2, 2);
 }
 
-::std::mutex ivec_lock;
+toolpex::spin_lock ivec_lock;
 ::std::vector<int> ivec;
 
 task<> func1()
@@ -43,7 +44,7 @@ task<> func1()
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(1);
     lk.unlock();
-    co_await this_task::sleep_for(15ms);
+    co_await this_task::sleep_for(8ms);
     lk.lock();
     ivec.push_back(4);
     co_return;
@@ -54,7 +55,7 @@ task<> func2()
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(2);
     lk.unlock();
-    co_await this_task::sleep_for(15ms);
+    co_await this_task::sleep_for(8ms);
     lk.lock();
     ivec.push_back(5);
     co_return;
@@ -65,7 +66,7 @@ task<> func3()
     ::std::unique_lock lk{ ivec_lock };
     ivec.push_back(3);
     lk.unlock();
-    co_await this_task::sleep_for(15ms);
+    co_await this_task::sleep_for(8ms);
     lk.lock();
     ivec.push_back(6);
     bs.release();
@@ -75,9 +76,9 @@ task<> func3()
 eager_task<void> mainfunc()
 {
     // add_event should never be called in main thread.
-    get_task_scheduler().add_event<timer_event_loop>(5ms, make_eager(func1));
-    get_task_scheduler().add_event<timer_event_loop>(10ms, make_eager(func2));
-    get_task_scheduler().add_event<timer_event_loop>(15ms, make_eager(func3));
+    get_task_scheduler().add_event<timer_event_loop>(2ms, make_eager(func1));
+    get_task_scheduler().add_event<timer_event_loop>(4ms, make_eager(func2));
+    get_task_scheduler().add_event<timer_event_loop>(8ms, make_eager(func3));
     co_return;
 }
 

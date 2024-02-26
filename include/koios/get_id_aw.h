@@ -29,9 +29,11 @@ KOIOS_NAMESPACE_BEG
 
 using task_id = void*;
 
+/*! \brief Awaitable class which get the coroutine task id (handler address). */
 class get_id_aw
 {
 public:
+    /*! \brief  Always return `false`. */
     constexpr bool await_ready() const noexcept { return false; }
     void await_suspend(task_on_the_fly h) noexcept;
     task_id await_resume() const noexcept { return m_result; }

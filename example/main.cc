@@ -15,6 +15,7 @@
 #include "koios/this_task.h"
 #include "koios/expected.h"
 #include "koios/functional.h"
+#include "koios/from_result.h"
 
 #include "toolpex/tic_toc.h"
 #include "toolpex/errret_thrower.h"
@@ -38,9 +39,15 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
+    auto something()
+    {
+        return from_result(1);
+    }
+
     eager_task<> newuring_test()
     {
-
+        int i = co_await something();
+        ::std::cout << i << ::std::endl;
         co_return;
     }
 }

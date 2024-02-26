@@ -28,16 +28,34 @@
 
 namespace koios::uring
 {
+    /*! \brief  Awaitable: Connect the target machine then return the socket fd.
+     *  \param  addr The ip address of target machine.
+     *  \param  port The port.
+     *  \param  socket_flags other flags of cqe.
+     *  \return if there're no any error, the return value is the fd represents the connection.
+     */
     task<toolpex::unique_posix_fd> 
     connect_get_sock(toolpex::ip_address::ptr addr, 
                      ::in_port_t port, 
                      unsigned int socket_flags = 0);
 
+    /*! \brief  Awaitable: Bind a name with this process.
+     *  \param  addr The ip address.
+     *  \param  port The port.
+     *  \param  socket_flags    other flags of cqe.
+     *  \param  reuse_port      true if you need reuse port.
+     *  \param  reuse_addr      true if you need reuse addr.
+     *  \return if there're no any error, the return value is the fd represent the current socket.
+     */
     task<toolpex::unique_posix_fd> 
     bind_get_sock_tcp(toolpex::ip_address::ptr addr, in_port_t port, 
                       bool reuse_port = true, bool reuse_addr = true,
                       unsigned int flags = 0);
 
+    /*! \brief  Awaitable: Append all the bytes the buffer contained to the determined facility the fd represented.
+     *  \param  fd The fd of the appendable facility.
+     *  \param  buffer The bytes buffer.
+     */
     task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer);
@@ -52,6 +70,10 @@ namespace koios::uring
         ));
     }
 
+    /*! \brief  Awaitable: Append all the bytes the buffer contained to the determined facility the fd represented.
+     *  \param  fd The fd of the appendable facility.
+     *  \param  buffer The bytes buffer.
+     */
     task<>
     append_all(const toolpex::unique_posix_fd& fd, 
               ::std::span<const ::std::byte> buffer, 

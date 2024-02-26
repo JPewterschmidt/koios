@@ -134,12 +134,30 @@ public:
     ~invocable_queue_wrapper() noexcept;
     invocable_queue_wrapper(invocable_queue_wrapper&& other) noexcept;
 
-    void enqueue(invocable_type&& func) const { m_enqueue_impl(m_storage.get(), nullptr, ::std::move(func)); }
+    /*! \brief Enqueue a task to the queue, like a regular queue. 
+     *  \param t The task you want enqueue.
+     */
+    void enqueue(invocable_type&& t) const { m_enqueue_impl(m_storage.get(), nullptr, ::std::move(t)); }
+
+    /*! \brief Enqueue a task to the queue. 
+     *  Like a regular queue, but if the underlying queue support thread specific enqueue, 
+     *  the thread specific one will be chosen. 
+     *  \param t The task you want enqueue.
+     *  \param ca The reference to thread specific information object.
+     */
     void enqueue(const per_consumer_attr& ca, invocable_type&& func) const { m_enqueue_impl(m_storage.get(), &ca, ::std::move(func)); }
+
+    /*! \brief Get the next task in the queue. */
     ::std::optional<invocable_type> dequeue(const per_consumer_attr& attr) const { return m_dequeue_impl(m_storage.get(), attr); }
 
     bool empty() const { return m_empty_impl(m_storage.get()); }
     size_t size() const noexcept { return m_size_impl(m_storage.get()); }
+
+    /*! \brief  Function will be called by `thread_pool`, or `event_loop` whatever.
+     *  
+     *  Before a worker thread actually deal their jobs, 
+     *  this function will be called to inform this class object to do some preparation job.
+     */
     void thread_specific_preparation(const per_consumer_attr& attr)
     {
         if (m_thread_specific_preparation)

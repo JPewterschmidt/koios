@@ -21,6 +21,7 @@
 
 #include "koios/macros.h"
 #include "koios/runtime.h"
+#include "koios/get_id_aw.h"
 #include <chrono>
 
 #include "toolpex/concepts_and_traits.h"
@@ -29,6 +30,9 @@ KOIOS_NAMESPACE_BEG
 
 namespace this_task
 {
+    /*! \brief  Return a awaitable object for getting the task id. */
+    inline get_id_aw get_id() noexcept { return {}; }
+
     template<typename Duration>
     class sleep_await
     {

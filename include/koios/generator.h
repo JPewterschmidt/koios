@@ -28,7 +28,6 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
-#include "koios/driver_policy.h"
 #include "koios/generator_iterator.h"
 
 KOIOS_NAMESPACE_BEG

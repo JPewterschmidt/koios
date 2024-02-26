@@ -41,7 +41,9 @@ enum expected_state_t : int
     KOIOS_EXPECTED_NOTHING_TO_GET      = 4,
 };
 
+/*! \brief Similary to `::std::system_category`.*/
 const ::std::error_category& koios_category() noexcept;
+/*! \brief Similary to `::std::system_category`.*/
 const ::std::error_category& expected_category() noexcept;
 const ::std::error_code& std_canceled_ec() noexcept;
 

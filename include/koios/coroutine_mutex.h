@@ -84,7 +84,8 @@ public:
     {
     }
     
-    bool await_ready() const;
+    /*! \brief  Try gain then check the ownership of the lock. */
+    bool await_ready() const noexcept;
     void await_suspend(task_on_the_fly h);
     unique_lock await_resume() noexcept;
 
@@ -98,7 +99,10 @@ struct waiting_handle
     task_on_the_fly task;
 };
 
-/*! \brief The coroutine mutex object */
+/*! \brief The coroutine mutex object 
+ *
+ *  Based on a spin lock.
+ */
 class mutex : public toolpex::move_only
 {
 public:
@@ -107,25 +111,40 @@ public:
      *  Due to the underlying mutex may throw an exception when lock it, 
      *  We didn't mark this function as noexcept.
      */
-    acq_lk_aw acquire() { return { *this }; }
+    acq_lk_aw acquire() noexcept { return { *this }; }
 
 private:
     friend class unique_lock;
     friend class acq_lk_aw;
 
-    // reentrant
+    /*! \brief Wake up the next waiting task handler
+     *
+     *  This function won't check the ownership, 
+     *  and will be called by `release()` member function
+     *  
+     *  \see `release()`
+     */
     void try_wake_up_next() noexcept;
 
     /*! \brief  Try to acquire the ownership.
-     *
-     *  Due to the underlying mutex may throw an exception when lock it, 
-     *  We didn't mark this function as noexcept.
+     *  \retval true The ownership was got.
+     *  \retval false The ownership was not got.
      */
-    bool hold_this_immediately();
+    bool hold_this_immediately() noexcept;
     void add_waiting(task_on_the_fly t);
+
+    /*! \brief  Move the ownership to the next waiting task, and wake it.
+     *
+     *  Actually there's no such code deal with ownership, 
+     *  ownership of this coroutine mutex implementation 
+     *  is just abstract concept. We only guarantee that
+     *  there's always one (or no) member task is running of this mutex.
+     */
     void release();
     
     void try_wake_up_next_impl() noexcept;
+
+public:
     bool being_held() const noexcept { return m_holded; }
 
 private:

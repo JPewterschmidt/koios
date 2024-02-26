@@ -38,9 +38,8 @@ KOIOS_NAMESPACE_BEG
  *
  *  \tparam T result type of the current task.
  *  \tparam Task `task` type of the current task.
- *  \tparam DriverPolicy Decide where to resume the caller task and the task itself.
  */
-template<typename T, typename Task, typename DriverPolicy>
+template<typename T, typename Task>
 class get_result_aw_base
 {
 public:
@@ -64,8 +63,6 @@ public:
 
 
 /**/    //  This function will record the caller coroutine for resuming it.         /**/
-/**/    //  It will also schedule this current task with `DriverPolicy`.            /**/
-/**/    //                                                                          /**/
 /**/void await_suspend(task_on_the_fly h) noexcept                                  /**/
 /**/{                                                                               /**/
 /**/    // Dear developers:                                                         /**/
@@ -74,7 +71,7 @@ public:
 /**/    assert(this->m_lock);                                                       /**/
 /**/    auto lk = ::std::move(m_lock);                                              /**/
 /**/    m_promise.set_caller(::std::move(h));                                       /**/
-/**/    DriverPolicy{}.scheduler().enqueue(                                         /**/
+/**/    get_task_scheduler().enqueue(                                               /**/
 /**/        static_cast<Task*>(this)->get_handler_to_schedule()                     /**/
 /**/    );                                                                          /**/
 /**************************************************************************************/
@@ -135,13 +132,13 @@ protected:
     mutable ::std::unique_lock<::std::mutex> m_lock{};
 };
 
-template<typename T, typename Task, typename DriverPolicy>
+template<typename T, typename Task>
 class get_result_aw
-    : public get_result_aw_base<T, Task, DriverPolicy>
+    : public get_result_aw_base<T, Task>
 {
 public:
     using value_type = T;
-    using base = get_result_aw_base<T, Task, DriverPolicy>;
+    using base = get_result_aw_base<T, Task>;
     using base::get_result_aw_base;
     
 /**/decltype(auto) await_resume()                                                   /**/
@@ -155,13 +152,13 @@ public:
     }
 };
 
-template<typename Task, typename DriverPolicy>
-class get_result_aw<void, Task, DriverPolicy>
-    : public get_result_aw_base<void, Task, DriverPolicy>
+template<typename Task>
+class get_result_aw<void, Task>
+    : public get_result_aw_base<void, Task>
 {
 public:
     using value_type = void;
-    using base = get_result_aw_base<void, Task, DriverPolicy>;
+    using base = get_result_aw_base<void, Task>;
     using base::get_result_aw_base;
 
 /**/void await_resume()                                                             /**/

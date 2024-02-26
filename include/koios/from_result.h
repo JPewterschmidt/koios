@@ -21,6 +21,7 @@
 
 #include <coroutine>
 #include <utility>
+#include <cassert>
 
 #include "koios/macros.h"
 #include "koios/task.h"
@@ -33,9 +34,8 @@ namespace from_result_detial
     class from_result_aw
     {
     public: 
-        template<typename... Args>
-        constexpr from_result_aw(Args&&... r)
-            : m_obj{ ::std::forward<Args>(r)... }
+        constexpr from_result_aw(Ret r)
+            : m_obj{ ::std::move(r) }
         {
         }
 
@@ -48,10 +48,10 @@ namespace from_result_detial
     };
 }
 
-template<typename Ret>
-sync_task<Ret> from_result(Ret r)
+template<typename T>
+auto from_result(T&& r)
 {
-    co_return r;
+    return from_result_detial::from_result_aw(::std::forward<T>(r));
 }
 
 KOIOS_NAMESPACE_END

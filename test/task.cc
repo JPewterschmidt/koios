@@ -6,6 +6,7 @@
 #include "koios/runtime.h"
 #include "koios/this_task.h"
 #include "koios/task_release_once.h"
+#include "koios/from_result.h"
 
 using namespace koios;
 
@@ -268,4 +269,24 @@ TEST(task_release_once, basic)
     ASSERT_TRUE(ttt.has_value());
     ttt = tt.release();
     ASSERT_FALSE(ttt.has_value());
+}
+
+namespace
+{
+
+auto get_a_awaitable()
+{
+    return from_result(1);
+}
+
+task<bool> from_result_test()
+{
+    co_return 1 == co_await get_a_awaitable();
+}
+
+}
+
+TEST(task, from_result)
+{
+    ASSERT_TRUE(from_result_test().result());   
 }

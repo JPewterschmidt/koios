@@ -91,7 +91,12 @@ namespace iel_detials
     };
 }
 
-/*! \brief Sub event loop of `koios::event_loop` which deal with iouring stuff. */
+/*! \brief Sub event loop of `koios::event_loop` which deal with iouring stuff. 
+ *
+ *  This class is a wrapper.
+ *  Every thread will has there own `iouring_event_loop_perthr` as the iouring related event_loop.
+ *  and any single `iouring_event_loop_perthr` represents a single iouring object.
+ */
 class iouring_event_loop : public toolpex::move_only
 {
 private:
@@ -113,11 +118,28 @@ public:
     void stop() { stop(get_unilk()); }
     void quick_stop();
     void do_occured_nonblk();
+
+    /*! \brief A blockable function after it's return 
+     *         means the top level event_loop could exit safely.
+     *
+     *  Actually do nothing, just for satisfy the requirement of `event_loop`.
+     */
     constexpr void until_done() const noexcept {}
 
+    /*! \brief  Get the maximum time gap 
+     *          between the last `do_occured_nonblk()` and the next.
+     *
+     *  This value will be evaluated fuzzly due to multithreading performance concern.
+     */
     ::std::chrono::milliseconds 
     max_sleep_duration(const per_consumer_attr&) const;   
 
+    /*! \brief  Inform the OS, you want do some IO operations, 
+     *          and register the task handler to the internal container.
+     *
+     *  \param h The handler of task issued a iouring operation(s).
+     *  \parma ops Represents those operations.
+     */
     void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
 
 private:

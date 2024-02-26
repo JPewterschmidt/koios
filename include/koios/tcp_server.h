@@ -28,7 +28,6 @@
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
-#include "koios/get_id_aw.h"
 #include "koios/error_category.h"
 #include <functional>
 #include <memory>

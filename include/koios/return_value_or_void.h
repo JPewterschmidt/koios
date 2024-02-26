@@ -37,9 +37,8 @@ KOIOS_NAMESPACE_BEG
  *
  *  \tparam T the return value type just like the one of a regular function.
  *  \tparam Promise the promise type of inherited class.
- *  \tparam The DriverPolicy of the promise type of inherited class.
  */
-template<typename T, typename Promise, typename DriverPolicy>
+template<typename T, typename Promise>
 class return_value_or_void_base : public toolpex::move_only // See also https://devblogs.microsoft.com/oldnewthing/20210504-00/?p=105176
 {
 public:
@@ -83,7 +82,7 @@ protected:
         m_caller_woke_or_exception_caught = true;
 #endif
         if (!has_caller()) return;
-        DriverPolicy{}.scheduler().enqueue(::std::move(m_caller));
+        get_task_scheduler().enqueue(::std::move(m_caller));
     }
 
     bool has_caller() const noexcept { return !!m_caller; }
@@ -126,11 +125,10 @@ private:
 /*! \brief The major `return_value_or_void` class template.
  *  \tparam T the return type of the task.
  *  \tparam Promise the promise type of the `task`.
- *  \tparam DriverPolicy the driver policy type used when waking up the caller coroutine.
  */
-template<typename T, typename Promise, typename DriverPolicy>
+template<typename T, typename Promise>
 class return_value_or_void 
-    : public return_value_or_void_base<T, Promise, DriverPolicy>
+    : public return_value_or_void_base<T, Promise>
 {
 public: 
     /*! \brief set the return value.
@@ -154,9 +152,9 @@ public:
 };
 
 /*! \brief the specializtion of return_value_or_void, which deal with void return type. */
-template<typename Promise, typename DriverPolicy>
-class return_value_or_void<void, Promise, DriverPolicy> 
-    : public return_value_or_void_base<void, Promise, DriverPolicy>
+template<typename Promise>
+class return_value_or_void<void, Promise> 
+    : public return_value_or_void_base<void, Promise>
 {
 public:
     /*! \brief Just wake the caller. */

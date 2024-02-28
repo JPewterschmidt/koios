@@ -17,9 +17,17 @@
  */
 
 #include "koios/iouring_op_batch_rep.h"
+#include <iterator>
 
 namespace koios::uring
 {
+
+::io_uring_sqe* op_batch_rep::get_sqe()
+{
+    if (!was_timeout_set())
+        return &m_sqes.emplace_back();
+    return &(*m_sqes.emplace(m_sqes.end()));
+}
 
 void op_batch_rep::set_user_data(void* userdata)
 {

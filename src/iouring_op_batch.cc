@@ -384,7 +384,7 @@ bool op_batch::all_success() const noexcept
 bool op_batch::is_timeout() const noexcept
 {
     if (!was_timeout_set()) return false;
-    return all_success() && m_rep
+    return m_rep
         .return_slots()
         .back()
         .error_code()

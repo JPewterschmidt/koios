@@ -153,8 +153,17 @@ public:
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_nop() noexcept;
+
+    /*! \brief  Set the timeout time point of the whole operation batch. 
+     *  
+     *  If there's already a timeout has been set, this function will overwrite it.
+     */
     op_batch& timeout(::std::chrono::system_clock::time_point tp) noexcept;
 
+    /*! \brief  Set the timeout time duration of the whole operation batch. 
+     *  
+     *  If there's already a timeout has been set, this function will overwrite it.
+     */
     template<typename Rep, typename Period>
     op_batch& timeout(::std::chrono::duration<Rep, Period> dura) noexcept
     {

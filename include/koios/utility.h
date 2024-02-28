@@ -24,11 +24,6 @@
 
 KOIOS_NAMESPACE_BEG
 
-inline auto from_result(auto&& r)
-{
-    return identity(::std::forward<decltype(r)>(r));
-}
-
 KOIOS_NAMESPACE_END
 
 #endif

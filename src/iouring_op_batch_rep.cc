@@ -26,7 +26,7 @@ namespace koios::uring
 {
     if (!was_timeout_set())
         return &m_sqes.emplace_back();
-    return &(*m_sqes.emplace(m_sqes.end()));
+    return &(*m_sqes.emplace(prev(m_sqes.end())));
 }
 
 void op_batch_rep::set_user_data(void* userdata)

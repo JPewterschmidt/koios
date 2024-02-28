@@ -276,12 +276,12 @@ namespace
 
 auto get_a_awaitable()
 {
-    return from_result(1);
+    return from_result(2);
 }
 
 task<bool> from_result_test()
 {
-    co_return 1 == co_await get_a_awaitable();
+    co_return 2 == co_await get_a_awaitable();
 }
 
 }

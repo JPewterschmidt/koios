@@ -346,9 +346,11 @@ timeout(::std::chrono::system_clock::time_point tp) noexcept
     if (tp == ::std::chrono::system_clock::time_point::max())
         return *this;
 
-    assert(!m_rep.empty());
+    ::io_uring_sqe* cur_sqe{ 
+        m_rep.was_timeout_set() ? 
+            &m_rep.back() :m_rep.get_sqe()
+    };
 
-    auto* cur_sqe = m_rep.get_sqe();
     struct timeout_data     
     {
         timeout_data(::std::chrono::system_clock::time_point const& tp) noexcept 

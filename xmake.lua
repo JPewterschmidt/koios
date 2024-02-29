@@ -22,9 +22,10 @@ add_includedirs(
 set_languages("c++2b", "c17")
 set_policy("build.warning", true)
 set_policy("build.optimization.lto", false)
+set_toolset("cc", "mold", {force = true}) 
 
 if not is_mode("release") then
-    add_cxxflags("-DKOIOS_DEBUG", {force = true})
+    add_defines("KOIOS_DEBUG", {force = true})
 end
 
 if is_mode("asan") then

@@ -152,6 +152,12 @@ public:
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
+
+    /*! \brief  Adding a nop sqe to the iouring event loop
+     *
+     *  This operation will prepare a nop sqe, could be used as test, 
+     *  or as a sitimulus to reduce the sleeping time of the event loop.
+     */
     op_batch& prep_nop() noexcept;
 
     /*! \brief  Set the timeout time point of the whole operation batch. 

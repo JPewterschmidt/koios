@@ -36,6 +36,19 @@
 namespace koios::uring
 {
 
+/*! \brief The linked iouring operations initialization helper
+ *
+ *  Due to the iouring supports linked cqe to process series of cqes with in a FIFO order. 
+ *  We provide the koios binding of it to support it.
+ *  You can call those member functions to generate corresponding cqes.
+ *  This class object guarantees that the operation order.
+ *  Those preparation information will be stored in a `iouring_op_batch_rep` object, 
+ *  When you call `co_await execute()` the `iouring_op_batch_rep` object 
+ *  will be passed to the iouring event loop related faciality.
+ *
+ *  This class won't remove the `IOSQE_IO_LINK` flag, 
+ *  `iouring_op_batch_execute_aw::await_suspend` will do it.
+ */
 class op_batch
 {
 public:
@@ -43,6 +56,14 @@ public:
     op_batch(op_batch&&) noexcept = default;
     op_batch& operator=(op_batch&&) noexcept = default;
 
+    /*! \brief  This function generates a awaitable object 
+     *          contains the reference of `iouring_op_batch_rep`.
+     *
+     *  `op_batch_execute_aw::await_suspend()` will remove the `IOSQE_IO_LINK` flag of the last op.
+     *  to break the linked operation chain.
+     *
+     *  \return A awaitable object which registers this series of operations.
+     */
     op_batch_execute_aw execute() & noexcept;
 
     op_batch& prep_accept(const toolpex::unique_posix_fd& fd) noexcept;
@@ -131,9 +152,24 @@ public:
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
     op_batch& prep_fsync(const toolpex::unique_posix_fd& fd) noexcept;
     op_batch& prep_fdatasync(const toolpex::unique_posix_fd& fd) noexcept;
+
+    /*! \brief  Adding a nop sqe to the iouring event loop
+     *
+     *  This operation will prepare a nop sqe, could be used as test, 
+     *  or as a sitimulus to reduce the sleeping time of the event loop.
+     */
     op_batch& prep_nop() noexcept;
+
+    /*! \brief  Set the timeout time point of the whole operation batch. 
+     *  
+     *  If there's already a timeout has been set, this function will overwrite it.
+     */
     op_batch& timeout(::std::chrono::system_clock::time_point tp) noexcept;
 
+    /*! \brief  Set the timeout time duration of the whole operation batch. 
+     *  
+     *  If there's already a timeout has been set, this function will overwrite it.
+     */
     template<typename Rep, typename Period>
     op_batch& timeout(::std::chrono::duration<Rep, Period> dura) noexcept
     {
@@ -142,9 +178,23 @@ public:
     }
 
     op_batch& clear() noexcept { m_rep.clear(); return *this; }
+
+    /*! \brief  Check if all the io operations has successfully return. 
+     *
+     *  except for the timeout setting of the batch if there is one.
+     */
     [[nodiscard]] bool all_success() const noexcept;
+
+    /*! \brief  Check wether user has set a timeout. */
     bool was_timeout_set() const noexcept{ return m_rep.was_timeout_set(); };
+
+    /*! \brief  Check wether the batch has been canceled by timeout or not. 
+     *  
+     *  This function will checkout the last return slots.
+     */
     bool is_timeout() const noexcept;
+
+    /*! \return return the `error_code` object of the timeout operation (the last one). */
     ::std::error_code timeout_req_ec() const noexcept;
 
     op_batch_rep& rep() noexcept { return m_rep; }

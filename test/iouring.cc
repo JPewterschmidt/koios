@@ -131,3 +131,15 @@ TEST(iouring, op_batch_basic)
 {
     ASSERT_TRUE(op_batch_test_basic().result());
 }
+
+TEST(iouring, batch_rep)
+{
+    uring::op_batch b;
+    b.prep_nop();
+    b.timeout(1s);
+    b.prep_nop();
+    b.prep_nop();
+    auto& rep = b.rep();
+    // the opcode of timeout is 15.
+    ASSERT_EQ(rep.back().opcode, 15); 
+}

@@ -39,14 +39,9 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    auto something()
-    {
-        return from_result(1);
-    }
-
     eager_task<> newuring_test()
     {
-        int i = co_await something();
+        int i = co_await from_result(1);
         ::std::cout << i << ::std::endl;
         co_return;
     }

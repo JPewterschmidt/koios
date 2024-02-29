@@ -28,20 +28,39 @@
 namespace koios::uring
 {
 
+/*! \brief  The op_batch representation, all the `io_uring_sqe` will be stored here.
+ *  
+ *  After operations return, the iouring event loop 
+ *  will add those return value and flags back here.
+ */
 class op_batch_rep : public toolpex::move_only
 {
 public:
     constexpr op_batch_rep() = default;
 
-    ::io_uring_sqe* get_sqe()
-    {
-        return &m_sqes.emplace_back();
-    }
+    /*! \brief Get the pointer to the next new writable sqe.
+     *  
+     *  This function will push back a default 
+     *  initialized `::io_uring_sqe` object, the return the pointer to it.
+     *  But if there's a timeout sqe, 
+     *  this function will insert a default initialized `::io_uring_sqe` 
+     *  before the timeout request entry (the last one), 
+     *  to make sure the last entry is the timeout entry.
+     *  If you write a timeout entry, you need call 
+     *  the member function `set_timeout(true)` before the next call to `get_sqe()`.
+     *
+     *  \return The pointer to a new default initialized sqe object.
+     */
+    ::io_uring_sqe* get_sqe();
 
     auto begin()    const noexcept { return m_sqes.begin(); }
     auto end()      const noexcept { return m_sqes.end(); }
     auto& back()          noexcept { return m_sqes.back(); }
     
+    /*! \brief Add a new return value and flags.
+     *
+     *  Same order as the sqes, the one of timeout will be stored at the end.
+     */
     void add_ret(int ret, int flags) { m_rets.emplace_back(ret, flags); }
     bool has_enough_ret() const noexcept { return m_rets.size() == m_sqes.size(); }
 

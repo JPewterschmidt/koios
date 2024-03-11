@@ -140,6 +140,14 @@ public:
         return prep_send(fd, ::std::as_bytes(buffer), flags);
     }
 
+    /*! \brief  Prepare a POSIX recv operation of iouring.
+     *
+     *  \param fd A open posix fd represents the recvable resource.
+     *
+     *  \param buffer The buffer you want to place the bytes received. 
+     *
+     *  See more at the POSIX manual pages recv(2).
+     */
     op_batch& prep_recv(const toolpex::unique_posix_fd& fd, 
                         ::std::span<::std::byte> buffer, 
                         int flags = 0) noexcept;
@@ -151,10 +159,26 @@ public:
         return prep_recv(fd, ::std::as_writable_bytes(buffer), flags);
     }
 
+    /*! \brief  Prepare a POSIX recvmsg operation of iouring.
+     *
+     *  \param fd A open posix fd represents the recvable resource.
+     *
+     *  \param  msg A pointer point to the msghdr structure.
+     *
+     *  See more at the POSIX manual pages recvmsg(2).
+     */
     op_batch& prep_recvmsg(const toolpex::unique_posix_fd& fd, 
                            ::msghdr* msg, 
                            int flags = 0) noexcept;
 
+    /*! \brief  Prepare a POSIX read operation of iouring.
+     *
+     *  \param fd A open posix fd represents the readable resource.
+     *
+     *  \param buffer The buffer you want to place the bytes received. 
+     *
+     *  See more at the POSIX manual pages read(2).
+     */
     op_batch& prep_read(const toolpex::unique_posix_fd& fd, 
                         ::std::span<::std::byte> buffer, 
                         uint64_t offset = 0) noexcept;
@@ -239,6 +263,13 @@ public:
                                       const toolpex::unique_posix_fd& newdir, 
                                       const ::std::filesystem::path& newname) noexcept;
 
+    /*! \brief  Prepare a POSIX socket iouring operation.
+     *  \see the manual page of socket(2)
+     *  \param domain The  domain argument specifies a communication domain.
+     *  \param type The  socket  has  the indicated type, which specifies the communication semantics.
+     *  \param protocal The  protocol  specifies  a  particular  protocol  to  be used with the socket.
+     *  \param flags the flags bit mask you want to inform to the underlying iouring facility.
+     */
     op_batch& prep_socket(int domain, int type, int protocal, unsigned int flags = 0) noexcept;
     op_batch& prep_connect(const toolpex::unique_posix_fd& fd, 
                            toolpex::ip_address::ptr addr, 
@@ -293,6 +324,7 @@ public:
     /*! \return return the `error_code` object of the timeout operation (the last one). */
     ::std::error_code timeout_req_ec() const noexcept;
 
+    /*! \return the reference to the representation object of this op_batch. Used by other koios uring components*/
     op_batch_rep& rep() noexcept { return m_rep; }
     const op_batch_rep& rep() const noexcept { return m_rep; }
 

@@ -4,7 +4,6 @@ add_rules(
 )
 
 add_requires(
-    "fmt", 
     "gflags", 
     "gtest", 
     "concurrentqueue master",
@@ -41,7 +40,6 @@ target("koios")
     set_kind("shared")
     add_deps("toolpex")
     add_packages(
-        "fmt", 
         "gflags", 
         "concurrentqueue", 
         "spdlog"
@@ -61,7 +59,7 @@ target("test")
     add_files( "test/*.cc")
     set_warnings("all", "error")
     add_packages(
-        "gtest", "fmt", "spdlog"
+        "gtest", "spdlog"
     )
     after_build(function (target)
         os.exec(target:targetfile())
@@ -80,7 +78,7 @@ target("example")
     add_syslinks("spdlog")
     set_policy("build.warning", true)
     add_packages(
-        "fmt", "gflags", 
+        "gflags", 
         "concurrentqueue"
     )
     

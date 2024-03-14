@@ -25,8 +25,7 @@
 #include <cstring>
 #include <string>
 #include <system_error>
-
-#include "fmt/core.h"
+#include <format>
 
 #include "koios/macros.h"
 #include "koios/error_category.h"
@@ -102,7 +101,7 @@ class runtime_not_working_exception : public thread_pool_stopped_exception
 public:
     runtime_not_working_exception(::std::source_location sl = ::std::source_location::current()) noexcept
         : thread_pool_stopped_exception{ 
-            fmt::format("runtime_not_working_exception: {}:{}:{}", 
+            std::format("runtime_not_working_exception: {}:{}:{}", 
                         sl.file_name(), sl.line(), sl.function_name()) 
           }
     {

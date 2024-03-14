@@ -4,7 +4,6 @@ add_rules(
 )
 
 add_requires(
-    "fmt", 
     "gflags", 
     "gtest", 
     "concurrentqueue master",
@@ -41,7 +40,6 @@ target("koios")
     set_kind("shared")
     add_deps("toolpex")
     add_packages(
-        "fmt", 
         "gflags", 
         "concurrentqueue", 
         "spdlog"
@@ -52,34 +50,3 @@ target("koios")
         "uring"
     )
     add_files( "src/*.cc")
-
---target("test")
---    set_kind("binary")
---    add_packages("concurrentqueue")
---    add_cxflags("-Wconversion", { force = true })
---    add_deps("koios", "toolpex")
---    add_files( "test/*.cc")
---    set_warnings("all", "error")
---    add_packages(
---        "gtest", "fmt", "spdlog"
---    )
---    after_build(function (target)
---        os.exec(target:targetfile())
---        print("xmake: unittest complete.")
---    end)
---    on_run(function (target)
---        --nothing
---    end)
---    
---target("example")
---    set_kind("binary")
---    add_packages("")
---    add_cxflags("-Wconversion", { force = true })
---    add_deps("koios", "toolpex")
---    add_files( "example/*.cc")
---    add_syslinks("spdlog")
---    set_policy("build.warning", true)
---    add_packages(
---        "fmt", "gflags", 
---        "concurrentqueue"
---    )

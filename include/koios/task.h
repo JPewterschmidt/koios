@@ -26,8 +26,6 @@
 #include <concepts>
 #include <iostream>
 
-#include "fmt/format.h"
-
 #include "koios/macros.h"
 #include "koios/promise_base.h"
 #include "koios/promise_wrapper.h"

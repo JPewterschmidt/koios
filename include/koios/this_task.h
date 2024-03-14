@@ -22,6 +22,7 @@
 #include "koios/macros.h"
 #include "koios/runtime.h"
 #include "koios/get_id_aw.h"
+#include "koios/task.h"
 #include <chrono>
 
 #include "toolpex/concepts_and_traits.h"
@@ -97,6 +98,8 @@ namespace this_task
         };
         return yield_aw{};
     }
+
+    task<> turn_into_scheduler();
 }
 
 KOIOS_NAMESPACE_END

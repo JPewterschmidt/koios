@@ -60,7 +60,33 @@ public:
     {
         if (!caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning() && !::std::current_exception()) [[unlikely]]
         {
-            ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
+            auto possible_ex = ::std::current_exception();
+            if (possible_ex)
+            {
+                ::std::cerr << "There's an unhandled exception thrown, "
+                            << "and cause this debugging mode checking. "
+                            << "If the code be compiled with release mode, "
+                            << "it will be caught by somewhere other."
+                            << "Here is the exception:" 
+                            << ::std::endl;
+                try
+                {
+                    ::std::rethrow_exception(possible_ex);
+                }
+                catch (const ::std::bad_exception& bad_ex)
+                {
+                    ::std::cerr << "koios: Something wrong, we can not get the exception!\n" << bad_ex.what() << ::std::endl;
+                }
+                catch (const exception& ex)
+                {
+                    ::std::cerr << ex.what() << ::std::endl;
+                }
+                catch (...)
+                {
+                    ::std::cerr << "koios: Not a regular exception derived from ::std::exception" << ::std::endl;
+                }
+            }
+            else ::std::cerr << "You have to call `co_return`!!!!" << ::std::endl;
             ::std::terminate();
         }
     }

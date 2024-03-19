@@ -19,6 +19,7 @@
 #include "koios/coroutine_mutex.h"
 #include "koios/runtime.h"
 #include "koios/exceptions.h"
+#include <mutex>
 
 KOIOS_NAMESPACE_BEG
 

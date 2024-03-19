@@ -26,6 +26,7 @@
 #include "koios/task.h"
 #include "koios/unique_lock.h"
 #include "koios/acq_lk_aw.h"
+#include "koios/waiting_handle.h"
 #include "toolpex/move_only.h"
 #include "toolpex/spin_lock.h"
 
@@ -33,12 +34,6 @@
 #include "concurrentqueue/concurrentqueue.h"
 
 KOIOS_NAMESPACE_BEG
-
-struct waiting_handle
-{
-    per_consumer_attr attr;
-    task_on_the_fly task;
-};
 
 /*! \brief The coroutine mutex object 
  *

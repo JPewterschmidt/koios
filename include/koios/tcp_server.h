@@ -124,7 +124,7 @@ private:
 
     mutable ::std::shared_mutex m_stop_related_lock;
     mutable koios::mutex        m_waiting_queue;
-    koios::unique_lock          m_waiting_latch;
+    koios::unique_lock<koios::mutex> m_waiting_latch;
 };
 
 namespace tcp_server_literals

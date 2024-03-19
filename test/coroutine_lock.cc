@@ -32,7 +32,7 @@ TEST(coro_lock, basic)
 
 static size_t g_val2{};
 
-static koios::task<koios::unique_lock> func2()
+static koios::task<koios::unique_lock<koios::mutex>> func2()
 {
     static koios::mutex lk;
     auto guard = co_await lk.acquire();

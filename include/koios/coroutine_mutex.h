@@ -83,7 +83,7 @@ private:
     
     void try_wake_up_next_impl() noexcept;
 
-public:
+private:
     bool being_held() const noexcept { return m_holded; }
 
 private:

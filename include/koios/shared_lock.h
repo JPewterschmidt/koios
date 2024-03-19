@@ -27,19 +27,19 @@ namespace koios
 {
 
 template<typename Mutex>
-class shared_lock : public lock_base
+class shared_lock : public lock_base<Mutex>
 {
 public:
     task<> lock()
     {
-        if (!m_mutex) [[unlikely]]
+        if (!this->m_mutex) [[unlikely]]
             throw koios::exception{ "there's no corresponding shared mutex instance!" };
 
-        auto lk = co_await m_mutex->acquire_shared();
+        auto lk = co_await this->m_mutex->acquire_shared();
 
-        assert(!is_hold());
-        m_hold = ::std::exchange(lk.m_hold, false);
-        assert(is_hold());
+        assert(!this->is_hold());
+        this->m_hold = ::std::exchange(lk.m_hold, false);
+        assert(this->is_hold());
 
         co_return;
     }

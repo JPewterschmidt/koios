@@ -1,5 +1,5 @@
 /* Koios, A c++ async runtime library.
- * Copyright (C) 2023  Jeremy Pewterschmidt
+ * Copyright (C) 2024  Jeremy Pewterschmidt
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

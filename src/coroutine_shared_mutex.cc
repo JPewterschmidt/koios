@@ -46,10 +46,14 @@ void shared_mutex::release()
 	switch (m_state)
     {
     case SHR: if (m_shr_cnt.fetch_sub() == 1)
+              {
+                  m_state = NO;
                   try_wake_up_next_uni_impl();
+              }
               break;
 
-    case UNI: try_wake_up_shr_impl();
+    case UNI: m_state = NO;
+              try_wake_up_shr_impl();
               if (!being_held_sharedly()) 
                   try_wake_up_next_uni_impl();
               break;

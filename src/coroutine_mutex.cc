@@ -36,22 +36,15 @@ add_waiting(task_on_the_fly h)
     m_waitings.enqueue({ .task = ::std::move(h) });
 }
 
-static void wake_up(waiting_handle& h)
-{
-    auto t = ::std::move(h.task);
-    [[assume(bool(t))]];
-    get_task_scheduler().enqueue(h.attr, ::std::move(t));
-}
-
 void mutex::
 try_wake_up_next_impl() noexcept
 {
     if (being_held()) return;
-    m_holded = true;
 
     waiting_handle handle{};
     if (m_waitings.try_dequeue(handle))
     {
+        m_holded = true;
         wake_up(handle);
     }
     else m_holded = false;

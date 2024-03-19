@@ -64,11 +64,18 @@ void shared_mutex::release()
 
 bool shared_mutex::being_held() const noexcept
 {
+    assert(health_check());
     return m_state == UNI;
+}
+
+bool shared_mutex::health_check() const noexcept
+{
+    return !(m_state == UNI && m_shr_cnt.load() != 0);
 }
 
 bool shared_mutex::being_held_sharedly() const noexcept
 {
+    assert(health_check());
     return m_state == SHR;
 }
 

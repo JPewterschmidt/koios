@@ -65,6 +65,9 @@ private:
     bool being_held_sharedly() const noexcept;
     void try_wake_up_next_uni_impl() noexcept;
     void try_wake_up_shr_impl() noexcept;
+    
+private:
+    bool health_check() const noexcept;
 
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_shr_waitings;

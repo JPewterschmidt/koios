@@ -32,8 +32,6 @@
 #undef BLOCK_SIZE
 #include "concurrentqueue/concurrentqueue.h"
 
-#include <mutex>
-
 KOIOS_NAMESPACE_BEG
 
 struct waiting_handle

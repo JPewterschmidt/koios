@@ -1,4 +1,5 @@
 #include "koios/coroutine_mutex.h"
+#include "koios/coroutine_shared_mutex.h"
 #include "gtest/gtest.h"
 #include "koios/task.h"
 
@@ -56,4 +57,39 @@ TEST(coro_lock, move_func)
     for (auto& f : fvec)
         f.get();
     ASSERT_EQ(g_val2, 2 * g_test_count);
+}
+
+namespace
+{
+
+::std::atomic_int val;
+koios::shared_mutex mut;
+
+koios::task<bool> reader()
+{
+    auto lk = co_await mut.acquire_shared();
+    const int old_val = val;
+    for (size_t i{}; i < 1000; ++i)
+    {
+        if (val.load(::std::memory_order_relaxed) != old_val) 
+            co_return false;
+    }
+    co_return true;
+}
+
+koios::task<> writer()
+{
+    auto lk = co_await mut.acquire();
+    val.fetch_add(1, ::std::memory_order_relaxed);
+}
+
+} // namespace annoymous
+
+TEST(coro_lock, shared)
+{
+    for (size_t i{}; i < 1000; ++i)
+    {
+        writer().run();
+        ASSERT_TRUE(reader().result());
+    }
 }

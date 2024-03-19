@@ -52,7 +52,7 @@ public:
     bool is_hold() const noexcept { return m_hold; }
 
 protected:
-    Mutex* m_mutex;
+    Mutex* m_mutex{};
     bool m_hold{ true };
 };
 

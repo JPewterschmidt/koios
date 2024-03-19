@@ -58,7 +58,7 @@ public:
 
 private:
     template<typename T>
-    friend class unique_lock;
+    friend class lock_base;
 
     template<typename T>
     friend class acq_lk_aw;

@@ -46,7 +46,7 @@ namespace iel_detials
         if (batch_rep->has_enough_ret())
         {
             auto t = ::std::move(task);
-            m_opreps.erase(it);
+            m_opreps.erase(key);
             schr.enqueue(::std::move(t));
         }
     }

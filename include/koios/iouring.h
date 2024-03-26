@@ -28,13 +28,13 @@
 #include <system_error>
 #include <memory>
 #include <chrono>
-#include <unordered_map>
 #include <utility>
 
 #include "koios/macros.h"
 #include "toolpex/move_only.h"
 #include "toolpex/posix_err_thrower.h"
 #include "toolpex/spin_lock.h"
+#include "toolpex/skip_list.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/task_release_once.h"
 #include "koios/per_consumer_attr.h"
@@ -82,10 +82,10 @@ namespace iel_detials
 
     private:
         ::io_uring m_ring;
-        ::std::unordered_map<
+        toolpex::skip_list<
             uint64_t, 
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
-        > m_opreps;
+        > m_opreps{24};
         mutable toolpex::spin_lock m_lk;
         ::std::size_t m_num_mis_shot{1};
     };

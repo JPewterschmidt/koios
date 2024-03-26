@@ -149,7 +149,7 @@ prep_connect(const toolpex::unique_posix_fd& fd,
 
 op_batch& op_batch::
 prep_cancel_any(const toolpex::unique_posix_fd& fd, 
-                uint64_t userdata) noexcept
+                uintptr_t userdata) noexcept
 {
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_cancel64(cur_sqe, userdata, IORING_ASYNC_CANCEL_ANY); 
@@ -180,7 +180,7 @@ prep_cancel_any(const toolpex::unique_posix_fd& fd) noexcept
 }
 
 op_batch& op_batch::
-prep_cancel_all(uint64_t userdata) noexcept
+prep_cancel_all(uintptr_t userdata) noexcept
 {
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_cancel64(cur_sqe, userdata, IORING_ASYNC_CANCEL_ALL); 
@@ -198,7 +198,7 @@ prep_cancel_all(void* userdata) noexcept
 }
 
 op_batch& op_batch::
-prep_cancel_first(uint64_t userdata) noexcept
+prep_cancel_first(uintptr_t userdata) noexcept
 {
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_cancel64(cur_sqe, userdata, 0); 

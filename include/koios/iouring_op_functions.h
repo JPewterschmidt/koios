@@ -200,15 +200,15 @@ accept(const toolpex::unique_posix_fd& fd,
     return accept(fd, tmot + ::std::chrono::system_clock::now());
 }
 
-cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, uint64_t userdata = 0);
+cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, uintptr_t userdata = 0);
 
 inline cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, void* userdata = nullptr)
 {
-    return cancel_any(fd, reinterpret_cast<uint64_t>(userdata));
+    return cancel_any(fd, reinterpret_cast<uintptr_t>(userdata));
 }
 
-cancel_aw cancel_first(uint64_t userdata);
-cancel_aw cancel_all(uint64_t userdata);
+cancel_aw cancel_first(uintptr_t userdata);
+cancel_aw cancel_all(uintptr_t userdata);
 
 nop_aw nop();
 

@@ -38,7 +38,7 @@ namespace iel_detials
         assert(cqep);
         auto& schr = get_task_scheduler();
 
-        const uint64_t key = cqep->user_data;
+        const uintptr_t key = cqep->user_data;
         auto it = m_opreps.find(key);
         assert(it != m_opreps.end());
         auto& [batch_rep, task] = it->second;
@@ -82,7 +82,7 @@ namespace iel_detials
     iouring_event_loop_perthr::
     add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     {
-        const uint64_t addrkey = reinterpret_cast<uint64_t>(h.address());
+        const uintptr_t addrkey = reinterpret_cast<uint64_t>(h.address());
         auto lk = get_lk();
         assert(!m_opreps.contains(addrkey));
         m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});

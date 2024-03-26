@@ -83,7 +83,7 @@ namespace iel_detials
     private:
         ::io_uring m_ring;
         ::std::unordered_map<
-            uint64_t, 
+            uintptr_t, 
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
         > m_opreps{};
         mutable toolpex::spin_lock m_lk;

@@ -190,12 +190,12 @@ public:
         return prep_read(fd, ::std::as_writable_bytes(buffer), offset);
     }
 
-    op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd, uint64_t userdata) noexcept;
+    op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd, uintptr_t userdata) noexcept;
     op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd, void* userdata) noexcept;
     op_batch& prep_cancel_any(const toolpex::unique_posix_fd& fd) noexcept;
-    op_batch& prep_cancel_all(uint64_t userdata) noexcept;
+    op_batch& prep_cancel_all(uintptr_t userdata) noexcept;
     op_batch& prep_cancel_all(void* userdata) noexcept;
-    op_batch& prep_cancel_first(uint64_t userdata) noexcept;
+    op_batch& prep_cancel_first(uintptr_t userdata) noexcept;
     op_batch& prep_cancel_first(void* userdata) noexcept;
 
     /*! \brief  Prepare a unlink iouring operation

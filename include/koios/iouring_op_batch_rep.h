@@ -71,7 +71,7 @@ public:
     const auto& return_slots() const noexcept { return m_rets; }
 
     void set_user_data(void* userdata);
-    void set_user_data(uint64_t userdata);
+    void set_user_data(uintptr_t userdata);
     void set_timeout(bool val = true) noexcept { m_was_timeout_set = val; }
     bool was_timeout_set() const noexcept { return m_was_timeout_set; }
 

@@ -292,7 +292,7 @@ accept(const toolpex::unique_posix_fd& fd,
     return result;
 }
 
-cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, uint64_t userdata)
+cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, uintptr_t userdata)
 {
     cancel_aw result{};
     if (userdata) result.batch().prep_cancel_any(fd, userdata);
@@ -300,14 +300,14 @@ cancel_aw cancel_any(const toolpex::unique_posix_fd& fd, uint64_t userdata)
     return result;
 }
 
-cancel_aw cancel_first(uint64_t userdata)
+cancel_aw cancel_first(uintptr_t userdata)
 {
     cancel_aw result{};
     result.batch().prep_cancel_first(userdata);
     return result;
 }
 
-cancel_aw cancel_all(uint64_t userdata)
+cancel_aw cancel_all(uintptr_t userdata)
 {
     cancel_aw result{};
     result.batch().prep_cancel_first(userdata);

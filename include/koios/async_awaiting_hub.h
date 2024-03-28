@@ -66,6 +66,23 @@ public:
         [[assume(bool(f))]];
         get_task_scheduler().enqueue(::std::move(f));       
     }
+
+    /*! \brief Wake up all the tasks in the waiting queue.
+     *
+     *  user should implement a guard which utilizes the RAII feature of C++
+     *  to call this function in the destructor of that RAII guard, 
+     *  to wake up the next waiting task. 
+     */
+    void may_wake_all() noexcept
+    {
+        task_on_the_fly f{};
+        auto& schr = get_task_scheduler();
+        while (m_awaitings.try_dequeue(f))
+        {
+            [[assume(bool(f))]];
+            schr.enqueue(::std::move(f));       
+        }
+    }
     
 private:
     moodycamel::ConcurrentQueue<task_on_the_fly> m_awaitings;

@@ -40,7 +40,7 @@ public:
         bool expected{ true };
         if (m_valid.compare_exchange_strong(expected, false))
         {
-            return ::std::move(m_task);
+            return ::std::optional<task_on_the_fly>(::std::move(m_task));
         }
         return {};
     }

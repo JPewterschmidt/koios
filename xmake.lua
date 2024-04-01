@@ -1,6 +1,6 @@
 add_rules(
     "mode.tsan", "mode.ubsan", "mode.asan", 
-    "mode.debug", "mode.release"
+    "mode.debug", "mode.release", "mode.valgrind"
 )
 
 add_requires(

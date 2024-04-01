@@ -15,6 +15,7 @@ includes("toolpex")
 add_includedirs(
     "include", 
     "toolpex/include", 
+    "atomic_queue/include",
     { public = true }
 )
 

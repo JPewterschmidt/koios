@@ -80,7 +80,8 @@ target("example")
     set_policy("build.warning", true)
     add_packages(
         "gflags", 
-        "concurrentqueue"
+        "concurrentqueue", 
+        "benchmark"
     )
     
 

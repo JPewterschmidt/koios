@@ -23,6 +23,8 @@
 #include "koios/tcp_server.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/coroutine_mutex.h"
+#include "koios/moodycamel_queue_wrapper.h"
+#include "koios/invocable_atomic_queue_wrapper.h"
 #include <string_view>
 
 #include "koios/unique_file_state.h"
@@ -32,31 +34,41 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "benchmark/benchmark.h"
+
 using namespace koios;
 using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
 using namespace toolpex::ip_address_literals;
 
-namespace
+static constexpr size_t scale{ 1000000 };
+
+static void BM_thread_pool_original(benchmark::State& state)
 {
-    eager_task<> newuring_test()
+    thread_pool tp{ 2, work_stealing_queue<moodycamel_queue_wrapper>{} };
+    tp.start();
+    for (auto _ : state)
     {
-        int i = co_await from_result(1);
-        ::std::cout << i << ::std::endl;
-        co_return;
+        ::std::atomic_size_t flagv{};
+        for (size_t i{}; i < scale; ++i)
+            tp.enqueue_no_future([&] mutable { flagv.fetch_add(1, ::std::memory_order_relaxed); });
+        while (flagv.load(::std::memory_order_relaxed) != scale);
     }
 }
+BENCHMARK(BM_thread_pool_original);
 
-int main()
-try
+static void BM_thread_pool_new(benchmark::State& state)
 {
-    koios::runtime_init(4);
-    newuring_test().result();
-    koios::runtime_exit();
-    return 0;
+    thread_pool tp{ 2, work_stealing_queue<invocable_atomic_queue_wrapper>{65536} };
+    tp.start();
+    for (auto _ : state)
+    {
+        ::std::atomic_size_t flagv{};
+        for (size_t i{}; i < scale; ++i)
+            tp.enqueue_no_future([&] mutable { flagv.fetch_add(1, ::std::memory_order_relaxed); });
+        while (flagv.load(::std::memory_order_relaxed) != scale);
+    }
 }
-catch (const ::std::exception& e)
-{
-    ::std::cout << e.what() << ::std::endl;
-    koios::runtime_exit();
-}
+BENCHMARK(BM_thread_pool_new);
+
+BENCHMARK_MAIN();

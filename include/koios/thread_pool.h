@@ -29,7 +29,9 @@
 #include <functional>
 #include <condition_variable>
 #include <latch>
+#include <chrono>
 
+#include "koios/env.h"
 #include "koios/macros.h"
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
@@ -56,10 +58,11 @@ public:
      *
      *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
      */
-    thread_pool(size_t numthr, invocable_queue_wrapper q)
+    thread_pool(size_t numthr, invocable_queue_wrapper q, size_t queue_capa_hint = 65536)
         : m_tasks{ ::std::move(q) }, 
           m_manully_stop{ false }, 
           m_num_thrs{ numthr },
+          m_queue_capa_hint{ queue_capa_hint },
           m_start_working{ static_cast<long int>(numthr) }
     {
     }
@@ -71,8 +74,8 @@ public:
      *  If you want to stop the `thread_pool`, you need call the `stop()` or `quick_stop()` manually.
      *  Or the destructor will blocked.
      */
-    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type)
-        : thread_pool(numthr, ::std::move(q))
+    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type, size_t queue_capa_hint = 65536)
+        : thread_pool(numthr, ::std::move(q), queue_capa_hint)
     { 
         m_manully_stop = true;
     }
@@ -80,9 +83,23 @@ public:
     /*! Make all the consumer working.
      *  You HAVE TO call this function after initialization.
      */
-    void start();
+    void start()
+    {
+        const auto main_thread_id = ::std::this_thread::get_id();
+        for (size_t i = 0; i < m_num_thrs; ++i)
+        {
+            m_thrs.emplace_back([this, main_thread_id]() noexcept { 
+                this->consumer(m_stop_source.get_token(), main_thread_id); 
+            });
+        }
+        m_start_working.wait();
+    }
 
-    virtual ~thread_pool() noexcept;
+    virtual ~thread_pool() noexcept
+    {
+        if (m_manully_stop) return;
+        quick_stop();
+    }
           
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
      *  \param func The functor.
@@ -158,7 +175,20 @@ public:
      *  and will continue to get functors from the queue. 
      *  Exit the thread until no functors are available.
      */
-    void stop() noexcept;
+    void stop() noexcept
+    {
+        ::std::call_once(m_stop_once_flag, [this]{
+            m_stop_source.request_stop();
+            m_cond.notify_all();
+
+            for (auto& thr : m_thrs)
+            {
+                m_cond.notify_all();
+                if (thr.joinable()) thr.join();
+            }
+        });
+    }
+
 
     /*! \brief Wake up all sleeping threads and return immediately.
      * 
@@ -167,7 +197,11 @@ public:
      *  Ownership of the remaining functors goes to the queue object. 
      *  Queue objects are responsible for destroying them.
      */
-    void quick_stop() noexcept;
+    void quick_stop() noexcept
+    {
+        m_stop_now.store(true, ::std::memory_order::release);
+        stop();
+    }
 
     /*! \return the number of remain tasks.
      */
@@ -260,11 +294,65 @@ protected:
         return ::std::chrono::nanoseconds::max(); 
     }
 
-    bool need_stop_now() const noexcept;
+    bool need_stop_now() const noexcept
+    {
+        return m_stop_now.load(::std::memory_order_acquire);
+    }
 
 private:
-    void consumer(::std::stop_token token, const ::std::thread::id main_thread_id) noexcept;
-    [[nodiscard]] bool done(::std::stop_token& tk) const noexcept;
+    void consumer(::std::stop_token         token, 
+                  const ::std::thread::id   main_thread_id) noexcept
+    {
+        const per_consumer_attr cattr{ 
+            .thread_id = ::std::this_thread::get_id(),
+            .main_thread_id = main_thread_id,
+            .number_of_threads = number_of_threads(),
+        };
+        thread_specific_preparation(cattr);
+        if (::std::this_thread::get_id() != main_thread_id)
+            m_start_working.count_down();
+        while (!done(token))
+        {
+            before_each_task();
+            if (auto task_opt = m_tasks.dequeue(cattr); !task_opt)
+            {
+                if (done(token)) break;
+                ::std::unique_lock lk{ m_lock };
+                const auto max_waiting_time = max_sleep_duration(cattr);
+                constexpr auto waiting_latch = is_profiling_mode() ? ::std::chrono::milliseconds{1} : ::std::chrono::milliseconds{100};
+                const auto actual_waiting_time = 
+                    waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
+
+                m_cond.wait_for(lk, actual_waiting_time);
+            }
+            else try 
+            { 
+                task_opt.value()(); 
+            } 
+            catch (const koios::exception& e)
+            {
+                e.log();
+            }
+            catch (const ::std::exception& e)
+            {
+                koios::log_error(e.what());
+            }
+            catch (...)
+            { 
+                koios::log_error("user code has throw something not inherited from `std::exception`");
+            }
+        }
+    }
+
+    [[nodiscard]] bool done(::std::stop_token& tk) const noexcept
+    {
+        if (!tk.stop_requested())
+            return false;
+
+        if (need_stop_now()) return true;
+        return m_tasks.empty();
+    }
+
 
 private:
     ::std::atomic_bool              m_stop_now{ false };
@@ -276,6 +364,7 @@ private:
     ::std::once_flag                m_stop_once_flag;
     ::std::vector<::std::jthread>   m_thrs;
     size_t                          m_num_thrs{};
+    size_t                          m_queue_capa_hint{};
     ::std::latch                    m_start_working;
     ::std::vector<const per_consumer_attr*> m_consumer_attrs{};
 };

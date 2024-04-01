@@ -33,9 +33,7 @@ public:
 
     void enqueue(invocable_type v)
     {
-        // It won't actually move `v` if there's not enough space.
-        while (!m_q.try_push(::std::move(v)))
-            ;
+        m_q.push(::std::move(v));
     }
 
     bool empty() const noexcept

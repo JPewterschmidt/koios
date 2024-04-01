@@ -50,11 +50,7 @@ template<event_loop_concept... Loops>
 class event_loop : public task_scheduler, private Loops...                
 {
 public:
-    template<typename... Args>
-    event_loop(Args&&... args)
-        : task_scheduler(::std::forward<Args>(args)...)
-    {
-    }
+    using task_scheduler::task_scheduler;
 
     /*! \brief Call the function with same name of each event loop.
      *

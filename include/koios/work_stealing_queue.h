@@ -51,7 +51,8 @@ public:
 
     work_stealing_queue(work_stealing_queue&& q) noexcept
         : m_queues{ ::std::move(q.m_queues) },
-          m_consumers{ ::std::move(q.m_consumers) }
+          m_consumers{ ::std::move(q.m_consumers) }, 
+          m_desire_capa{ q.m_desire_capa }
     {
     }
 
@@ -60,7 +61,7 @@ public:
     {
         ::std::shared_lock lk{ m_queues_lk };
         ::std::optional<invocable_type> result{ 
-            m_queues[attr.thread_id].dequeue()
+            m_queues.at(attr.thread_id).dequeue()
         };
 
         if (!result)
@@ -87,7 +88,7 @@ public:
         {
             tid = m_queues.begin()->first;
         }
-        m_queues[tid].enqueue(::std::move(i));
+        m_queues.at(tid).enqueue(::std::move(i));
     }
 
     size_t size() const noexcept
@@ -118,11 +119,11 @@ private:
         // See `invocable_atomic_queue_wrapper`
         if constexpr (::std::constructible_from<queue_type, size_t>)
         {
-            m_queues[tid] = queue_type{m_desire_capa};
+            m_queues.insert({tid, queue_type{m_desire_capa}});
         }
         else
         {
-            m_queues[tid] = queue_type{};
+            m_queues.insert({tid, queue_type{}});
         }
     }
 

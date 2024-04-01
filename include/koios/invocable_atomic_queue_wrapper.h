@@ -4,6 +4,7 @@
 #include "atomic_queue/atomic_queue.h"
 #include <cassert>
 #include <optional>
+#include <limits>
 
 namespace koios
 {
@@ -15,9 +16,10 @@ public:
 
 public:
     invocable_atomic_queue_wrapper(size_t capacity)
-        : m_q{ capacity }
+        : m_q{ static_cast<unsigned int>(capacity) }
     {
-        assert(capacity);
+        assert(capacity < ::std::numeric_limits<unsigned int>::max());
+        assert(capacity > 0);
     }
 
     ::std::optional<invocable_type> 
@@ -47,7 +49,7 @@ public:
     }
 
 private:
-    atomic_queue::AtomicQueueB<invocable_type> m_q;   
+    atomic_queue::AtomicQueueB2<invocable_type> m_q;   
 };
 
 } // namespace koios

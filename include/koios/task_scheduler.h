@@ -29,27 +29,33 @@
 #include "koios/std_queue_wrapper.h"
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/work_stealing_queue.h"
+#include "koios/invocable_atomic_queue_wrapper.h"
 
 KOIOS_NAMESPACE_BEG
 
+namespace task_scheduler_detials
+{
+    using queue_type = work_stealing_queue<invocable_atomic_queue_wrapper>;
+} // namespace task_scheduler_detials
+
 /*! \brief the async task scheduler class. */
-class task_scheduler : public thread_pool<work_stealing_queue<moodycamel_queue_wrapper>>
+class task_scheduler : public thread_pool<task_scheduler_detials::queue_type>
 {
 public:
-    using queue_type = work_stealing_queue<moodycamel_queue_wrapper>;
+    using queue_type = task_scheduler_detials::queue_type;
 
 public:
     /*! \param thr_cnt the number of thread you want.
      *  \param manually_stop_type a tag which indecate 
      *                            your willing of how the destructor behave. Just like `thread_pool`.
      */
-    explicit task_scheduler(size_t thr_cnt, manually_stop_type)
-        : thread_pool{ thr_cnt, queue_type{}, manually_stop }
+    explicit task_scheduler(size_t thr_cnt, manually_stop_type, size_t queue_capa_hint = 65536)
+        : thread_pool{ thr_cnt, queue_type{queue_capa_hint}, manually_stop, queue_capa_hint }
     {
     }
 
-    explicit task_scheduler(size_t thr_cnt)
-        : thread_pool{ thr_cnt, queue_type{} }
+    explicit task_scheduler(size_t thr_cnt, size_t queue_capa_hint = 65536)
+        : thread_pool{ thr_cnt, queue_type{queue_capa_hint}, queue_capa_hint }
     {
     }
 

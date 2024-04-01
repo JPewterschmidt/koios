@@ -8,9 +8,20 @@ using namespace koios;
 constinit size_t test_size{ 10000 };
 constinit size_t pool_size{ 10 };
 
+namespace
+{
+
+class moodycamel_queue_wrapper_wrapper : public moodycamel_queue_wrapper
+{
+public:
+    constexpr void thread_specific_preparation([[maybe_unused]] const per_consumer_attr&) const noexcept {}
+};
+
+} // annoymous namespace
+
 TEST(thread_pool, basic)
 {
-    thread_pool tp{ pool_size, moodycamel_queue_wrapper{} };
+    thread_pool tp{ pool_size, moodycamel_queue_wrapper_wrapper{} };
     tp.start();
     ::std::atomic_size_t count{ test_size };
 

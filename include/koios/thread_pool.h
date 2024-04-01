@@ -33,7 +33,6 @@
 
 #include "koios/env.h"
 #include "koios/macros.h"
-#include "koios/invocable_queue_wrapper.h"
 #include "koios/exceptions.h"
 #include "koios/per_consumer_attr.h" 
 #include "koios/queue_concepts.h"
@@ -50,6 +49,7 @@ extern manually_stop_type manually_stop;
  *
  *  \attention Remeber to call `start()` after initialization !
  */
+template<typename InvocableQueue>
 class thread_pool : public toolpex::move_only
 {
 public:
@@ -58,7 +58,7 @@ public:
      *
      *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
      */
-    thread_pool(size_t numthr, invocable_queue_wrapper q, size_t queue_capa_hint = 65536)
+    thread_pool(size_t numthr, InvocableQueue q, size_t queue_capa_hint = 65536)
         : m_tasks{ ::std::move(q) }, 
           m_manully_stop{ false }, 
           m_num_thrs{ numthr },
@@ -74,7 +74,7 @@ public:
      *  If you want to stop the `thread_pool`, you need call the `stop()` or `quick_stop()` manually.
      *  Or the destructor will blocked.
      */
-    thread_pool(size_t numthr, invocable_queue_wrapper q, manually_stop_type, size_t queue_capa_hint = 65536)
+    thread_pool(size_t numthr, InvocableQueue q, manually_stop_type, size_t queue_capa_hint = 65536)
         : thread_pool(numthr, ::std::move(q), queue_capa_hint)
     { 
         m_manully_stop = true;
@@ -357,7 +357,7 @@ private:
 private:
     ::std::atomic_bool              m_stop_now{ false };
     ::std::stop_source              m_stop_source;
-    invocable_queue_wrapper         m_tasks;
+    InvocableQueue                  m_tasks;
     bool                            m_manully_stop{ true };
     mutable ::std::mutex            m_lock;
     ::std::condition_variable       m_cond;

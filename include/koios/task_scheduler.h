@@ -33,7 +33,7 @@
 KOIOS_NAMESPACE_BEG
 
 /*! \brief the async task scheduler class. */
-class task_scheduler : public thread_pool
+class task_scheduler : public thread_pool<work_stealing_queue<moodycamel_queue_wrapper>>
 {
 public:
     using queue_type = work_stealing_queue<moodycamel_queue_wrapper>;

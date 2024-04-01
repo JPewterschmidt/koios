@@ -25,6 +25,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <ranges>
+#include <cassert>
 
 #include "koios/macros.h"
 #include "koios/queue_concepts.h"
@@ -42,6 +43,12 @@ public:
 
 public:
     work_stealing_queue() = default;
+    work_stealing_queue(size_t desire_capa) noexcept
+        : m_desire_capa{ desire_capa }
+    {
+        assert(desire_capa);
+    }
+
     work_stealing_queue(work_stealing_queue&& q) noexcept
         : m_queues{ ::std::move(q.m_queues) },
           m_consumers{ ::std::move(q.m_consumers) }
@@ -106,7 +113,17 @@ private:
     {
         ::std::unique_lock lk{ m_queues_lk };
         m_consumers.insert(tid);
-        m_queues[tid] = queue_type{};
+        
+        // To support fixed size queue.
+        // See `invocable_atomic_queue_wrapper`
+        if constexpr (::std::constructible_from<queue_type, size_t>)
+        {
+            m_queues[tid] = queue_type{m_desire_capa};
+        }
+        else
+        {
+            m_queues[tid] = queue_type{};
+        }
     }
 
     void add_consumer_thread_id(const per_consumer_attr& attr)
@@ -118,6 +135,7 @@ private:
     ::std::unordered_map<::std::thread::id, queue_type> m_queues;
     mutable ::std::shared_mutex m_queues_lk;
     ::std::unordered_set<::std::thread::id> m_consumers;
+    size_t m_desire_capa{};
 };
 
 KOIOS_NAMESPACE_END

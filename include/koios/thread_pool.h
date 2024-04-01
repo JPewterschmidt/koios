@@ -58,11 +58,10 @@ public:
      *
      *  This constructor will mark this `thread_pool` to call the `quick_stop()` in the destructor.
      */
-    thread_pool(size_t numthr, InvocableQueue q, size_t queue_capa_hint = 65536)
+    thread_pool(size_t numthr, InvocableQueue q)
         : m_tasks{ ::std::move(q) }, 
           m_manully_stop{ false }, 
           m_num_thrs{ numthr },
-          m_queue_capa_hint{ queue_capa_hint },
           m_start_working{ static_cast<long int>(numthr) }
     {
     }
@@ -74,8 +73,8 @@ public:
      *  If you want to stop the `thread_pool`, you need call the `stop()` or `quick_stop()` manually.
      *  Or the destructor will blocked.
      */
-    thread_pool(size_t numthr, InvocableQueue q, manually_stop_type, size_t queue_capa_hint = 65536)
-        : thread_pool(numthr, ::std::move(q), queue_capa_hint)
+    thread_pool(size_t numthr, InvocableQueue q, manually_stop_type)
+        : thread_pool(numthr, ::std::move(q))
     { 
         m_manully_stop = true;
     }
@@ -364,7 +363,6 @@ private:
     ::std::once_flag                m_stop_once_flag;
     ::std::vector<::std::jthread>   m_thrs;
     size_t                          m_num_thrs{};
-    size_t                          m_queue_capa_hint{};
     ::std::latch                    m_start_working;
     ::std::vector<const per_consumer_attr*> m_consumer_attrs{};
 };

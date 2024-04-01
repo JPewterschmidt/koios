@@ -50,12 +50,12 @@ public:
      *                            your willing of how the destructor behave. Just like `thread_pool`.
      */
     explicit task_scheduler(size_t thr_cnt, manually_stop_type, size_t queue_capa_hint = 65536)
-        : thread_pool{ thr_cnt, queue_type{queue_capa_hint}, manually_stop, queue_capa_hint }
+        : thread_pool{ thr_cnt, queue_type{queue_capa_hint}, manually_stop }
     {
     }
 
     explicit task_scheduler(size_t thr_cnt, size_t queue_capa_hint = 65536)
-        : thread_pool{ thr_cnt, queue_type{queue_capa_hint}, queue_capa_hint }
+        : thread_pool{ thr_cnt, queue_type{queue_capa_hint} }
     {
     }
 

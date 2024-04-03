@@ -18,7 +18,7 @@ add_includedirs(
     { public = true }
 )
 
-set_languages("c++2b", "c17")
+set_languages("c++23", "c17")
 set_policy("build.warning", true)
 set_policy("build.optimization.lto", false)
 set_toolset("cc", "mold", {force = true}) 

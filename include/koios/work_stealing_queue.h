@@ -43,8 +43,7 @@ public:
 public:
     work_stealing_queue() = default;
     work_stealing_queue(work_stealing_queue&& q) noexcept
-        : m_queues{ ::std::move(q.m_queues) },
-          m_consumers{ ::std::move(q.m_consumers) }
+        : m_queues{ ::std::move(q.m_queues) }
     {
     }
 
@@ -76,11 +75,11 @@ public:
     {
         auto tid = ca.thread_id;
         ::std::shared_lock lk{ m_queues_lk };
-        if (!m_consumers.contains(tid))
+        if (!m_queues.contains(tid))
         {
             tid = m_queues.begin()->first;
         }
-        m_queues[tid].enqueue(::std::move(i));
+        m_queues.at(tid).enqueue(::std::move(i));
     }
 
     size_t size() const noexcept
@@ -105,8 +104,7 @@ private:
     void add_consumer_thread_id(::std::thread::id tid)
     {
         ::std::unique_lock lk{ m_queues_lk };
-        m_consumers.insert(tid);
-        m_queues[tid] = queue_type{};
+        m_queues.insert({ tid, queue_type{} });
     }
 
     void add_consumer_thread_id(const per_consumer_attr& attr)
@@ -117,7 +115,6 @@ private:
 private:
     ::std::unordered_map<::std::thread::id, queue_type> m_queues;
     mutable ::std::shared_mutex m_queues_lk;
-    ::std::unordered_set<::std::thread::id> m_consumers;
 };
 
 KOIOS_NAMESPACE_END

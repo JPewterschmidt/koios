@@ -25,6 +25,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <ranges>
+#include <atomic>
 
 #include "koios/macros.h"
 #include "koios/queue_concepts.h"
@@ -43,24 +44,24 @@ public:
 public:
     work_stealing_queue() = default;
     work_stealing_queue(work_stealing_queue&& q) noexcept
-        : m_queues{ ::std::move(q.m_queues) },
-          m_consumers{ ::std::move(q.m_consumers) }
+        : m_queues{ q.m_queues.exchange(nullptr) }
     {
     }
 
     ::std::optional<invocable_type> 
     dequeue(const per_consumer_attr& attr)
     {
-        ::std::shared_lock lk{ m_queues_lk };
+        auto qs = queues_ptr();
+        auto& queues = *qs;
         ::std::optional<invocable_type> result{ 
-            m_queues[attr.thread_id].dequeue()
+            queues[attr.thread_id]->dequeue()
         };
 
         if (!result)
         {
-            for (auto& [k, q] : m_queues)
+            for (auto& [k, q] : queues)
             {
-                if ((result = q.dequeue()))
+                if ((result = q->dequeue()))
                     break;
             }
         }
@@ -75,21 +76,23 @@ public:
     void enqueue(const per_consumer_attr& ca, invocable_type i)
     {
         auto tid = ca.thread_id;
-        ::std::shared_lock lk{ m_queues_lk };
-        if (!m_consumers.contains(tid))
+        auto qs = queues_ptr();
+        auto& queues = *qs;
+        if (!queues.contains(tid))
         {
-            tid = m_queues.begin()->first;
+            tid = (queues.begin())->first;
         }
-        m_queues[tid].enqueue(::std::move(i));
+        queues.at(tid)->enqueue(::std::move(i));
     }
 
     size_t size() const noexcept
     {
         size_t result{};
-        ::std::shared_lock lk{ m_queues_lk };
-        for (const auto& [k, q] : m_queues)
+        auto qs = queues_ptr();
+        auto& queues = *qs;
+        for (const auto& [k, q] : queues)
         {
-            result += q.size();
+            result += q->size();
         }
         return result;
     }
@@ -102,11 +105,30 @@ public:
     }
 
 private:
+    using queue_type_ptr        = ::std::shared_ptr<queue_type>;
+    using queues_hashmap        = ::std::unordered_map<::std::thread::id, queue_type_ptr>;
+    using queues_hashmap_ptr    = ::std::shared_ptr<queues_hashmap>;
+
+    auto queues_ptr() const
+    {
+        queues_hashmap_ptr qs_ptr;
+        while (!(qs_ptr = m_queues.load()))
+            ;
+        return qs_ptr;
+    }
+
+    static queues_hashmap_ptr make_queues_hashmap() { return ::std::make_shared<queues_hashmap>();  }
+    static queue_type_ptr make_queue() { return ::std::make_shared<queue_type>(); }
+    static queues_hashmap_ptr dup_queues(queues_hashmap_ptr q) { return ::std::make_shared<queues_hashmap>(*q); }
+
     void add_consumer_thread_id(::std::thread::id tid)
     {
-        ::std::unique_lock lk{ m_queues_lk };
-        m_consumers.insert(tid);
-        m_queues[tid] = queue_type{};
+        queues_hashmap_ptr old_hashmap;
+        while (!(old_hashmap = m_queues.exchange(nullptr)))
+            ;
+        queues_hashmap_ptr new_hashmap = dup_queues(old_hashmap);
+        new_hashmap->insert({tid, make_queue()});
+        m_queues.store(::std::move(new_hashmap));
     }
 
     void add_consumer_thread_id(const per_consumer_attr& attr)
@@ -115,9 +137,7 @@ private:
     }
 
 private:
-    ::std::unordered_map<::std::thread::id, queue_type> m_queues;
-    mutable ::std::shared_mutex m_queues_lk;
-    ::std::unordered_set<::std::thread::id> m_consumers;
+    ::std::atomic<queues_hashmap_ptr> m_queues{ make_queues_hashmap() };
 };
 
 KOIOS_NAMESPACE_END

@@ -67,6 +67,13 @@ concept eager_task_concept =
 template<typename Func>
 concept task_callable_concept = task_concept<toolpex::get_return_type_t<::std::remove_reference_t<Func>>>;
 
+template<typename Func, typename Ret>
+concept task_callable_with_result_concept = 
+    task_callable_concept<Func> && 
+    ::std::same_as<
+        awaitable_result_type_t<toolpex::get_return_type_t<Func>>, 
+        Ret>;
+
 template<typename Func>
 concept eager_task_callable_concept = 
     task_callable_concept<Func> 

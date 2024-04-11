@@ -60,3 +60,21 @@ TEST(other_traits, is_all_same_type)
     ASSERT_FALSE((is_all_same_type_v<void, int>));
     ASSERT_FALSE((is_all_same_type_v<>));
 }
+
+namespace
+{
+
+task<int> dummy_func()
+{
+    // This coroutine should not be executed 
+    // since it's just a declval dummy.
+    assert(false);
+    co_return {};
+}
+
+} // annoymous namespace
+
+TEST(task_concepts, task_callable_with_result)
+{
+    ASSERT_TRUE((task_callable_with_result_concept<decltype(dummy_func), int>));
+}

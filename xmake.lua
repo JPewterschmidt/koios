@@ -7,16 +7,12 @@ add_requires(
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark"
+    "benchmark", 
+    "magic_enum"
 )
 
 includes("toolpex")
 
-add_includedirs(
-    "include", 
-    "toolpex/include", 
-    { public = true }
-)
 
 set_languages("c++23", "c17")
 set_policy("build.warning", true)
@@ -42,7 +38,8 @@ target("koios")
     add_packages(
         "gflags", 
         "concurrentqueue", 
-        "spdlog"
+        "spdlog", 
+        "magic_enum"
     )
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })
@@ -50,6 +47,10 @@ target("koios")
         "uring"
     )
     add_files( "src/*.cc")
+    add_includedirs(
+        "include", 
+        { public = true }
+    )
 
 target("test")
     set_kind("binary")

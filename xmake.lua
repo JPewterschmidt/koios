@@ -39,7 +39,8 @@ target("koios")
         "gflags", 
         "concurrentqueue", 
         "spdlog", 
-        "magic_enum"
+        "magic_enum", 
+        { public = true }
     )
     set_warnings("all", "error")
     add_cxflags("-Wconversion", { force = true })

@@ -17,7 +17,9 @@
  */
 
 #include "koios/error_category.h"
+#include "toolpex/functional.h"
 #include <unordered_map>
+#include "magic_enum.hpp"
 
 KOIOS_NAMESPACE_BEG
 
@@ -53,29 +55,16 @@ namespace
     koios_category_t::
     message(int condition) const
     {
-        switch (condition)
-        {
-        case koios_state_t::KOIOS_SUCCEED            : return koios_ctgr_name + " Success";
-        case koios_state_t::KOIOS_EXCEPTION_CATCHED  : return koios_ctgr_name + " Exception Catched";
-        }
-        
-        return exp_ctgr_name + " Unknow";
+        const koios_state_t c = static_cast<koios_state_t>(condition);
+        return toolpex::lazy_string_concater{} + koios_ctgr_name + magic_enum::enum_name(c);
     }
 
     ::std::string 
     expected_category_t::
     message(int condition) const
     {
-        switch (condition)
-        {
-        case expected_state_t::KOIOS_EXPECTED_SUCCEED            : return exp_ctgr_name + " Success";
-        case expected_state_t::KOIOS_EXPECTED_CANCELED           : return exp_ctgr_name + " Canceled";
-        case expected_state_t::KOIOS_EXPECTED_EXCEPTION_CATCHED  : return exp_ctgr_name + " Exception Catched";
-        case expected_state_t::KOIOS_EXPECTED_USER_DEFINED_ERROR : return exp_ctgr_name + " User Definded Error";
-        case expected_state_t::KOIOS_EXPECTED_NOTHING_TO_GET     : return exp_ctgr_name + " Nothing to Get";
-        }
-        
-        return exp_ctgr_name + " Unknow";
+        const expected_state_t c = static_cast<expected_state_t>(condition);
+        return toolpex::lazy_string_concater{} + exp_ctgr_name + magic_enum::enum_name(c);
     }
 }
 

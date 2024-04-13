@@ -39,6 +39,7 @@ requires (
 auto make_eager(Func f, Args... args) 
     -> eager_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
+    // It is a best practice to co_return a co_await'ed result in make_eager coroutine.
     co_return co_await f(::std::move(args)...);
 }
 

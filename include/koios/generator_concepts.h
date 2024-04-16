@@ -1,5 +1,5 @@
 /* Koios, A c++ async runtime library.
- * Copyright (C) 2024  Jeremy Pewterschmidt
+ * Copyright (C)   Jeremy Pewterschmidt
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,9 +30,9 @@ template<typename G>
 concept generator_concept = requires(G g)
 {
     typename G::promise_type;
-    { g.move_next() } -> ::std::same_as<bool>;
+    { g.move_next() } -> toolpex::boolean_testable;
     { g.current_value() };
-    { g.has_value() } -> ::std::same_as<bool>;
+    { g.has_value() } -> toolpex::boolean_testable;
 };
 
 KOIOS_NAMESPACE_END

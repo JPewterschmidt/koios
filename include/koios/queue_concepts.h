@@ -24,7 +24,7 @@
 
 #include "koios/macros.h"
 #include "koios/per_consumer_attr.h"
-#include "toolpex/is_specialization_of.h"
+#include "toolpex/concepts_and_traits.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -32,7 +32,7 @@ template<typename Queue>
 concept base_queue = requires(Queue q)
 {
     //{ &Queue::enqueue };  // overloading 
-    { q.empty()     } -> ::std::same_as<bool>;
+    { q.empty()     } -> toolpex::boolean_testable;
     { q.size()      } -> ::std::integral;
 };
 

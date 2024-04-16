@@ -29,7 +29,7 @@ template<typename Exp>
 concept regular_expected_like_concept = requires (Exp e)
 {
     e.error();
-    { e.has_value() } -> ::std::same_as<bool>;
+    { e.has_value() } -> toolpex::boolean_testable;
 };
 
 template<typename Exp>

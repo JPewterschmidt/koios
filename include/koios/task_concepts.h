@@ -33,7 +33,7 @@ KOIOS_NAMESPACE_BEG
 template<typename Aw>
 concept awaitible_concept = requires(Aw a)
 {
-    { a.await_ready() } -> ::std::same_as<bool>;
+    { a.await_ready() } -> toolpex::boolean_testable;
     { a.await_suspend(::std::declval<::std::coroutine_handle<>>()) };
     a.await_resume();
 };

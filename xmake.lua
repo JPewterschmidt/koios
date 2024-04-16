@@ -8,7 +8,8 @@ add_requires(
     "gtest", 
     "concurrentqueue master",
     "benchmark", 
-    "magic_enum"
+    "magic_enum",
+    "fmt"
 )
 
 includes("toolpex")
@@ -39,6 +40,7 @@ target("koios")
         "gflags", 
         "concurrentqueue", 
         "spdlog", 
+        "fmt",
         "magic_enum", 
         { public = true }
     )

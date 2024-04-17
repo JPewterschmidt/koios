@@ -57,14 +57,18 @@ public:
      *  user should implement a guard which utilizes the RAII feature of C++
      *  to call this function in the destructor of that RAII guard, 
      *  to wake up the next waiting task. 
+     *  
+     *  \retval true Successfully wake up a awaiting task.
+     *  \retval false there's no task awaiting.
      */
-    void may_wake_next() noexcept
+    bool may_wake_next() noexcept
     {
         task_on_the_fly f{};
         if (!m_awaitings.try_dequeue(f))
-            return;
+            return false;
         [[assume(bool(f))]];
         get_task_scheduler().enqueue(::std::move(f));       
+        return true;
     }
 
     /*! \brief Wake up all the tasks in the waiting queue.
@@ -72,16 +76,22 @@ public:
      *  user should implement a guard which utilizes the RAII feature of C++
      *  to call this function in the destructor of that RAII guard, 
      *  to wake up the next waiting task. 
+     *
+     *  \retval true Successfully wake up a awaiting task.
+     *  \retval false there's no task awaiting.
      */
-    void may_wake_all() noexcept
+    bool may_wake_all() noexcept
     {
         task_on_the_fly f{};
         auto& schr = get_task_scheduler();
+        bool result{};
         while (m_awaitings.try_dequeue(f))
         {
+            result = true;
             [[assume(bool(f))]];
             schr.enqueue(::std::move(f));       
         }
+        return result;
     }
     
 private:

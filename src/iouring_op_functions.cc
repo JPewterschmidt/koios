@@ -219,6 +219,16 @@ socket(int domain, int type, int protocal, unsigned int flags)
     return result;
 }
 
+posix_result_aw 
+openat(const toolpex::unique_posix_fd& fd, 
+       ::std::filesystem::path path, 
+       int flags, mode_t mode)
+{
+    posix_result_aw result{};
+    result.batch().prep_openat(fd, ::std::move(path), flags, mode);
+    return result;
+}
+
 normal_aw 
 unlink(::std::filesystem::path path, int flags)
 {

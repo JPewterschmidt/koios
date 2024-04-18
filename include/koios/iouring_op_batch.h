@@ -24,6 +24,7 @@
 #include <liburing.h>
 #include <filesystem>
 #include <span>
+#include <sys/types.h>
 #include "toolpex/unique_posix_fd.h"
 #include "toolpex/ipaddress.h"
 #include "koios/traits.h"
@@ -197,6 +198,8 @@ public:
     op_batch& prep_cancel_all(void* userdata) noexcept;
     op_batch& prep_cancel_first(uintptr_t userdata) noexcept;
     op_batch& prep_cancel_first(void* userdata) noexcept;
+
+    op_batch& prep_openat(const toolpex::unique_posix_fd& dirfd, ::std::filesystem::path p, int flags, mode_t mode) noexcept;
 
     /*! \brief  Prepare a unlink iouring operation
      *

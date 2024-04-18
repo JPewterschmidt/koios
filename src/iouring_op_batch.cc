@@ -215,18 +215,30 @@ prep_cancel_first(void* userdata) noexcept
 	return *this;
 }
 
-struct unlink_data
+struct path_data 
 {
-    unlink_data(const ::std::filesystem::path& p) noexcept : path{ p } {}
-    unlink_data(unlink_data&&) noexcept = default;
+    path_data(const ::std::filesystem::path& p) noexcept : path{ p } {}
+    path_data(path_data&&) noexcept = default;
     ::std::string path;
 };
+
+op_batch& op_batch::
+prep_openat(const toolpex::unique_posix_fd& dirfd, 
+            ::std::filesystem::path p, int flags, mode_t m) noexcept
+{
+    path_data* data{m_peripheral.add<path_data>(::std::move(p))};
+	auto* cur_sqe = m_rep.get_sqe();
+    ::io_uring_prep_openat(cur_sqe, dirfd, data->path.c_str(), flags, m);
+	cur_sqe->flags |= IOSQE_IO_LINK;
+
+    return *this;
+}
 
 op_batch& op_batch::
 prep_unlink(::std::filesystem::path path, 
             int flags) noexcept
 {
-    unlink_data* data{m_peripheral.add<unlink_data>(::std::move(path))};
+    path_data* data{m_peripheral.add<path_data>(::std::move(path))};
 
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_unlink(cur_sqe, data->path.c_str(), flags);
@@ -239,7 +251,7 @@ prep_unlinkat(const toolpex::unique_posix_fd& fd,
               ::std::filesystem::path path, 
               int flags) noexcept
 {
-    unlink_data* data{m_peripheral.add<unlink_data>(::std::move(path))};
+    path_data* data{m_peripheral.add<path_data>(::std::move(path))};
 
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_unlinkat(cur_sqe, fd, data->path.c_str(), flags);

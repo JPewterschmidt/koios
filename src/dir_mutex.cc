@@ -108,8 +108,11 @@ eager_task<> dir_mutex::polling_lock_file(
 void dir_mutex::cancel_all_polling() noexcept
 {
     m_stop_src.request_stop();
-    ::std::lock_guard lk{ m_pollers_lock };
-    for (auto& item : m_pollers)
+    ::std::unique_lock lk{ m_pollers_lock };
+    auto pollers = ::std::move(m_pollers);
+    lk.unlock();
+
+    for (auto& item : pollers)
     {
         item.get();
     }

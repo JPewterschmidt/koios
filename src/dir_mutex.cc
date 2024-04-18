@@ -1,6 +1,10 @@
 #include <chrono>
 #include <fstream>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "toolpex/exceptions.h"
+#include "toolpex/errret_thrower.h"
+#include "toolpex/functional.h"
 #include "koios/dir_mutex.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/this_task.h"
@@ -9,6 +13,8 @@ namespace koios
 {
 
 namespace fs = ::std::filesystem;
+
+static toolpex::errret_thrower et{};
 
 void dir_mutex_guard::unlock() noexcept
 {
@@ -22,7 +28,6 @@ void dir_mutex_guard::unlock() noexcept
 dir_mutex_guard::dir_mutex_guard(dir_mutex_guard&& other) noexcept
     : m_parent{ ::std::exchange(other.m_parent, nullptr) }
 {
-    toolpex::not_implemented();
 }
 
 dir_mutex_guard& dir_mutex_guard::operator=(dir_mutex_guard&& other) noexcept
@@ -48,48 +53,41 @@ dir_mutex_guard dir_mutex_acq_aw::await_resume() noexcept
 }
 
 dir_mutex::dir_mutex(::std::filesystem::path p)
-    : m_path{ ::std::move(p) }
+    : m_path{ ::std::move(p) }, 
+      m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }
 {
-    ::std::error_code ec;
-    if (!dir_exists(ec) || ec)
-    {
-        throw koios::exception{ec};
-    }
+    ::stat st{};
+    ::fstat(m_dirfd, &st);
+    if (st.st_mode & S_IFMT != S_IFDIR)
+        throw koios::exception(toolpex::lazy_string_concater{} 
+                + "It's not a directory!, path = " 
+                + m_path.string());
 }
 
-bool dir_mutex::dir_exists(::std::error_code& ec) const noexcept
+bool dir_mutex::create_lock_file() const
 {
-    ec = {};
-    return (fs::is_directory(path(), ec) || ec);
-}
+    const int ret = ::openat(m_dirfd, lock_file_name().data(), 
+                             O_CREAT | O_EXCL | O_CLOEXEC);
+    if (ret == EEXIST) return false;
+    else if (ret == 0) return true;
 
-bool dir_mutex::already_a_lockfile_be() const
-{
-    ::std::error_code ec{};
-    if (!dir_exists(ec) || ec)
-    {
-        throw koios::exception{ec};
-    }
-    return fs::exists(path()/lock_file_name(), ec);
+    throw koios::exception(ret);
+
+    return {};
 }
 
 task<> dir_mutex::polling_lock_file(::std::stop_token tk)
 {
     using namespace ::std::chrono_literals;
-    co_await this_task::sleep_for(50ms);
-
-    for ( ;; ) 
+    co_await this_task::sleep_for(100ms);
+    while (!tk.stop_requested())
     {
-        if (tk.stop_requested())
-            co_return;
-
-        if (already_a_lockfile_be())
-            co_await this_task::sleep_for(50ms);
-        else
+        if (create_lock_file())       
         {
-            this->may_wake_next();
+            may_wake_next();
             co_return;
         }
+        co_await this_task::sleep_for(100ms);
     }
 }
 
@@ -110,24 +108,13 @@ dir_mutex::~dir_mutex() noexcept
     
 bool dir_mutex::hold_this_immediately()
 {
-    if (already_a_lockfile_be()) 
+    const bool success = create_lock_file();
+
+    if (!success) 
     {
         m_pollers.emplace_back(
             polling_lock_file(m_stop_src.get_token())
-                .run_and_get_future()
-        );
-        return false;
-    }
-    
-    bool expected{false};
-    const bool success = m_holded.compare_exchange_strong(
-        expected, true, 
-        ::std::memory_order_release, 
-        ::std::memory_order_relaxed);
-
-    if (success)
-    {
-        ::std::ofstream{path()/lock_file_name()};
+                .run_and_get_future());
     }
 
     return success;
@@ -135,14 +122,13 @@ bool dir_mutex::hold_this_immediately()
 
 static task<> delete_lock_file(const auto& path)
 {
-    co_await uring::unlink(path);
+    // TODO
 }
 
 void dir_mutex::unlock() noexcept
 {
     if (!this->may_wake_next()) 
     {
-        m_holded.store(false, ::std::memory_order_acquire);
         delete_lock_file(path()).result();
     }
 }

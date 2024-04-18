@@ -61,13 +61,12 @@ private:
     friend class dir_mutex_acq_aw;
     bool hold_this_immediately();
     static constexpr ::std::string_view lock_file_name() { return "koios_dir_lock"; }
-    bool already_a_lockfile_be() const;
-    bool dir_exists(::std::error_code& ec) const noexcept;
     task<> polling_lock_file(::std::stop_token tk);
+    bool create_lock_file() const;
 
 private:
     ::std::filesystem::path m_path;
-    ::std::atomic_bool m_holded{};
+    toolpex::unique_posix_fd m_dirfd;
     ::std::stop_source m_stop_src;
     ::std::vector<koios::future<void>> m_pollers;
 }; 

@@ -14,6 +14,7 @@ namespace koios
 {
 
 namespace fs = ::std::filesystem;
+using namespace ::std::chrono_literals;
 
 static toolpex::errret_thrower et{};
 
@@ -53,9 +54,10 @@ dir_mutex_guard dir_mutex_acq_aw::await_resume() noexcept
     return { m_parent };   
 }
 
-dir_mutex::dir_mutex(::std::filesystem::path p)
+dir_mutex::dir_mutex(::std::filesystem::path p, ::std::chrono::milliseconds polling_period)
     : m_path{ ::std::move(p) }, 
-      m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }
+      m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }, 
+      m_polling_period{ polling_period > 10ms ? polling_period : 10ms }
 {
     typename ::stat st{};
     et << ::fstat(m_dirfd, &st);
@@ -82,10 +84,11 @@ bool dir_mutex::create_lock_file() const
     return true;
 }
 
-eager_task<> dir_mutex::polling_lock_file(::std::stop_token tk)
+eager_task<> dir_mutex::polling_lock_file(
+    ::std::stop_token tk, 
+    ::std::chrono::milliseconds period)
 {
-    using namespace ::std::chrono_literals;
-    co_await this_task::sleep_for(50ms);
+    co_await this_task::sleep_for(period);
     while (!tk.stop_requested())
     {
         if (create_lock_file())       
@@ -93,7 +96,7 @@ eager_task<> dir_mutex::polling_lock_file(::std::stop_token tk)
             may_wake_next();
             co_return;
         }
-        co_await this_task::sleep_for(50ms);
+        co_await this_task::sleep_for(period);
     }
 }
 
@@ -119,7 +122,7 @@ bool dir_mutex::hold_this_immediately()
     if (!success) 
     {
         m_pollers.emplace_back(
-            polling_lock_file(m_stop_src.get_token())
+            polling_lock_file(m_stop_src.get_token(), polling_period())
                 .run_and_get_future());
     }
 

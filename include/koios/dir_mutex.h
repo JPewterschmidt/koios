@@ -49,9 +49,12 @@ private:
 class dir_mutex : private async_awaiting_hub
 {
 public:
-    dir_mutex(::std::filesystem::path p);
+    dir_mutex(::std::filesystem::path p, 
+              ::std::chrono::milliseconds polling_period 
+                  = ::std::chrono::milliseconds{50});
     
     const ::std::filesystem::path& path() const noexcept { return m_path; }
+    auto polling_period() const noexcept { return m_polling_period; }
     dir_mutex_acq_aw acquire() noexcept { return { this }; }
     void cancel_all_polling() noexcept;
     void unlock() noexcept;
@@ -61,7 +64,7 @@ private:
     friend class dir_mutex_acq_aw;
     bool hold_this_immediately();
     static constexpr ::std::string_view lock_file_name() { return "koios_dir_lock"; }
-    eager_task<> polling_lock_file(::std::stop_token tk);
+    eager_task<> polling_lock_file(::std::stop_token tk, ::std::chrono::milliseconds period);
     bool create_lock_file() const;
     eager_task<> delete_lock_file();
 
@@ -70,6 +73,7 @@ private:
     toolpex::unique_posix_fd m_dirfd;
     ::std::stop_source m_stop_src;
     ::std::vector<koios::future<void>> m_pollers;
+    ::std::chrono::milliseconds m_polling_period;
 }; 
 
 } // namespace koios

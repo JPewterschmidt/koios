@@ -223,7 +223,16 @@ normal_aw
 unlink(::std::filesystem::path path, int flags)
 {
     normal_aw result{};
-    result.batch().prep_unlink(path, flags);
+    result.batch().prep_unlink(::std::move(path), flags);
+    return result;
+}
+
+normal_aw 
+unlinkat(const toolpex::unique_posix_fd& fd, 
+         ::std::filesystem::path path, int flags)
+{
+    normal_aw result{};
+    result.batch().prep_unlinkat(fd, ::std::move(path), flags);
     return result;
 }
 

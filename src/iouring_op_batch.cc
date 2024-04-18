@@ -215,19 +215,34 @@ prep_cancel_first(void* userdata) noexcept
 	return *this;
 }
 
+struct unlink_data
+{
+    unlink_data(const ::std::filesystem::path& p) noexcept : path{ p } {}
+    unlink_data(unlink_data&&) noexcept = default;
+    ::std::string path;
+};
+
 op_batch& op_batch::
-prep_unlink(const ::std::filesystem::path& path, 
+prep_unlink(::std::filesystem::path path, 
             int flags) noexcept
 {
-    struct unlink_data
-    {
-        unlink_data(const ::std::filesystem::path& p) noexcept : path{ p } {}
-        unlink_data(unlink_data&&) noexcept = default;
-        ::std::string path;
-    } *data{m_peripheral.add<unlink_data>(path)};
+    unlink_data* data{m_peripheral.add<unlink_data>(::std::move(path))};
 
 	auto* cur_sqe = m_rep.get_sqe();
     ::io_uring_prep_unlink(cur_sqe, data->path.c_str(), flags);
+	cur_sqe->flags |= IOSQE_IO_LINK;
+	return *this;
+}
+
+op_batch& op_batch::
+prep_unlinkat(const toolpex::unique_posix_fd& fd,
+              ::std::filesystem::path path, 
+              int flags) noexcept
+{
+    unlink_data* data{m_peripheral.add<unlink_data>(::std::move(path))};
+
+	auto* cur_sqe = m_rep.get_sqe();
+    ::io_uring_prep_unlinkat(cur_sqe, fd, data->path.c_str(), flags);
 	cur_sqe->flags |= IOSQE_IO_LINK;
 	return *this;
 }

@@ -58,7 +58,7 @@ dir_mutex::dir_mutex(::std::filesystem::path p)
       m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }
 {
     typename ::stat st{};
-    ::fstat(m_dirfd, &st);
+    et << ::fstat(m_dirfd, &st);
     if ((st.st_mode & S_IFMT) != S_IFDIR)
         throw koios::exception(::std::string(toolpex::lazy_string_concater{} 
                 + "It's not a directory!, path = " 
@@ -69,18 +69,23 @@ bool dir_mutex::create_lock_file() const
 {
     const int ret = ::openat(m_dirfd, lock_file_name().data(), 
                              O_CREAT | O_EXCL | O_CLOEXEC);
-    if (ret == EEXIST) return false;
-    else if (ret == 0) return true;
+    if (ret < 0)
+    { 
+        if (errno == EEXIST) return false;
+        else if (errno == 0) return true;
+        throw koios::exception(ret);
+    }
 
-    throw koios::exception(ret);
+    // auto close it.
+    toolpex::unique_posix_fd{ ret };
 
-    return {};
+    return true;
 }
 
-task<> dir_mutex::polling_lock_file(::std::stop_token tk)
+eager_task<> dir_mutex::polling_lock_file(::std::stop_token tk)
 {
     using namespace ::std::chrono_literals;
-    co_await this_task::sleep_for(100ms);
+    co_await this_task::sleep_for(50ms);
     while (!tk.stop_requested())
     {
         if (create_lock_file())       
@@ -88,7 +93,7 @@ task<> dir_mutex::polling_lock_file(::std::stop_token tk)
             may_wake_next();
             co_return;
         }
-        co_await this_task::sleep_for(100ms);
+        co_await this_task::sleep_for(50ms);
     }
 }
 
@@ -121,7 +126,7 @@ bool dir_mutex::hold_this_immediately()
     return success;
 }
 
-task<> dir_mutex::delete_lock_file()
+eager_task<> dir_mutex::delete_lock_file()
 {
     co_await uring::unlinkat(m_dirfd, lock_file_name());
 }

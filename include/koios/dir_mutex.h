@@ -52,7 +52,7 @@ public:
     dir_mutex(::std::filesystem::path p);
     
     const ::std::filesystem::path& path() const noexcept { return m_path; }
-    dir_mutex_acq_aw acquire() noexcept;
+    dir_mutex_acq_aw acquire() noexcept { return { this }; }
     void cancel_all_polling() noexcept;
     void unlock() noexcept;
     ~dir_mutex() noexcept;
@@ -61,9 +61,9 @@ private:
     friend class dir_mutex_acq_aw;
     bool hold_this_immediately();
     static constexpr ::std::string_view lock_file_name() { return "koios_dir_lock"; }
-    task<> polling_lock_file(::std::stop_token tk);
+    eager_task<> polling_lock_file(::std::stop_token tk);
     bool create_lock_file() const;
-    task<> delete_lock_file();
+    eager_task<> delete_lock_file();
 
 private:
     ::std::filesystem::path m_path;

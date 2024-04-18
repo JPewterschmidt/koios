@@ -55,6 +55,16 @@ namespace koios::uring
         }
     };
 
+    class posix_result_aw : public op_aw_base, public op_batch_execute_aw
+    {
+    public:
+        posix_result_aw() noexcept;
+        ioret_for_posix_fd_result await_resume() noexcept
+        {
+            return this->resume_template<ioret_for_posix_fd_result>();
+        }
+    };
+
     class read_write_aw : public op_aw_base, public op_batch_execute_aw
     {
     public:

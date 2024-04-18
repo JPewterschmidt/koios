@@ -4,12 +4,16 @@
 
 #include <ranges>
 #include <string_view>
+#include <filesystem>
 #include <memory>
 
 using namespace koios;
 using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
 using namespace toolpex::ip_address_literals;
+namespace fs = ::std::filesystem;
+
+static toolpex::errret_thrower et;
 
 namespace
 {
@@ -17,13 +21,11 @@ namespace
 ::std::string g_file_name{ "testfile_for_iouring.txt" };
 task<toolpex::unique_posix_fd> create_file()
 {
-    toolpex::errret_thrower et;
     co_return et << ::creat(g_file_name.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 }
 
 task<toolpex::unique_posix_fd> open_file()
 {
-    toolpex::errret_thrower et;
     co_return et << ::open(g_file_name.c_str(), O_RDWR);
 }
 
@@ -142,4 +144,9 @@ TEST(iouring, batch_rep)
     auto& rep = b.rep();
     // the opcode of timeout is 15.
     ASSERT_EQ(rep.back().opcode, 15); 
+}
+
+TEST(iouring, unlinkat)
+{
+    // TODO
 }

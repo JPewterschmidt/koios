@@ -180,6 +180,11 @@ connect(const toolpex::unique_posix_fd& fd,
     return connect(fd, addr, port, tmot + ::std::chrono::system_clock::now());
 }
 
+posix_result_aw 
+openat(const toolpex::unique_posix_fd& fd, 
+       ::std::filesystem::path path, 
+       int flags, mode_t mode);
+
 normal_aw unlink(::std::filesystem::path path, int flags = 0);
 normal_aw unlinkat(const toolpex::unique_posix_fd& fd, 
                    ::std::filesystem::path path, int flags = 0);

@@ -206,8 +206,21 @@ public:
      *
      *  \return the reference to the object which this call related to.
      */
-    op_batch& prep_unlink(const ::std::filesystem::path& path, 
+    op_batch& prep_unlink(::std::filesystem::path path, 
                           int flags = 0) noexcept;
+
+    /*! \brief  Prepare a unlinkat iouring operation
+     *
+     *  \param fd   The directory file descriptor.
+     *  \param path The path you want to unlink (hard). 
+     *              The content of this parameter will be copied.
+     *              The copied one will last until the `op_batch` destructed.
+     *
+     *  \return the reference to the object which this call related to.
+     */
+    op_batch& prep_unlinkat(const toolpex::unique_posix_fd& fd, 
+                            ::std::filesystem::path path, 
+                            int flags = 0) noexcept;
 
     /*! \brief  Prepare a rename iouring operation
      *

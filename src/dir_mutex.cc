@@ -8,6 +8,7 @@
 #include "koios/dir_mutex.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/this_task.h"
+#include "koios/task.h"
 
 namespace koios
 {
@@ -56,12 +57,12 @@ dir_mutex::dir_mutex(::std::filesystem::path p)
     : m_path{ ::std::move(p) }, 
       m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }
 {
-    ::stat st{};
+    typename ::stat st{};
     ::fstat(m_dirfd, &st);
-    if (st.st_mode & S_IFMT != S_IFDIR)
-        throw koios::exception(toolpex::lazy_string_concater{} 
+    if ((st.st_mode & S_IFMT) != S_IFDIR)
+        throw koios::exception(::std::string(toolpex::lazy_string_concater{} 
                 + "It's not a directory!, path = " 
-                + m_path.string());
+                + m_path.string()));
 }
 
 bool dir_mutex::create_lock_file() const
@@ -120,16 +121,16 @@ bool dir_mutex::hold_this_immediately()
     return success;
 }
 
-static task<> delete_lock_file(const auto& path)
+task<> dir_mutex::delete_lock_file()
 {
-    // TODO
+    co_await uring::unlinkat(m_dirfd, lock_file_name());
 }
 
 void dir_mutex::unlock() noexcept
 {
     if (!this->may_wake_next()) 
     {
-        delete_lock_file(path()).result();
+        delete_lock_file().result();
     }
 }
 

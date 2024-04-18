@@ -63,6 +63,7 @@ private:
     static constexpr ::std::string_view lock_file_name() { return "koios_dir_lock"; }
     task<> polling_lock_file(::std::stop_token tk);
     bool create_lock_file() const;
+    task<> delete_lock_file();
 
 private:
     ::std::filesystem::path m_path;

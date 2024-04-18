@@ -4,6 +4,9 @@
 #include <atomic>
 #include <stop_token>
 #include <filesystem>
+
+#include "toolpex/spin_lock.h"
+
 #include "koios/async_awaiting_hub.h"
 #include "koios/task.h"
 
@@ -53,7 +56,7 @@ public:
               ::std::chrono::milliseconds polling_period 
                   = ::std::chrono::milliseconds{50});
     
-    const ::std::filesystem::path& path() const noexcept { return m_path; }
+    const ::std::filesystem::path& dir_path() const noexcept { return m_path; }
     auto polling_period() const noexcept { return m_polling_period; }
     dir_mutex_acq_aw acquire() noexcept { return { this }; }
     void cancel_all_polling() noexcept;
@@ -73,6 +76,7 @@ private:
     toolpex::unique_posix_fd m_dirfd;
     ::std::stop_source m_stop_src;
     ::std::vector<koios::future<void>> m_pollers;
+    toolpex::spin_lock m_pollers_lock;
     ::std::chrono::milliseconds m_polling_period;
 }; 
 

@@ -1,10 +1,14 @@
 #include <chrono>
 #include <fstream>
+#include <mutex>
+
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #include "toolpex/exceptions.h"
 #include "toolpex/errret_thrower.h"
 #include "toolpex/functional.h"
+
 #include "koios/dir_mutex.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/this_task.h"
@@ -54,17 +58,18 @@ dir_mutex_guard dir_mutex_acq_aw::await_resume() noexcept
     return { m_parent };   
 }
 
-dir_mutex::dir_mutex(::std::filesystem::path p, ::std::chrono::milliseconds polling_period)
+dir_mutex::dir_mutex(::std::filesystem::path p, 
+                     ::std::chrono::milliseconds polling_period)
     : m_path{ ::std::move(p) }, 
-      m_dirfd{ et << ::open(m_path.c_str(), O_DIRECTORY) }, 
+      m_dirfd{ et << ::open(dir_path().c_str(), O_DIRECTORY) }, 
       m_polling_period{ polling_period > 10ms ? polling_period : 10ms }
 {
     typename ::stat st{};
     et << ::fstat(m_dirfd, &st);
     if ((st.st_mode & S_IFMT) != S_IFDIR)
         throw koios::exception(::std::string(toolpex::lazy_string_concater{} 
-                + "It's not a directory!, path = " 
-                + m_path.string()));
+                + "It's not a directory!, directory path = " 
+                + dir_path().string()));
 }
 
 bool dir_mutex::create_lock_file() const
@@ -103,6 +108,7 @@ eager_task<> dir_mutex::polling_lock_file(
 void dir_mutex::cancel_all_polling() noexcept
 {
     m_stop_src.request_stop();
+    ::std::lock_guard lk{ m_pollers_lock };
     for (auto& item : m_pollers)
     {
         item.get();
@@ -121,6 +127,7 @@ bool dir_mutex::hold_this_immediately()
 
     if (!success) 
     {
+        ::std::lock_guard lk{ m_pollers_lock };
         m_pollers.emplace_back(
             polling_lock_file(m_stop_src.get_token(), polling_period())
                 .run_and_get_future());

@@ -55,11 +55,18 @@ namespace koios::uring
         size_t nbytes_delivered() const noexcept;
     };
 
-    class ioret_for_socket : public ioret_for_any_base
+    class ioret_for_posix_fd_result : public ioret_for_any_base
     {
     public:
         using ioret_for_any_base::ioret_for_any_base;
-        ::toolpex::unique_posix_fd get_socket_fd();       
+        ::toolpex::unique_posix_fd get_fd();
+    };
+
+    class ioret_for_socket : public ioret_for_posix_fd_result
+    {
+    public:
+        using ioret_for_posix_fd_result::ioret_for_posix_fd_result;
+        ::toolpex::unique_posix_fd get_socket_fd() { return get_fd(); }
     };
 
     class ioret_for_accept : public ioret_for_any_base
@@ -81,6 +88,7 @@ namespace koios::uring
     };
 
     using ioret_for_connect = ioret_for_any_base;
+    using ioret_for_openat = ioret_for_posix_fd_result;
 
     class ioret_for_cancel : public ioret_for_any_base
     {

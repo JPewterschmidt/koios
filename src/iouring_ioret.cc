@@ -49,8 +49,8 @@ nbytes_delivered() const noexcept
 }
 
 ::toolpex::unique_posix_fd 
-ioret_for_socket::
-get_socket_fd()
+ioret_for_posix_fd_result::
+get_fd()
 {
     if (auto ec = this->error_code(); ec)
     {

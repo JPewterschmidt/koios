@@ -39,7 +39,7 @@ namespace detial
         using generator_type = G;
         using result_type = typename generator_type::result_type;
 
-        using difference_type = ::std::size_t;
+        using difference_type = ::std::ptrdiff_t;
         using value_type = result_type;
         using pointer = value_type*;
         using reference = value_type&;
@@ -48,14 +48,18 @@ namespace detial
         using storage_type = typename generator_type::promise_type::storage_type;
 
     public:
+        generator_iterator() noexcept = default;
+
         generator_iterator(generator_type& g) noexcept
-            : m_generator{ g }
+            : m_generator{ &g }
         {
-            m_reach_end = !m_generator.move_next();
+            m_reach_end = !m_generator->move_next();
         }
 
         generator_iterator(const generator_iterator&) = delete;
         generator_iterator& operator=(const generator_iterator&) = delete;
+        generator_iterator(generator_iterator&&) noexcept = delete;
+        generator_iterator& operator=(generator_iterator&&) noexcept = delete;
 
         /*! \brief Call the `move_next()`
          *  But won't take the ownership of the current yield value.
@@ -63,7 +67,7 @@ namespace detial
         generator_iterator& operator++()
         {
             m_storage = nullptr;
-            m_reach_end = !m_generator.move_next() || !m_generator.has_value();
+            m_reach_end = !m_generator->move_next() || !m_generator->has_value();
 
             return *this;
         }
@@ -95,7 +99,7 @@ namespace detial
         {
             if (!m_storage)
             {
-                m_storage.swap(m_generator.current_value_storage());
+                m_storage.swap(m_generator->current_value_storage());
                 return bool(m_storage);
             }
             return true;
@@ -105,7 +109,7 @@ namespace detial
         friend bool operator != (const generator_iterator<GG>&, const generator_iterator_sentinel&);
 
     private: 
-        generator_type& m_generator;
+        generator_type* m_generator{};
         bool m_reach_end{};
         storage_type m_storage;
     };

@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include "gtest/gtest.h"
 #include "koios/generator.h"
 #include "koios/macros.h"
@@ -57,4 +59,3 @@ TEST(generator_iterator, multi_dereference)
         ASSERT_EQ(val1, val2);
     }
 }
-

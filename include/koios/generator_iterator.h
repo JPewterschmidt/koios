@@ -94,6 +94,8 @@ namespace detial
             return m_storage.get();
         }
 
+        bool reach_end() const noexcept { return m_reach_end; }
+
     private:
         bool retrive_data()
         {

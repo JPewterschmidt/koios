@@ -312,6 +312,7 @@ using eager_task = async_task<T, InitialSuspendAw>;
 using taskec = task<::std::error_code>;
 using etaskec = eager_task<::std::error_code>;
 
+extern template class koios::_task<void, discardable, ::std::suspend_always>::_type;
 extern template class koios::_task<void, discardable, lazy_aw>::_type;
 extern template class koios::_task<void, non_discardable, lazy_aw>::_type;
 extern template class koios::_task<bool, discardable, lazy_aw>::_type;

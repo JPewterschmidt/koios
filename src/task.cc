@@ -22,6 +22,7 @@
 
 KOIOS_NAMESPACE_BEG
 
+template class koios::_task<void, discardable, ::std::suspend_always>::_type;
 template class koios::_task<void, discardable, lazy_aw>::_type;
 template class koios::_task<void, non_discardable, lazy_aw>::_type;
 template class koios::_task<bool, discardable, lazy_aw>::_type;

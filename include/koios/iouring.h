@@ -87,7 +87,7 @@ namespace iel_detials
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
         > m_opreps{};
         mutable toolpex::spin_lock m_lk;
-        ::std::size_t m_num_mis_shot{1};
+        ::std::uint8_t m_num_mis_shot{1};
     };
 }
 

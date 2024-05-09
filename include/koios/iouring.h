@@ -76,8 +76,8 @@ namespace iel_detials
     private:
         auto get_lk() const { return ::std::unique_lock{ m_lk }; }
         void dealwith_cqe(const ::io_uring_cqe* cqep);
-        size_t mis_shot_indicator() const noexcept { return m_num_mis_shot - 1; }
-        void mis_shot_this_time() noexcept { m_num_mis_shot <<= 1; }
+        size_t mis_shot_indicator() const noexcept { return static_cast<size_t>(m_num_mis_shot - 1); }
+        void mis_shot_this_time() noexcept { m_num_mis_shot <<= static_cast<uint8_t>(1); }
         void shot_this_time() noexcept { m_num_mis_shot = 1; }
 
     private:

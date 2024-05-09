@@ -25,6 +25,10 @@
 #include <mutex>
 #include <concepts>
 #include <iostream>
+#include <string>
+#include <string_view>
+#include <span>
+#include <cstddef>
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
@@ -308,6 +312,7 @@ using eager_task = async_task<T, InitialSuspendAw>;
 using taskec = task<::std::error_code>;
 using etaskec = eager_task<::std::error_code>;
 
+extern template class koios::_task<void, discardable, ::std::suspend_always>::_type;
 extern template class koios::_task<void, discardable, lazy_aw>::_type;
 extern template class koios::_task<void, non_discardable, lazy_aw>::_type;
 extern template class koios::_task<bool, discardable, lazy_aw>::_type;
@@ -316,6 +321,20 @@ extern template class koios::_task<size_t, discardable, lazy_aw>::_type;
 extern template class koios::_task<::std::string, discardable, lazy_aw>::_type;
 extern template class koios::_task<::std::string_view, discardable, lazy_aw>::_type;
 extern template class koios::_task<::std::error_code, discardable, lazy_aw>::_type;
+extern template class koios::_task<uint8_t, discardable, lazy_aw>::_type;
+extern template class koios::_task<uint32_t, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::byte*, discardable, lazy_aw>::_type;
+extern template class koios::_task<const ::std::byte*, discardable, lazy_aw>::_type;
+extern template class koios::_task<char*, discardable, lazy_aw>::_type;
+extern template class koios::_task<const char*, discardable, lazy_aw>::_type;
+extern template class koios::_task<void*, discardable, lazy_aw>::_type;
+extern template class koios::_task<const void*, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<::std::byte>, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<const ::std::byte>, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<char>, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<const char>, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<uint8_t>, discardable, lazy_aw>::_type;
+extern template class koios::_task<::std::span<const uint8_t>, discardable, lazy_aw>::_type;
 
 KOIOS_NAMESPACE_END
 

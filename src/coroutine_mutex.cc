@@ -34,12 +34,13 @@ void mutex::
 add_waiting(task_on_the_fly h)
 {
     m_waitings.enqueue({ .task = ::std::move(h) });
+    try_wake_up_next();
 }
 
 void mutex::
 try_wake_up_next_impl() noexcept
 {
-    if (being_held()) return;
+    if (being_held_impl()) return;
 
     waiting_handle handle{};
     if (m_waitings.try_dequeue(handle))

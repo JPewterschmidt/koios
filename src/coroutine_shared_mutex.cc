@@ -45,6 +45,7 @@ bool shared_mutex::hold_this_shr_immediately() noexcept
 void shared_mutex::add_shr_waiting(task_on_the_fly t)
 {
 	m_shr_waitings.enqueue({ .task = ::std::move(t) });
+    try_wake_up_next();
 }
 
 bool shared_mutex::hold_this_immediately() noexcept
@@ -56,6 +57,7 @@ bool shared_mutex::hold_this_immediately() noexcept
 void shared_mutex::add_waiting(task_on_the_fly t)
 {
 	m_uni_waitings.enqueue({ .task = ::std::move(t) });
+    try_wake_up_next();
 }
 
 void shared_mutex::release()

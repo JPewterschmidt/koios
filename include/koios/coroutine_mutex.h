@@ -84,7 +84,7 @@ private:
     void try_wake_up_next_impl() noexcept;
 
 private:
-    bool being_held() const noexcept { return m_holded; }
+    bool being_held_impl() const noexcept { return m_holded; }
 
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;

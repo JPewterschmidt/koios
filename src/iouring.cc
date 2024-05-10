@@ -141,10 +141,10 @@ do_occured_nonblk()
     if (!ptr && m_cleaning) [[unlikely]] return;
     else if (!ptr && !m_cleaning)
     {
-        ::std::cerr << 
+        ::std::cout << 
             "you should call async uring operation "
             "in a eager_task or any subsequent normal task.";
-        ::std::terminate();
+        ::exit(1);
     }
     ptr->do_occured_nonblk();
 }
@@ -157,10 +157,10 @@ add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     if (!impl && m_cleaning) [[unlikely]] return;
     else if (!impl) 
     {
-        ::std::cerr << 
+        ::std::cout << 
             "you should call async uring operation "
             "in a eager_task or any subsequent normal task.";
-        ::std::terminate();
+        ::exit(1);
     }
     return impl->add_event(::std::move(h), ops);
 }

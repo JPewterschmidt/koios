@@ -34,7 +34,6 @@ void mutex::
 add_waiting(task_on_the_fly h)
 {
     m_waitings.enqueue({ .task = ::std::move(h) });
-    try_wake_up_next();
 }
 
 void mutex::

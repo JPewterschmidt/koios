@@ -33,6 +33,18 @@ using namespace ::std::chrono_literals;
 namespace iel_detials
 {
     void iouring_event_loop_perthr::
+    mis_shot_this_time() noexcept 
+    { 
+        m_num_mis_shot <<= 1u;
+    }
+
+    void iouring_event_loop_perthr::
+    shot_this_time() noexcept 
+    { 
+        m_num_mis_shot = 1u; 
+    }
+
+    void iouring_event_loop_perthr::
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {
         assert(cqep);

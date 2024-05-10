@@ -20,8 +20,9 @@
 #include "koios/timer.h"
 #include "koios/event_loop.h"
 #include "koios/task_scheduler.h"
-#include "spdlog/spdlog.h"
 #include "toolpex/exceptions.h"
+
+#include "spdlog/spdlog.h"
 
 #include <utility>
 #include <atomic>
@@ -37,8 +38,7 @@ namespace
 
     void logging_init()
     {
-        spdlog::set_level(spdlog::level::debug);
-        spdlog::set_pattern("[%H:%M:%S %z] [thread %t] %v ");
+        spdlog::set_level(spdlog::level::info);
     }
 
     void signal_handler(int signum)

@@ -38,7 +38,6 @@ public:
     void await_suspend(task_on_the_fly h)
     {
         m_mutex.add_waiting(::std::move(h));
-        m_mutex.try_wake_up_next();
     }
 
     /*! \brief  Try gain then check the ownership of the lock. */

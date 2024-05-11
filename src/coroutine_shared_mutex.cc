@@ -58,13 +58,22 @@ void shared_mutex::add_shr_waiting(task_on_the_fly t)
 
 bool shared_mutex::hold_this_immediately() noexcept
 {
-    ::std::lock_guard lk{ m_lock };
-    return (!being_held() && !being_held_sharedly()) ? (m_state = UNI, true) : false;
+    return false;
 }
 
 void shared_mutex::add_waiting(task_on_the_fly t)
 {
-    m_uni_waitings.enqueue({ .task = ::std::move(t) });
+    ::std::lock_guard lk{ m_lock };
+    const bool have_ownership = (!being_held() && !being_held_sharedly()) ? (m_state = UNI, true) : false;
+    if (have_ownership)
+    {
+        m_current_writer = t.address();
+        get_task_scheduler().enqueue(::std::move(t));
+    }
+    else
+    {
+        m_uni_waitings.enqueue({ .task = ::std::move(t) });
+    }
 }
 
 void shared_mutex::release()
@@ -108,7 +117,7 @@ bool shared_mutex::health_check() const noexcept
 bool shared_mutex::being_held_sharedly() const noexcept
 {
     assert(health_check());
-    return m_state == SHR;
+    return m_state == SHR || m_state == SHR_DURING_UNI;
 }
 
 void shared_mutex::try_wake_up_next_uni_impl() noexcept

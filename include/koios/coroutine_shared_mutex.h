@@ -58,7 +58,7 @@ private:
 
     void release();
 
-    enum holding_state { NO, SHR, UNI, };
+    enum holding_state { NO, SHR, UNI, SHR_DURING_UNI };
 
 private:
     bool being_held() const noexcept;
@@ -75,6 +75,7 @@ private:
     toolpex::spin_lock m_lock;
     holding_state m_state;
     toolpex::ref_count m_shr_cnt{0};
+    void* m_current_writer{};
 };
 
 } // namespace koios 

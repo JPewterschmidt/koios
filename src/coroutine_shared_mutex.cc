@@ -44,7 +44,16 @@ bool shared_mutex::hold_this_shr_immediately() noexcept
 
 void shared_mutex::add_shr_waiting(task_on_the_fly t)
 {
-	m_shr_waitings.enqueue({ .task = ::std::move(t) });
+    ::std::lock_guard lk{ m_lock };
+    if (t.address() == m_current_writer)
+    {
+        m_state = SHR_DURING_UNI;
+        get_task_scheduler().enqueue(::std::move(t));
+    }
+    else
+    {
+        m_shr_waitings.enqueue({ .task = ::std::move(t) });
+    }
 }
 
 bool shared_mutex::hold_this_immediately() noexcept
@@ -55,7 +64,7 @@ bool shared_mutex::hold_this_immediately() noexcept
 
 void shared_mutex::add_waiting(task_on_the_fly t)
 {
-	m_uni_waitings.enqueue({ .task = ::std::move(t) });
+    m_uni_waitings.enqueue({ .task = ::std::move(t) });
 }
 
 void shared_mutex::release()
@@ -75,6 +84,11 @@ void shared_mutex::release()
               if (!being_held_sharedly()) 
                   try_wake_up_next_uni_impl();
               break;
+
+    case SHR_DURING_UNI:
+              m_state = UNI;
+              return;
+
     case NO:  assert(false);
     }
     if (!being_held() && !being_held_sharedly()) m_state = NO;
@@ -104,6 +118,7 @@ void shared_mutex::try_wake_up_next_uni_impl() noexcept
     if (m_uni_waitings.try_dequeue(handle))
     {
         m_state = UNI;
+        m_current_writer = handle.task.address();
         wake_up(handle);
     }
 }

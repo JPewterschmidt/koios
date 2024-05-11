@@ -89,6 +89,7 @@ void shared_mutex::release()
               break;
 
     case UNI: m_state = NO;
+              m_current_writer = nullptr;
               try_wake_up_shr_impl();
               if (!being_held_sharedly()) 
                   try_wake_up_next_uni_impl();

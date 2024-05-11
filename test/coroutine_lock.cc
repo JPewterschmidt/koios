@@ -93,3 +93,22 @@ TEST(coro_lock, shared)
         ASSERT_TRUE(reader().result());
     }
 }
+
+namespace
+{
+
+koios::shared_mutex mut2;
+
+koios::task<bool> get_shared_during_writing()
+{
+    auto uni = co_await mut2.acquire();
+    auto shr = co_await mut2.acquire_shared();
+    co_return true;
+}
+
+} // annoymous namespace
+
+TEST(coro_lock, shared_during_writing)
+{
+    ASSERT_TRUE(get_shared_during_writing().result());
+}

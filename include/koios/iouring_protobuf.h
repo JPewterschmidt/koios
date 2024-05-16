@@ -1,0 +1,85 @@
+#ifndef KOIOS_IOURING_PROTOBUF_H
+#define KOIOS_IOURING_PROTOBUF_H
+
+#include <chrono>
+
+#include "toolpex/encode.h"
+#include "toolpex/unique_posix_fd.h"
+
+#include "koios/task.h"
+#include "koios/iouring_awaitables.h"
+
+namespace koios::uring
+{
+
+task<size_t> send_pb_message(const toolpex::unique_posix_fd& fd, auto pb)
+{
+    const auto msg_rep = pb.SerializeAsString();
+    auto left = ::std::as_bytes(::std::span{ msg_rep });
+    size_t wrote{};
+    
+    // Send message length prefix with big endian.
+    ::std::array<::std::byte, sizeof(uint32_t)> msg_len_buf{};
+    toolpex::encode_big_endian_to(static_cast<uint32_t>(msg_rep.size()), msg_len_buf);
+
+    size_t retry_count{};
+
+    do
+    {
+        ++retry_count;
+        const auto prefix_sent_ret = co_await uring::send(fd, msg_len_buf);
+        if (retry_count > 5) co_return 0;
+    }
+    while (is_timeout_ec(prefix_sent_ret.error_code()));
+    retry_count = 0;
+    
+    // Send message body.
+    while (!left.empty())
+    {
+        if (retry_count > 10) break;
+        auto ret = co_await uring::send(fd, left);
+        if (auto ec = ret.error_code(); ec && !is_timeout_ec(ec))
+        {
+            break;
+        }
+        else if (!ec)
+        {
+            const auto cur_wrote = ret.nbytes_delivered();
+            left = left.subspan(cur_wrote);
+            wrote += cur_wrote;
+        }
+        else
+        {
+            ++retry_count;
+        }
+    }
+    
+    co_return wrote;
+}
+
+template<typename PbMsg>
+task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, PbMsg& msg)
+{
+    using namespace ::std::chrono_literals;
+    ::std::byte<::std::byte, sizeof(uint32_t)> prefix_buf{};
+    ::std::error_code ec{};
+    co_await recv_fill_buffer(fd, prefix_buf, 0, ec, 1min);
+    if (ec) co_return false;
+
+    const uint32_t prefix_len = toolpex::decode_big_endian_from<uint32_t>(prefix_buf);
+    auto buf = ::std::unique_ptr{ 
+        // TODO: remove default init (fill zero) after test
+        new ::std::byte[prefix_len]{} 
+    };
+    ::std::span<::std::byte> writable{ buf.get(), prefix_len };
+    const size_t received = co_await recv_fill_buffer(fd, writable, 0, ec, 3min);
+    if (ec || received != prefix_len)
+    {
+        co_return false;
+    }
+    co_return msg.ParseFromArray(writable.data(), writable.size());
+}
+
+} // namespace koios::uring
+
+#endif

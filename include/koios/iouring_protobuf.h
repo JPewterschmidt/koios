@@ -6,6 +6,7 @@
 
 #include "toolpex/encode.h"
 #include "toolpex/unique_posix_fd.h"
+#include "toolpex/concepts_and_traits.h"
 
 #include "koios/task.h"
 #include "koios/iouring_awaitables.h"
@@ -13,7 +14,15 @@
 namespace koios::uring
 {
 
-task<bool> send_pb_message(const toolpex::unique_posix_fd& fd, const auto& pb)
+template<typename PbMsg>
+concept protobuf_msg_concept = requires (PbMsg p)
+{
+    { p.IsInitialized() } -> toolpex::boolean_testable;
+    { p.SerializeAsString() } -> ::std::same_as<::std::string>;
+    { p.ParseFromArray(::std::declval<void*>(), ::std::declval<int>()) } -> toolpex::boolean_testable;
+};
+
+task<bool> send_pb_message(const toolpex::unique_posix_fd& fd, protobuf_msg_concept auto const& pb)
 {
     if (!pb.IsInitialized()) co_return false;
 
@@ -60,8 +69,7 @@ task<bool> send_pb_message(const toolpex::unique_posix_fd& fd, const auto& pb)
     co_return true;
 }
 
-template<typename PbMsg>
-task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, PbMsg& msg)
+task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, protobuf_msg_concept auto& msg)
 {
     using namespace ::std::chrono_literals;
     ::std::array<::std::byte, sizeof(uint32_t)> prefix_buf{};

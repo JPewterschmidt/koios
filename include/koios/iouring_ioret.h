@@ -36,6 +36,7 @@ namespace koios::uring
     class ioret_for_any_base : public ioret
     {
     public:
+        constexpr ioret_for_any_base() noexcept = default;
         ioret_for_any_base(ioret r) noexcept;
         ioret_for_any_base(int32_t ret, uint32_t flags) noexcept
             : ioret_for_any_base{ ioret{ ret, flags } }

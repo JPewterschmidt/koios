@@ -2,6 +2,7 @@
 #define KOIOS_IOURING_PROTOBUF_H
 
 #include <chrono>
+#include <array>
 
 #include "toolpex/encode.h"
 #include "toolpex/unique_posix_fd.h"
@@ -12,8 +13,10 @@
 namespace koios::uring
 {
 
-task<size_t> send_pb_message(const toolpex::unique_posix_fd& fd, auto pb)
+task<bool> send_pb_message(const toolpex::unique_posix_fd& fd, const auto& pb)
 {
+    if (!pb.IsInitialized()) co_return false;
+
     const auto msg_rep = pb.SerializeAsString();
     auto left = ::std::as_bytes(::std::span{ msg_rep });
     size_t wrote{};
@@ -23,12 +26,12 @@ task<size_t> send_pb_message(const toolpex::unique_posix_fd& fd, auto pb)
     toolpex::encode_big_endian_to(static_cast<uint32_t>(msg_rep.size()), msg_len_buf);
 
     size_t retry_count{};
-
+    ioret_for_data_deliver prefix_sent_ret{};
     do
     {
         ++retry_count;
-        const auto prefix_sent_ret = co_await uring::send(fd, msg_len_buf);
-        if (retry_count > 5) co_return 0;
+        prefix_sent_ret = co_await uring::send(fd, msg_len_buf);
+        if (retry_count > 5) co_return false;
     }
     while (is_timeout_ec(prefix_sent_ret.error_code()));
     retry_count = 0;
@@ -54,20 +57,20 @@ task<size_t> send_pb_message(const toolpex::unique_posix_fd& fd, auto pb)
         }
     }
     
-    co_return wrote;
+    co_return true;
 }
 
 template<typename PbMsg>
 task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, PbMsg& msg)
 {
     using namespace ::std::chrono_literals;
-    ::std::byte<::std::byte, sizeof(uint32_t)> prefix_buf{};
+    ::std::array<::std::byte, sizeof(uint32_t)> prefix_buf{};
     ::std::error_code ec{};
     co_await recv_fill_buffer(fd, prefix_buf, 0, ec, 1min);
     if (ec) co_return false;
 
     const uint32_t prefix_len = toolpex::decode_big_endian_from<uint32_t>(prefix_buf);
-    auto buf = ::std::unique_ptr{ 
+    auto buf = ::std::unique_ptr<::std::byte[]>{ 
         // TODO: remove default init (fill zero) after test
         new ::std::byte[prefix_len]{} 
     };
@@ -77,7 +80,7 @@ task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, PbMsg& msg)
     {
         co_return false;
     }
-    co_return msg.ParseFromArray(writable.data(), writable.size());
+    co_return msg.ParseFromArray(writable.data(), static_cast<int>(writable.size()));
 }
 
 } // namespace koios::uring

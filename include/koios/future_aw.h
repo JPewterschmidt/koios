@@ -1,8 +1,9 @@
 #ifndef KOIOS_FUTURE_AW_H
 #define KOIOS_FUTURE_AW_H
 
-#include <cassert>
 #include <memory>
+
+#include "toolpex/assert.h"
 
 #include "koios/task_on_the_fly.h"
 
@@ -34,7 +35,7 @@ public:
         : m_fb{ fb }, 
           m_fut_aw_detial{ ::std::make_unique<future_aw_detial>() }
     {
-        assert(m_fb.valid());
+        toolpex_assert(m_fb.valid());
     }
     
     bool await_ready() const noexcept

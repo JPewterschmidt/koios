@@ -1,4 +1,7 @@
 #include "gtest/gtest.h"
+
+#include "toolpex/assert.h"
+
 #include "koios/task.h"
 #include "koios/task_concepts.h"
 
@@ -68,7 +71,7 @@ task<int> dummy_func()
 {
     // This coroutine should not be executed 
     // since it's just a declval dummy.
-    assert(false);
+    toolpex_assert(false);
     co_return {};
 }
 

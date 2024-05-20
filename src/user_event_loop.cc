@@ -19,7 +19,6 @@
 #include "koios/user_event_loops.h"
 #include "koios/user_event_loop_interface.h"
 #include "toolpex/exceptions.h"
-#include <cassert>
 
 KOIOS_NAMESPACE_BEG
 

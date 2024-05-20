@@ -21,8 +21,8 @@
 
 #include <vector>
 #include <liburing.h>
-#include <cassert>
 #include "toolpex/move_only.h"
+#include "toolpex/assert.h"
 #include "koios/iouring_ioret.h"
 
 namespace koios::uring
@@ -64,7 +64,7 @@ public:
     void add_ret(int ret, int flags) { m_rets.emplace_back(ret, flags); }
     bool has_enough_ret() const noexcept { return m_rets.size() == m_sqes.size(); }
 
-    void clear() noexcept { m_sqes.clear(); assert(!m_rets.empty()); }
+    void clear() noexcept { m_sqes.clear(); toolpex_assert(!m_rets.empty()); }
     bool empty() const noexcept { return m_sqes.empty(); }
 
     auto& return_slots() noexcept { return m_rets; }

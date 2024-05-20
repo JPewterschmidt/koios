@@ -25,7 +25,6 @@
 #include <utility>
 #include <compare>
 #include <mutex>
-#include <cassert>
 #include <thread>
 #include <shared_mutex>
 #include <stop_token>

@@ -52,7 +52,7 @@ auto make_eager(Func f, Args... args)
 }
 
 template<awaitible_concept... Aws>
-auto when_all(Aws... aws)
+auto wait_all(Aws... aws)
     -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
 {
     co_return ::std::make_tuple((co_await ::std::move(aws))...);

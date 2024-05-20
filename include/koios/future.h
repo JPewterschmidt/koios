@@ -22,11 +22,12 @@
 #include <atomic>
 #include <exception>
 #include <memory>
-#include <cassert>
 #include <type_traits>
 #include <optional>
 #include <condition_variable> 
 #include <mutex>
+
+#include "toolpex/assert.h"
 
 #include "koios/macros.h"
 #include "koios/exceptions.h"
@@ -214,7 +215,7 @@ namespace fp_detials
 
         auto get_nonblk(const ::std::unique_lock<::std::mutex>& lk)
         {
-            assert(lk.mutex() == &m_lock);
+            toolpex_assert(lk.mutex() == &m_lock);
             if (auto& ex = m_storage_ptr->exception_ptr(); ex)
             {
                 ::std::rethrow_exception(ex);
@@ -226,13 +227,13 @@ namespace fp_detials
 
         bool ready(const ::std::unique_lock<::std::mutex>& lk) const noexcept 
         { 
-            assert(lk.mutex() == &m_lock);
+            toolpex_assert(lk.mutex() == &m_lock);
             return !!m_storage_ptr; 
         }
 
         auto get(::std::unique_lock<::std::mutex>& lk)
         {
-            assert(lk.mutex() == &m_lock);
+            toolpex_assert(lk.mutex() == &m_lock);
             if (!ready(lk)) 
                 m_cond.wait(lk, [&lk, this]{ return ready(lk); });
             return get_nonblk(lk);
@@ -242,7 +243,7 @@ namespace fp_detials
         void set_future_aw_ptr(future_aw_detial* ptr)
         {
             auto lk = get_unique_lock();
-            assert(m_aw == nullptr);
+            toolpex_assert(m_aw == nullptr);
             m_aw = ptr;
             if (ready(lk)) [[unlikely]]
             {
@@ -259,7 +260,7 @@ namespace fp_detials
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr, 
                              const ::std::unique_lock<::std::mutex>& lk)
         {
-            assert(lk.mutex() == &m_lock);
+            toolpex_assert(lk.mutex() == &m_lock);
             m_storage_ptr = ::std::move(ptr);
             m_cond.notify_all(); 
             if (m_aw) 
@@ -329,7 +330,7 @@ namespace fp_detials
          */
         auto get() 
         { 
-            assert(valid());
+            toolpex_assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get();
             else return m_impl_ptr->get();
@@ -350,7 +351,7 @@ namespace fp_detials
          */
         auto get_nonblk()
         {
-            assert(valid());
+            toolpex_assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get_nonblk();
             else return m_impl_ptr->get_nonblk();
@@ -358,13 +359,13 @@ namespace fp_detials
 
         auto get_shared_state_lock() const noexcept 
         { 
-            assert(valid());
+            toolpex_assert(valid());
             return m_impl_ptr->get_shared_state_lock(); 
         }
 
         auto get_nonblk(const ::std::unique_lock<::std::mutex>& lk)
         {
-            assert(valid());
+            toolpex_assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get_nonblk(lk);
             else return m_impl_ptr->get_nonblk(lk);
@@ -372,13 +373,13 @@ namespace fp_detials
 
         bool ready(const ::std::unique_lock<::std::mutex>& lk) const noexcept 
         { 
-            assert(valid());
+            toolpex_assert(valid());
             return m_impl_ptr->ready(lk);
         }
 
         auto get(::std::unique_lock<::std::mutex>& lk)
         {
-            assert(valid());
+            toolpex_assert(valid());
             if constexpr (::std::same_as<value_type, void>) 
                 m_impl_ptr->get(lk);
             else return m_impl_ptr->get(lk);

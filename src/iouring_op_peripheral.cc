@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "toolpex/assert.h"
 #include "koios/iouring_op_peripheral.h"
-#include <cassert>
 
 namespace koios::uring
 {
@@ -51,7 +51,7 @@ void
 op_peripheral_element::
 delete_this() noexcept
 {
-    assert(m_deleter);
+    toolpex_assert(m_deleter);
     if (m_buffer) m_deleter(m_buffer.get());
 }
 

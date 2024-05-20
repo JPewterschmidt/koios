@@ -21,7 +21,8 @@
 
 #include <future>
 #include <memory>
-#include <cassert>
+
+#include "toolpex/assert.h"
 
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
@@ -57,7 +58,7 @@ public:
 /***                          Critical Section Begin                                ***/
 /**************************************************************************************/
 /**/    lock_shared_state();                                                        /**/
-/**/    assert(m_lock);                                                             /**/
+/**/    toolpex_assert(m_lock);                                                     /**/
 /**/    return m_future.ready(m_lock);                                              /**/
 /**/}                                                                               /**/
 
@@ -68,7 +69,7 @@ public:
 /**/    // Dear developers:                                                         /**/
 /**/    // This function should not throw (even potentially) anything.              /**/
 /**/    // See also comments of `thread_pool::enqueue`                              /**/
-/**/    assert(this->m_lock);                                                       /**/
+/**/    toolpex_assert(this->m_lock);                                               /**/
 /**/    auto lk = ::std::move(m_lock);                                              /**/
 /**/    m_promise.set_caller(::std::move(h));                                       /**/
 /**/    get_task_scheduler().enqueue(                                               /**/
@@ -91,7 +92,7 @@ public:
     {
         // For which scheduled by user call 
         // `task::run()` or `task::run_and_get_future()` directly.
-        assert(!m_promise.caller_set());
+        toolpex_assert(!m_promise.caller_set());
         return m_future; 
     }
 

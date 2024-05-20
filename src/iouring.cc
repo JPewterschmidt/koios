@@ -16,9 +16,10 @@
  * foundation, inc., 51 franklin street, fifth floor, boston, ma  02110-1301, usa.
  */
 
+#include "toolpex/assert.h"
+
 #include "koios/iouring.h"
 #include "koios/runtime.h"
-#include <cassert>
 #include <thread>
 #include <chrono>
 #include "toolpex/tic_toc.h"
@@ -47,12 +48,12 @@ namespace iel_detials
     void iouring_event_loop_perthr::
     dealwith_cqe(const ::io_uring_cqe* cqep)
     {
-        assert(cqep);
+        toolpex_assert(cqep);
         auto& schr = get_task_scheduler();
 
         const uintptr_t key = cqep->user_data;
         auto it = m_opreps.find(key);
-        assert(it != m_opreps.end());
+        toolpex_assert(it != m_opreps.end());
         auto& [batch_rep, task] = it->second;
         batch_rep->add_ret(cqep->res, cqep->flags);
         if (batch_rep->has_enough_ret())
@@ -96,7 +97,7 @@ namespace iel_detials
     {
         const uintptr_t addrkey = reinterpret_cast<uint64_t>(h.address());
         auto lk = get_lk();
-        assert(!m_opreps.contains(addrkey));
+        toolpex_assert(!m_opreps.contains(addrkey));
         m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
         shot_this_time();
         for (const auto& sqe : ops)

@@ -16,9 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <cassert>
 #include "koios/iouring_op_batch.h"
 #include "toolpex/exceptions.h"
+#include "toolpex/assert.h"
 #include "toolpex/convert_to_systime.h"
 
 namespace koios::uring
@@ -28,7 +28,7 @@ op_batch_execute_aw
 op_batch::
 execute() & noexcept 
 { 
-    assert(!m_rep.empty());
+    toolpex_assert(!m_rep.empty());
     return { m_rep };
 }
 

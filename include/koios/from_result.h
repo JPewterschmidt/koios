@@ -21,7 +21,6 @@
 
 #include <coroutine>
 #include <utility>
-#include <cassert>
 
 #include "koios/macros.h"
 #include "koios/task.h"

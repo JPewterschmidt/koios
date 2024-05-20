@@ -21,7 +21,6 @@
 
 #include <coroutine>
 #include <memory>
-#include <cassert>
 #include <utility>
 #include <stdexcept>
 #include <memory>

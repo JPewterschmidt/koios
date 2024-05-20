@@ -22,7 +22,6 @@
 #include <atomic>
 #include <shared_mutex>
 #include <liburing.h>
-#include <cassert>
 #include <cstdint>
 #include <condition_variable>
 #include <system_error>

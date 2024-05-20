@@ -19,7 +19,8 @@
 #ifndef KOIOS_SHARED_LOCK_H
 #define KOIOS_SHARED_LOCK_H
 
-#include <cassert>
+#include "toolpex/assert.h"
+
 #include "koios/exceptions.h"
 #include "koios/lock_base.h"
 
@@ -37,9 +38,9 @@ public:
 
         auto lk = co_await this->m_mutex->acquire_shared();
 
-        assert(!this->is_hold());
+        toolpex_assert(!this->is_hold());
         this->m_hold = ::std::exchange(lk.m_hold, false);
-        assert(this->is_hold());
+        toolpex_assert(this->is_hold());
 
         co_return;
     }

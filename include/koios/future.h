@@ -30,6 +30,7 @@
 
 #include "koios/macros.h"
 #include "koios/exceptions.h"
+#include "koios/future_aw.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -183,6 +184,7 @@ namespace fp_detials
         using value_type = ::std::remove_reference_t<Result>;
         template<typename> friend class fp_detials::promise_impl;
         template<typename> friend class fp_detials::promise_base;
+        template<typename> friend class fp_detials::future_base;
         template<typename> friend class fp_detials::storage_deliver;
 
     public:
@@ -237,6 +239,17 @@ namespace fp_detials
         }
 
     private:
+        void set_future_aw_ptr(future_aw_detial* ptr)
+        {
+            auto lk = get_unique_lock();
+            assert(m_aw == nullptr);
+            m_aw = ptr;
+            if (ready(lk)) [[unlikely]]
+            {
+                m_aw->awake();
+            }
+        }
+
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
         {
             auto lk = get_unique_lock();
@@ -249,6 +262,11 @@ namespace fp_detials
             assert(lk.mutex() == &m_lock);
             m_storage_ptr = ::std::move(ptr);
             m_cond.notify_all(); 
+            if (m_aw) 
+            {
+                m_aw->awake();
+                m_aw = nullptr;
+            }
         }
 
         auto get_unique_lock() const { return ::std::unique_lock{ m_lock }; }
@@ -256,6 +274,7 @@ namespace fp_detials
     private:
         ::std::shared_ptr<fp_detials::promise_storage<value_type>> m_storage_ptr;
         ::std::condition_variable m_cond;
+        future_aw_detial* m_aw{};
         mutable ::std::mutex m_lock;
     };
 
@@ -367,10 +386,17 @@ namespace fp_detials
 
         bool valid() const noexcept { return m_impl_ptr != nullptr; }
 
+        auto get_async() noexcept
+        {
+            auto result = future_aw{ *this };
+            m_impl_ptr->set_future_aw_ptr(result.get_aw_detial_ptr());
+            return result;
+        }
+
     private:
         ::std::shared_ptr<fp_detials::future_impl<value_type>> m_impl_ptr;
     };
-}
+} // namespace fp_detials
 
 /*! \brief The future object of koios future/promise pattern */
 template<typename T> 

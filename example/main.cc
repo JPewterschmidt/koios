@@ -39,10 +39,17 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
+    eager_task<int> func()
+    {
+        co_return 2333;
+    }
+ 
     eager_task<> newuring_test()
     {
-        int i = co_await from_result(1);
-        ::std::cout << i << ::std::endl;
+        auto fut = func().run_and_get_future();
+        int i = co_await fut.get_async();
+        ::std::cout << i << "\n";
+
         co_return;
     }
 }
@@ -53,6 +60,7 @@ try
     koios::runtime_init(4);
     newuring_test().result();
     koios::runtime_exit();
+    ::std::cout << ::std::endl;
     return 0;
 }
 catch (const ::std::exception& e)

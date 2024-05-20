@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "koios/future.h"
 #include "koios/future_concepts.h"
+#include "koios/task.h"
 
 using namespace koios;
 
@@ -78,4 +79,25 @@ TEST(future, future_ready3)
 TEST(future, future_concept)
 {
     ASSERT_TRUE(future_concept<koios::future<int>>);
+}
+
+namespace 
+{
+
+task<int> test_future_aw_func()
+{
+    co_return 2333;
+}
+
+task<bool> test_future_aw()
+{
+    koios::future<int> fut = test_future_aw_func().run_and_get_future();
+    co_return co_await fut.get_async() == 2333;
+}
+    
+} // annoymous namespace
+
+TEST(future, future_aw)
+{
+    ASSERT_TRUE(test_future_aw().result());
 }

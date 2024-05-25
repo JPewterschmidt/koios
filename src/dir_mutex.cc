@@ -93,7 +93,8 @@ dir_mutex::dir_mutex(::std::filesystem::path p,
 bool dir_mutex::create_lock_file() const
 {
     const int ret = ::openat(m_dirfd, lock_file_name().data(), 
-                             O_CREAT | O_EXCL | O_CLOEXEC);
+                             O_CREAT | O_EXCL | O_CLOEXEC, 
+                             S_IRWXU | S_IRGRP | S_IROTH);
     if (ret < 0)
     { 
         if (errno == EEXIST) return false;

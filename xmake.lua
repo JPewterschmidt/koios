@@ -66,7 +66,7 @@ target("test")
         "gtest", "spdlog"
     )
     after_build(function (target)
-        os.exec(target:targetfile())
+        os.execv(target:targetfile(), {"--gtest_color=yes"})
         print("xmake: unittest complete.")
     end)
     on_run(function (target)

@@ -24,10 +24,15 @@
 #include <utility>
 #include <stdexcept>
 #include <memory>
+#include <mutex>
+
+#include "toolpex/spin_lock.h"
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
 #include "koios/generator_iterator.h"
+#include "koios/task_on_the_fly.h"
+#include "koios/waiting_handle.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -46,18 +51,7 @@ template<typename T, typename Alloc>
 class generator_promise_type 
     : public promise_base<::std::suspend_always, ::std::suspend_always>
 {
-private:
-    /*! \brief allocate memory then initialize the object at.
-     *  \return the pointer to the memory buffer allocated.
-     */
-    template<typename TT>
-    static T* alloc_and_construct(TT&& tt)
-    {
-        T* buffer = Alloc{}.allocate(1);
-        ::std::construct_at(buffer, ::std::forward<TT>(tt));
-        return buffer;
-    }
-
+public:
     /*! The deleter for `::std::unique_ptr`, which firstly destruct the object on it,
      *  the deallocate it by the allocator.
      */
@@ -70,12 +64,76 @@ private:
         }
     };
 
-public:
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
     using storage_type = ::std::unique_ptr<T, value_deleter>;
 
+private:
+    mutable toolpex::spin_lock m_mutex;
     storage_type m_current_value_p{ nullptr }; /*! Holds the memory and the return value object. */
+    task_on_the_fly m_waitting{};
+    bool m_finalized{};
 
+    /*! \brief allocate memory then initialize the object at.
+     *  \return the pointer to the memory buffer allocated.
+     */
+    template<typename TT>
+    static T* alloc_and_construct(TT&& tt)
+    {
+        T* buffer = Alloc{}.allocate(1);
+        ::std::construct_at(buffer, ::std::forward<TT>(tt));
+        return buffer;
+    }
+
+public:
+    class get_yielded_aw
+    {
+    public:
+        get_yielded_aw(::std::coroutine_handle<generator_promise_type> h) noexcept
+            : m_h{ h }, m_parent{ h.promise() }
+        {
+        }
+
+        bool await_ready() noexcept
+        {
+            toolpex_assert(!m_parent.m_mutex.is_locked());
+            m_lock = ::std::unique_lock{ m_parent.m_mutex };
+            if (m_parent.finalized_impl())
+            {
+                return true;
+            }
+            else if (!m_parent.value_storage())
+            {
+                wake_up(::std::move(m_h));
+                return false;
+            }
+
+            return m_parent.has_value_impl();
+        }
+
+        void await_suspend(task_on_the_fly t) noexcept
+        {
+            toolpex_assert(!m_parent.m_waitting);
+            toolpex_assert(m_lock.owns_lock());
+            m_parent.m_waitting = ::std::move(t);
+            m_lock.unlock();
+        }
+
+        ::std::optional<T> await_resume() 
+        {
+            m_lock.lock();
+            auto ret = m_parent.value_opt_impl();
+            m_lock = {};
+
+            return ret;
+        }
+
+    private:
+        mutable ::std::unique_lock<toolpex::spin_lock> m_lock;
+        task_on_the_fly m_h{};
+        generator_promise_type& m_parent;
+    };
+
+public:
     static _generator<T, Alloc>::_type get_return_object_on_allocation_failure() 
     { 
         return { handle_type{} }; 
@@ -86,7 +144,15 @@ public:
         return { handle_type::from_promise(*this) }; 
     }
 
-    constexpr void return_void() const noexcept {}
+    void return_void() noexcept 
+    { 
+        ::std::unique_lock lk{ m_mutex }; 
+        m_finalized = true; 
+        if (m_waitting)
+        {
+            wake_up(::std::move(m_waitting));
+        }
+    }
 
     void unhandled_exception() const { throw; }
 
@@ -96,9 +162,15 @@ public:
     template<typename TT>
     auto yield_value(TT&& val)
     {
+        ::std::unique_lock lk{ m_mutex };
         m_current_value_p.reset(
             alloc_and_construct(::std::forward<TT>(val))
         );
+        if (m_waitting)
+        {
+            wake_up(::std::move(m_waitting));
+            m_waitting = {};
+        }
         return ::std::suspend_always{};
     }
 
@@ -107,7 +179,13 @@ public:
      */
     bool has_value() const noexcept
     {
-        return bool(m_current_value_p);
+        ::std::unique_lock lk{ m_mutex };
+        return has_value_impl();
+    }
+
+    bool has_value_impl() const noexcept
+    {
+        return !m_finalized && bool(m_current_value_p);
     }
 
     /*! \brief Take the ownership of the current yield value.
@@ -115,12 +193,38 @@ public:
      */
     T value()
     {
+        ::std::unique_lock lk{ m_mutex };
+        return value_impl();
+    }
+
+    T value_impl()
+    {
         auto resultp = ::std::move(m_current_value_p);
         return ::std::move(*resultp);
     }
 
+    ::std::optional<T> value_opt()
+    {
+        ::std::unique_lock lk{ m_mutex };
+        return value_opt_impl();
+    }
+
+    ::std::optional<T> value_opt_impl()
+    {
+        ::std::optional<T> result{};
+        if (has_value_impl())
+        {
+            result.emplace(value_impl());
+        }
+        return result;
+    }
+
+    bool finalized() const noexcept { ::std::unique_lock lk{ m_mutex }; return finalized_impl(); }
+    bool finalized_impl() const noexcept { return m_finalized; }
+
     /*! \return Reference of the storage which holds the yield value and its memory buffer. */
     auto& value_storage() noexcept { return m_current_value_p; }
+    const auto& value_storage() const noexcept { return m_current_value_p; }
 
     /*! \brief destruct the current yield value and deallocate the memory. */
     void clear() noexcept { m_current_value_p.reset(); }
@@ -219,11 +323,15 @@ private:
     bool m_need_destroy_in_dtor{ true };
 
 public:
-    using iterator = detial::generator_iterator<_generator<T, Alloc>::_type>;
+    using iterator = detial::sync_generator_iterator<_generator<T, Alloc>::_type>;
     iterator begin() noexcept { return { *this }; }
-    constexpr detial::generator_iterator_sentinel end() const noexcept { return {}; };
-};
+    constexpr detial::sync_generator_iterator_sentinel end() const noexcept { return {}; };
 
+    [[nodiscard]] typename promise_type::get_yielded_aw next_value_async() & noexcept
+    {
+        return { m_coro };
+    }
+};
 
 template<typename T, typename Alloc = ::std::allocator<T>>
 using generator = typename _generator<T, Alloc>::_type;

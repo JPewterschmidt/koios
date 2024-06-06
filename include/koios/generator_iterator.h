@@ -30,10 +30,10 @@ KOIOS_NAMESPACE_BEG
 
 namespace detial
 {
-    class generator_iterator_sentinel{};
+    class sync_generator_iterator_sentinel{};
 
     template<typename G>
-    class generator_iterator
+    class sync_generator_iterator
     {
     private:
         using generator_type = G;
@@ -48,23 +48,23 @@ namespace detial
         using storage_type = typename generator_type::promise_type::storage_type;
 
     public:
-        generator_iterator() noexcept = default;
+        sync_generator_iterator() noexcept = default;
 
-        generator_iterator(generator_type& g) noexcept
+        sync_generator_iterator(generator_type& g) noexcept
             : m_generator{ &g }
         {
             m_reach_end = !m_generator->move_next();
         }
 
-        generator_iterator(const generator_iterator&) = delete;
-        generator_iterator& operator=(const generator_iterator&) = delete;
-        generator_iterator(generator_iterator&&) noexcept = delete;
-        generator_iterator& operator=(generator_iterator&&) noexcept = delete;
+        sync_generator_iterator(const sync_generator_iterator&) = delete;
+        sync_generator_iterator& operator=(const sync_generator_iterator&) = delete;
+        sync_generator_iterator(sync_generator_iterator&&) noexcept = delete;
+        sync_generator_iterator& operator=(sync_generator_iterator&&) noexcept = delete;
 
         /*! \brief Call the `move_next()`
          *  But won't take the ownership of the current yield value.
          */
-        generator_iterator& operator++()
+        sync_generator_iterator& operator++()
         {
             m_storage = nullptr;
             m_reach_end = !m_generator->move_next() || !m_generator->has_value();
@@ -74,7 +74,7 @@ namespace detial
 
         void operator++(int) { operator++(); }
 
-        generator_iterator& operator=(generator_iterator_sentinel)
+        sync_generator_iterator& operator=(sync_generator_iterator_sentinel)
         {
             m_storage = nullptr;
             m_reach_end = true;
@@ -108,7 +108,7 @@ namespace detial
         }
 
         template<generator_concept GG>
-        friend bool operator != (const generator_iterator<GG>&, const generator_iterator_sentinel&);
+        friend bool operator != (const sync_generator_iterator<GG>&, const sync_generator_iterator_sentinel&);
 
     private: 
         generator_type* m_generator{};
@@ -117,7 +117,7 @@ namespace detial
     };
 
     template<generator_concept G>
-    bool operator!=(const generator_iterator<G>& iter, const generator_iterator_sentinel&)
+    bool operator!=(const sync_generator_iterator<G>& iter, const sync_generator_iterator_sentinel&)
     {
         return !iter.m_reach_end;
     }

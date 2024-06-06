@@ -16,6 +16,7 @@
 #include "koios/expected.h"
 #include "koios/functional.h"
 #include "koios/from_result.h"
+#include "koios/generator.h"
 
 #include "toolpex/tic_toc.h"
 #include "toolpex/errret_thrower.h"
@@ -41,14 +42,27 @@ namespace
 {
     eager_task<int> func()
     {
-        co_return 2333;
+        co_return 1;
     }
- 
-    eager_task<> newuring_test()
+    
+    generator<int> gen()
     {
-        auto fut = func().run_and_get_future();
-        int i = co_await fut.get_async();
-        ::std::cout << i << "\n";
+        for (int i{}; i < 10; ++i)
+        {
+            co_yield co_await func() + i; 
+        }
+        co_return;
+    }
+
+    eager_task<> main_body()
+    {
+        auto g = gen();
+        ::std::optional<int> iopt;
+        while ((iopt = co_await g.next_value_async()))
+        {
+            ::std::cout << *iopt << " ";
+        }
+        ::std::cout << ::std::endl;
 
         co_return;
     }
@@ -57,8 +71,8 @@ namespace
 int main()
 try
 {
-    koios::runtime_init(4);
-    newuring_test().result();
+    koios::runtime_init(1);
+    main_body().result();
     koios::runtime_exit();
     ::std::cout << ::std::endl;
     return 0;

@@ -65,7 +65,7 @@ public:
      */
     void do_occured_nonblk() noexcept
     {
-        (Loops::do_occured_nonblk(), ...);
+        (this->Loops::do_occured_nonblk(), ...);
     }
 
     /*! \brief Add event to specific event loop. 

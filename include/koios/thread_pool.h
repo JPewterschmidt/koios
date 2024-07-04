@@ -96,9 +96,9 @@ public:
     template<typename F, typename... Args>
     [[nodiscard]] auto enqueue(F&& func, Args&&... args)
     {
-        if (need_stop_now()) [[unlikely]] 
+        if (this->need_stop_now()) [[unlikely]] 
             throw thread_pool_stopped_exception{};
-        return enqueue_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
+        return this->enqueue_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
     /*! \brief Bind the first and the rest of parameters into a invocable object, the run it on a thread.
@@ -111,9 +111,9 @@ public:
     template<typename F, typename... Args>
     void enqueue_no_future(F&& func, Args&&... args)
     {
-        if (need_stop_now()) [[unlikely]] 
+        if (this->need_stop_now()) [[unlikely]] 
             throw thread_pool_stopped_exception{};
-        enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
+        this->enqueue_no_future_without_checking(::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
     /*! \brief  Basically same as `enqueue` without `ca` parameter.
@@ -124,9 +124,9 @@ public:
     template<typename F, typename... Args>
     [[nodiscard]] auto enqueue(const per_consumer_attr& ca, F&& func, Args&&... args)
     {
-        if (need_stop_now()) [[unlikely]] 
+        if (this->need_stop_now()) [[unlikely]] 
             throw thread_pool_stopped_exception{};
-        return enqueue_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
+        return this->enqueue_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
     /*! \brief  Basically same as `enqueue_no_future` without `ca` parameter.
@@ -137,9 +137,9 @@ public:
     template<typename F, typename... Args>
     void enqueue_no_future(const per_consumer_attr& ca, F&& func, Args&&... args)
     {
-        if (need_stop_now()) [[unlikely]] 
+        if (this->need_stop_now()) [[unlikely]] 
             throw thread_pool_stopped_exception{};
-        enqueue_no_future_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
+        this->enqueue_no_future_without_checking(ca, ::std::forward<F>(func), ::std::forward<Args>(args)...);
     }
 
     void wake_up() noexcept
@@ -198,7 +198,7 @@ protected:
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
-        wake_up();
+        this->wake_up();
     }
 
     template<typename F, typename... Args>
@@ -206,7 +206,7 @@ protected:
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
         m_tasks.enqueue(ca, [task = ::std::move(task)] mutable { task(); });
-        wake_up();
+        this->wake_up();
     }
 
     template<typename F, typename... Args>
@@ -223,7 +223,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue([task] mutable { (*task)(); });
-        wake_up();
+        this->wake_up();
 
         return result;
     }
@@ -242,7 +242,7 @@ protected:
         );
         auto result = task->get_future();
         m_tasks.enqueue(ca, [task] mutable { (*task)(); });
-        wake_up();
+        this->wake_up();
 
         return result;
     }

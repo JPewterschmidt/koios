@@ -34,7 +34,7 @@ op_peripheral_element&
 op_peripheral_element::
 operator=(op_peripheral_element&& other) noexcept
 {
-    delete_this();
+    this->delete_this();
     m_buffer = ::std::move(other.m_buffer);
     m_deleter = other.m_deleter;
     other.m_buffer = nullptr;
@@ -44,7 +44,7 @@ operator=(op_peripheral_element&& other) noexcept
 op_peripheral_element::
 ~op_peripheral_element() noexcept
 {
-    delete_this();
+    this->delete_this();
 }
 
 void 

@@ -55,17 +55,17 @@ public:
 
     void enqueue(task_concept auto t) noexcept
     {
-        enqueue(t.move_out_coro_handle());
+        this->enqueue(t.move_out_coro_handle());
     }
 
     void enqueue(task_on_the_fly h) noexcept
     {
-        if (h) thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
+        if (h) this->thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
     }
 
     void enqueue(const per_consumer_attr& ca, task_concept auto t) noexcept
     {
-        enqueue(ca, task_on_the_fly(t));
+        this->enqueue(ca, task_on_the_fly(t));
     }
 
     void enqueue(const per_consumer_attr& ca, task_on_the_fly h) noexcept
@@ -73,8 +73,8 @@ public:
         if (h) thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
     }
 
-    virtual void stop() noexcept { thread_pool::stop(); }
-    void quick_stop() noexcept { thread_pool::quick_stop(); }
+    virtual void stop() noexcept { this->thread_pool::stop(); }
+    void quick_stop() noexcept { this->thread_pool::quick_stop(); }
 
     virtual ~task_scheduler() noexcept {}
 };

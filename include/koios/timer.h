@@ -83,7 +83,7 @@ public:
     void add_event(toolpex::is_std_chrono_duration auto dura, auto task) noexcept
     {
         const auto now = ::std::chrono::high_resolution_clock::now();
-        add_event(now + dura, ::std::move(task));
+        this->add_event(now + dura, ::std::move(task));
     }
 
     /*! \brief Adding a timer event.
@@ -97,7 +97,7 @@ public:
             task_on_the_fly result = ::std::move(t);
             return result;
         };
-        add_event_impl({ tp, tof(::std::move(task)) });
+        this->add_event_impl({ tp, tof(::std::move(task)) });
     }
 
     /*! \brief returning the maximum sleep duration of the `thread_pool`
@@ -149,14 +149,14 @@ public:
 
     void do_occured_nonblk() noexcept 
     { 
-        auto [lk, ptr] = cur_thread_ptr();
+        auto [lk, ptr] = this->cur_thread_ptr();
         ptr->do_occured_nonblk(); 
     }
 
     template<typename... Args>
     void add_event(Args&&... args) noexcept 
     { 
-        if (is_cleanning()) 
+        if (this->is_cleanning()) 
         {
             koios::log_error(
                 "event loop has started cleaning! "
@@ -165,14 +165,14 @@ public:
             return;
         }
         
-        auto [lk, ptr] = cur_thread_ptr();
+        auto [lk, ptr] = this->cur_thread_ptr();
         ptr->add_event(::std::forward<Args>(args)...); 
     }
 
     ::std::chrono::nanoseconds
     max_sleep_duration(const per_consumer_attr& cattr) noexcept
     { 
-        if (is_cleanning()) 
+        if (this->is_cleanning()) 
             return ::std::chrono::nanoseconds::max();
         auto lk = ::std::shared_lock{ m_ptrs_lock };
         return m_impl_ptrs[cattr.thread_id]->max_sleep_duration();

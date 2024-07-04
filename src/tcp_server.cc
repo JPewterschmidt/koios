@@ -68,7 +68,7 @@ void
 tcp_server::
 until_done_blk()
 {
-    until_done_async().result();
+    this->until_done_async().result();
 }
 
 bool tcp_server::is_stop() const noexcept 
@@ -93,7 +93,7 @@ void tcp_server::stop()
 
 task<> tcp_server::until_done_async()
 {
-    if (is_stop()) co_return;
+    if (this->is_stop()) co_return;
     [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
     co_return;
 }

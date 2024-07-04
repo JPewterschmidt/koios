@@ -164,7 +164,7 @@ public:
     {
         ::std::unique_lock lk{ m_mutex };
         m_current_value_p.reset(
-            alloc_and_construct(::std::forward<TT>(val))
+            this->alloc_and_construct(::std::forward<TT>(val))
         );
         if (m_waitting)
         {
@@ -180,7 +180,7 @@ public:
     bool has_value() const noexcept
     {
         ::std::unique_lock lk{ m_mutex };
-        return has_value_impl();
+        return this->has_value_impl();
     }
 
     bool has_value_impl() const noexcept
@@ -194,7 +194,7 @@ public:
     T value()
     {
         ::std::unique_lock lk{ m_mutex };
-        return value_impl();
+        return this->value_impl();
     }
 
     T value_impl()
@@ -206,20 +206,20 @@ public:
     ::std::optional<T> value_opt()
     {
         ::std::unique_lock lk{ m_mutex };
-        return value_opt_impl();
+        return this->value_opt_impl();
     }
 
     ::std::optional<T> value_opt_impl()
     {
         ::std::optional<T> result{};
-        if (has_value_impl())
+        if (this->has_value_impl())
         {
             result.emplace(value_impl());
         }
         return result;
     }
 
-    bool finalized() const noexcept { ::std::unique_lock lk{ m_mutex }; return finalized_impl(); }
+    bool finalized() const noexcept { ::std::unique_lock lk{ m_mutex }; return this->finalized_impl(); }
     bool finalized_impl() const noexcept { return m_finalized; }
 
     /*! \return Reference of the storage which holds the yield value and its memory buffer. */
@@ -295,7 +295,7 @@ public:
 
     _type& operator = (_type&& other) noexcept
     {
-        destroy_current_coro();
+        this->destroy_current_coro();
 
         m_coro = ::std::exchange(other.m_coro, nullptr);
         m_need_destroy_in_dtor = ::std::exchange(other.m_need_destroy_in_dtor, false);
@@ -305,7 +305,7 @@ public:
 
     /*! \brief Will destroy the coroutine handler, wether the generator has been `move_next`
      */
-    ~_type() noexcept { destroy_current_coro(); }
+    ~_type() noexcept { this->destroy_current_coro(); }
 
 private:
     _type(::std::coroutine_handle<promise_type> h) 

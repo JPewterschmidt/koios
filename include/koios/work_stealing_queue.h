@@ -51,7 +51,7 @@ public:
     ::std::optional<invocable_type> 
     dequeue(const per_consumer_attr& attr)
     {
-        auto qs = queues_ptr();
+        auto qs = this->queues_ptr();
         auto& queues = *qs;
         ::std::optional<invocable_type> result{ 
             queues[attr.thread_id]->dequeue()
@@ -70,13 +70,13 @@ public:
 
     void enqueue(invocable_type i)
     {
-        enqueue({}, ::std::move(i));
+        this->enqueue({}, ::std::move(i));
     }
 
     void enqueue(const per_consumer_attr& ca, invocable_type i)
     {
         auto tid = ca.thread_id;
-        auto qs = queues_ptr();
+        auto qs = this->queues_ptr();
         auto& queues = *qs;
         if (!queues.contains(tid))
         {
@@ -88,7 +88,7 @@ public:
     size_t size() const noexcept
     {
         size_t result{};
-        auto qs = queues_ptr();
+        auto qs = this->queues_ptr();
         auto& queues = *qs;
         for (const auto& [k, q] : queues)
         {
@@ -97,11 +97,11 @@ public:
         return result;
     }
 
-    bool empty() const noexcept { return size() == 0; }
+    bool empty() const noexcept { return this->size() == 0; }
 
     void thread_specific_preparation(const per_consumer_attr& attr)
     {
-        add_consumer_thread_id(attr);
+        this->add_consumer_thread_id(attr);
     }
 
 private:
@@ -126,18 +126,18 @@ private:
         queues_hashmap_ptr old_hashmap;
         while (!(old_hashmap = m_queues.exchange(nullptr)))
             ;
-        queues_hashmap_ptr new_hashmap = dup_queues(old_hashmap);
-        new_hashmap->insert({tid, make_queue()});
+        queues_hashmap_ptr new_hashmap = this->dup_queues(old_hashmap);
+        new_hashmap->insert({tid, this->make_queue()});
         m_queues.store(::std::move(new_hashmap));
     }
 
     void add_consumer_thread_id(const per_consumer_attr& attr)
     {
-        add_consumer_thread_id(attr.thread_id);
+        this->add_consumer_thread_id(attr.thread_id);
     }
 
 private:
-    ::std::atomic<queues_hashmap_ptr> m_queues{ make_queues_hashmap() };
+    ::std::atomic<queues_hashmap_ptr> m_queues{ this->make_queues_hashmap() };
 };
 
 KOIOS_NAMESPACE_END

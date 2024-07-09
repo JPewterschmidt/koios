@@ -89,7 +89,7 @@ private:
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
 
-    toolpex::spin_lock m_lock;  
+    ::std::mutex m_lock;  
     bool m_holded{false};
 };
 

@@ -20,6 +20,7 @@
 #define KOIOS_IOURING_H
 
 #include <atomic>
+#include <mutex>
 #include <shared_mutex>
 #include <liburing.h>
 #include <cstdint>
@@ -85,7 +86,7 @@ namespace iel_detials
             uintptr_t, 
             ::std::pair<uring::op_batch_rep*, task_on_the_fly>
         > m_opreps{};
-        mutable toolpex::spin_lock m_lk;
+        mutable ::std::mutex m_lk;
         unsigned m_num_mis_shot{1};
     };
 }

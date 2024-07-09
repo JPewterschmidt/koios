@@ -73,7 +73,7 @@ public:
 
 private:
     queue_type m_q;   
-    mutable toolpex::spin_lock m_lock;
+    mutable ::std::mutex m_lock;
 };
 
 KOIOS_NAMESPACE_END

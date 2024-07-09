@@ -19,6 +19,7 @@
 #ifndef KOIOS_DIR_MUTEX_H
 #define KOIOS_DIR_MUTEX_H
 
+#include <mutex>
 #include <atomic>
 #include <stop_token>
 #include <filesystem>
@@ -94,7 +95,7 @@ private:
     toolpex::unique_posix_fd m_dirfd;
     ::std::stop_source m_stop_src;
     ::std::vector<koios::future<void>> m_pollers;
-    toolpex::spin_lock m_pollers_lock;
+    ::std::mutex m_pollers_lock;
     ::std::chrono::milliseconds m_polling_period;
 }; 
 

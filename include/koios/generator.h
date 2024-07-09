@@ -26,8 +26,6 @@
 #include <memory>
 #include <mutex>
 
-#include "toolpex/spin_lock.h"
-
 #include "koios/macros.h"
 #include "koios/promise_base.h"
 #include "koios/generator_iterator.h"
@@ -68,7 +66,7 @@ public:
     using storage_type = ::std::unique_ptr<T, value_deleter>;
 
 private:
-    mutable toolpex::spin_lock m_mutex;
+    mutable ::std::mutex m_mutex;
     storage_type m_current_value_p{ nullptr }; /*! Holds the memory and the return value object. */
     task_on_the_fly m_waitting{};
     bool m_finalized{};
@@ -95,7 +93,6 @@ public:
 
         bool await_ready() noexcept
         {
-            toolpex_assert(!m_parent.m_mutex.is_locked());
             m_lock = ::std::unique_lock{ m_parent.m_mutex };
             if (m_parent.finalized_impl())
             {
@@ -128,7 +125,7 @@ public:
         }
 
     private:
-        mutable ::std::unique_lock<toolpex::spin_lock> m_lock;
+        mutable ::std::unique_lock<::std::mutex> m_lock;
         task_on_the_fly m_h{};
         generator_promise_type& m_parent;
     };

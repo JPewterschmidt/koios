@@ -6,6 +6,7 @@
 #include <string_view>
 #include <filesystem>
 #include <memory>
+#include <fcntl.h>
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -115,6 +116,10 @@ TEST(iouring, op_fill_buffer)
 
 #include "koios/iouring_op_batch.h"
 #include "toolpex/ipaddress.h"
+#include <experimental/filesystem>
+
+namespace efs = ::std::experimental::filesystem;
+
 namespace
 {
     eager_task<bool> op_batch_test_basic()
@@ -146,7 +151,60 @@ TEST(iouring, batch_rep)
     ASSERT_EQ(rep.back().opcode, 15); 
 }
 
-TEST(iouring, unlinkat)
+namespace 
 {
-    // TODO
+    static const fs::path dir_name = "unlink_at_test_dir";
+    static const fs::path file_name = "test_file";
+
+    class unlinkat_test : public ::testing::Test
+    {
+    private:
+        fs::path m_generated;
+
+    public:
+        unlinkat_test()
+            : m_generated{ fs::current_path() / dir_name }
+        {
+            fs::create_directory(dir_name);
+            auto file_full_path = m_generated / file_name;
+            const toolpex::unique_posix_fd ret = ::open(file_full_path.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+            if (!ret.valid()) throw ::std::system_error{ ret, ::std::system_category() };
+        }
+
+        ~unlinkat_test() noexcept
+        {
+            ::std::error_code ec;
+            fs::remove_all(m_generated, ec);
+            (void)ec;
+        }
+
+    private:
+        toolpex::unique_posix_fd open_dir()
+        {
+            return ::open(m_generated.c_str(), O_DIRECTORY, 0);
+        }
+        
+    public:
+        eager_task<bool> do_test()
+        {
+            auto dir_fd = open_dir();
+            auto ret = co_await uring::unlinkat(dir_fd, file_name, 0);
+            co_return !ret.error_code();
+        }
+
+        bool file_exists() const noexcept
+        {
+            return fs::exists(m_generated/file_name);
+        }
+    };
+} 
+
+TEST_F(unlinkat_test, basic)
+{
+    // File exists, delete it, should be succeed.
+    ASSERT_TRUE(do_test().result());
+    ASSERT_TRUE(!file_exists());
+
+    // File NOT exists, should be failed.
+    ASSERT_TRUE(!do_test().result());
 }

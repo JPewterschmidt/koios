@@ -109,7 +109,7 @@ protected:
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
           m_std_promise_p{ p.get_std_promise_pointer() }
     {
-        if constexpr (is_lazy()) m_coro_handle.give_up_ownership();
+        if constexpr (this->is_lazy()) m_coro_handle.give_up_ownership();
     }
 
 public:
@@ -120,14 +120,14 @@ public:
     {
     }
 
-    operator task_on_the_fly() noexcept { return get_handler_to_schedule(); }
+    operator task_on_the_fly() noexcept { return this->get_handler_to_schedule(); }
 
     /*! \brief Run the current task.
      *  Just call the `run()` member function.
      *  \see `run()`
      *  \see `run_and_get_future()`
      */
-    void operator()() { run(); }
+    void operator()() { this->run(); }
 
     /*! \retval true The coroutine state was suspended at final state, 
      *          or the task has been executed by `run()` or other similar functions.
@@ -145,25 +145,25 @@ public:
      */
     void run()
     {
-        run_on(get_task_scheduler());
+        this->run_on(get_task_scheduler());
     }
 
     void run(const per_consumer_attr& attr)
     {
-        run_on(attr, get_task_scheduler());
+        this->run_on(attr, get_task_scheduler());
     }
 
     void 
     run_on(const task_scheduler_wrapper& schr)
     {
-        static_assert(is_return_void() || is_discardable(), 
+        static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!is_lazy())
+        if constexpr (!this->is_lazy())
         {
             if (!this->future().ready())
             {   
-                auto h = get_handler_to_schedule();
+                auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
                 schr.enqueue(::std::move(h));
             }
@@ -173,14 +173,14 @@ public:
     void 
     run_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
-        static_assert(is_return_void() || is_discardable(), 
+        static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!is_lazy())
+        if constexpr (!this->is_lazy())
         {
             if (!this->future().ready())
             {   
-                auto h = get_handler_to_schedule();
+                auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
                 schr.enqueue(attr, ::std::move(h));
             }
@@ -197,22 +197,22 @@ public:
      */
     [[nodiscard]] future_type run_and_get_future()
     {
-        return run_and_get_future_on(get_task_scheduler());
+        return this->run_and_get_future_on(get_task_scheduler());
     }
 
     [[nodiscard]] future_type run_and_get_future(const per_consumer_attr& attr)
     {
-        return run_and_get_future_on(attr, get_task_scheduler());
+        return this->run_and_get_future_on(attr, get_task_scheduler());
     }
 
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
-        auto result = get_future();
-        if constexpr (!is_lazy())
+        auto result = this->get_future();
+        if constexpr (!this->is_lazy())
         {
-            if (!has_scheduled() && !result.ready())
+            if (!this->has_scheduled() && !result.ready())
             {   
-                auto h = get_handler_to_schedule();
+                auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
                 schr.enqueue(::std::move(h));
             }
@@ -223,12 +223,12 @@ public:
     [[nodiscard]] future_type run_and_get_future_on(
         const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
-        auto result = get_future();
-        if constexpr (!is_lazy())
+        auto result = this->get_future();
+        if constexpr (!this->is_lazy())
         {
-            if (!has_scheduled() && !result.ready())
+            if (!this->has_scheduled() && !result.ready())
             {   
-                auto h = get_handler_to_schedule();
+                auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
                 schr.enqueue(attr, ::std::move(h));
             }
@@ -238,26 +238,26 @@ public:
 
     [[nodiscard]] auto result()
     {
-        return result_on(get_task_scheduler());
+        return this->result_on(get_task_scheduler());
     }
 
     [[nodiscard]] auto result(const per_consumer_attr& attr)
     {
-        return result_on(attr, get_task_scheduler());
+        return this->result_on(attr, get_task_scheduler());
     }
 
     [[nodiscard]] auto result_on(const task_scheduler_wrapper& schr)
     {
-        if constexpr (is_return_void())
-            run_and_get_future_on(schr).get();
-        else return run_and_get_future_on(schr).get();
+        if constexpr (this->is_return_void())
+            this->run_and_get_future_on(schr).get();
+        else return this->run_and_get_future_on(schr).get();
     }
 
     [[nodiscard]] auto result_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
-        if constexpr (is_return_void())
-            run_and_get_future_on(attr, schr).get();
-        else return run_and_get_future_on(attr, schr).get();
+        if constexpr (this->is_return_void())
+            this->run_and_get_future_on(attr, schr).get();
+        else return this->run_and_get_future_on(attr, schr).get();
     }
 
     /*! \retval true This task is a discardable task. You could ignore the return value.
@@ -282,12 +282,12 @@ private:
      */
     [[nodiscard]] future_type get_future()
     {
-        if constexpr (!is_lazy())
+        if constexpr (!this->is_lazy())
         {
-            if (has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
+            if (this->has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
         }
 
-        return get_result_aw<T, _type>::get_future();
+        return this->get_result_aw<T, _type>::get_future();
     }
 
     auto get_handler_to_schedule() noexcept { return ::std::exchange(m_coro_handle, {}); }

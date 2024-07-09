@@ -54,7 +54,7 @@ void mutex::
 try_wake_up_next() noexcept
 {
     ::std::lock_guard lk{ m_lock };
-    try_wake_up_next_impl();
+    this->try_wake_up_next_impl();
 }
 
 void
@@ -63,7 +63,7 @@ release()
 {
     ::std::lock_guard lk{ m_lock };
     m_holded = false;
-    try_wake_up_next_impl();
+    this->try_wake_up_next_impl();
 }
 
 KOIOS_NAMESPACE_END

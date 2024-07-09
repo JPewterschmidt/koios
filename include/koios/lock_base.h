@@ -43,7 +43,7 @@ public:
 
     lock_base& operator=(lock_base&& other) noexcept
     {
-        unlock();
+        this->unlock();
 
         m_mutex = ::std::exchange(other.m_mutex, nullptr);
         m_hold = ::std::exchange(other.m_hold, false);
@@ -58,14 +58,14 @@ public:
      */
     void unlock() noexcept
     {
-        if (m_mutex && is_hold())
+        if (m_mutex && this->is_hold())
         {
             m_mutex->release();
             m_hold = false;
         }
     }
 
-    ~lock_base() noexcept { unlock(); }
+    ~lock_base() noexcept { this->unlock(); }
 
     bool is_hold() const noexcept { return m_hold; }
 

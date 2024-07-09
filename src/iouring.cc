@@ -67,15 +67,15 @@ namespace iel_detials
     void iouring_event_loop_perthr::
     do_occured_nonblk() noexcept
     {
-        auto lk = get_lk();
+        auto lk = this->get_lk();
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
         if (left == 0) 
         {
-            mis_shot_this_time();
+            this->mis_shot_this_time();
             return;
         }
-        shot_this_time();
+        this->shot_this_time();
 
         ::io_uring_cqe* cqep{};
         for (size_t i{}; i < left; ++i)
@@ -86,7 +86,7 @@ namespace iel_detials
                 break;
             }
 
-            dealwith_cqe(cqep);
+            this->dealwith_cqe(cqep);
             ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
         }
     }
@@ -96,10 +96,10 @@ namespace iel_detials
     add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     {
         const uintptr_t addrkey = reinterpret_cast<uint64_t>(h.address());
-        auto lk = get_lk();
+        auto lk = this->get_lk();
         toolpex_assert(!m_opreps.contains(addrkey));
         m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
-        shot_this_time();
+        this->shot_this_time();
         for (const auto& sqe : ops)
             *::io_uring_get_sqe(&m_ring) = sqe;
         ::io_uring_submit(&m_ring);
@@ -109,15 +109,15 @@ namespace iel_detials
     iouring_event_loop_perthr::
     max_sleep_duration() const
     {
-        auto lk = get_lk();
-        return m_opreps.empty() * mis_shot_indicator() * 25ms;
+        auto lk = this->get_lk();
+        return m_opreps.empty() * this->mis_shot_indicator() * 25ms;
     }
 }
 
 void iouring_event_loop::
 thread_specific_preparation(const per_consumer_attr& attr)
 {
-    auto unilk = get_unilk();
+    auto unilk = this->get_unilk();
     m_impls.insert({
         attr.thread_id, 
         ::std::make_unique<
@@ -130,7 +130,7 @@ auto iouring_event_loop::
 shrlk_and_curthr_ptr()
 {
     const auto id = ::std::this_thread::get_id();
-    auto lk = get_shrlk();
+    auto lk = this->get_shrlk();
     auto it = m_impls.find(id);
     return ::std::make_pair(::std::move(lk), (it != m_impls.end() ? it->second.get() : nullptr));
 }
@@ -138,7 +138,7 @@ shrlk_and_curthr_ptr()
 void iouring_event_loop::
 do_occured_nonblk()
 {
-    auto [lk, ptr] = shrlk_and_curthr_ptr();
+    auto [lk, ptr] = this->shrlk_and_curthr_ptr();
     if (!ptr && m_cleaning) [[unlikely]] return;
     else if (!ptr && !m_cleaning)
     {
@@ -154,7 +154,7 @@ void
 iouring_event_loop::
 add_event(task_on_the_fly h, uring::op_batch_rep& ops)
 {
-    auto [lk, impl] = shrlk_and_curthr_ptr();
+    auto [lk, impl] = this->shrlk_and_curthr_ptr();
     if (!impl && m_cleaning) [[unlikely]] return;
     else if (!impl) 
     {
@@ -175,17 +175,17 @@ stop(::std::unique_lock<::std::shared_mutex> lk)
 void iouring_event_loop::
 quick_stop()
 {
-    auto lk = get_unilk();
+    auto lk = this->get_unilk();
     decltype(m_impls) going_to_die;
     m_impls.swap(going_to_die);
-    stop(::std::move(lk));
+    this->stop(::std::move(lk));
 }
 
 ::std::chrono::milliseconds 
 iouring_event_loop::
 max_sleep_duration(const per_consumer_attr& attr) const 
 {
-    auto lk = get_shrlk();
+    auto lk = this->get_shrlk();
     if (m_cleaning == true) [[unlikely]] return 10000ms;
     if (auto it = m_impls.find(attr.thread_id); it != m_impls.end())
         return ::std::min(200ms, it->second->max_sleep_duration());

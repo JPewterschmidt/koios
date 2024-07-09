@@ -56,7 +56,7 @@ dir_mutex_guard::dir_mutex_guard(dir_mutex_guard&& other) noexcept
 
 dir_mutex_guard& dir_mutex_guard::operator=(dir_mutex_guard&& other) noexcept
 {
-    unlock();
+    this->unlock();
     m_parent = ::std::exchange(other.m_parent, nullptr);
     return *this;
 }
@@ -115,7 +115,7 @@ eager_task<> dir_mutex::polling_lock_file(
     co_await this_task::sleep_for(period);
     while (!tk.stop_requested())
     {
-        if (create_lock_file())       
+        if (this->create_lock_file())       
         {
             may_wake_next();
             co_return;
@@ -139,19 +139,19 @@ void dir_mutex::cancel_all_polling() noexcept
 
 dir_mutex::~dir_mutex() noexcept
 {
-    cancel_all_polling();
-    unlock();
+    this->cancel_all_polling();
+    this->unlock();
 }
     
 bool dir_mutex::hold_this_immediately()
 {
-    const bool success = create_lock_file();
+    const bool success = this->create_lock_file();
 
     if (!success) 
     {
         ::std::lock_guard lk{ m_pollers_lock };
         m_pollers.emplace_back(
-            polling_lock_file(m_stop_src.get_token(), polling_period())
+            this->polling_lock_file(m_stop_src.get_token(), polling_period())
                 .run_and_get_future());
     }
 
@@ -167,7 +167,7 @@ void dir_mutex::unlock() noexcept
 {
     if (!this->may_wake_next()) 
     {
-        delete_lock_file().result();
+        this->delete_lock_file().result();
     }
 }
 

@@ -4,12 +4,11 @@
 #include "koios/this_task.h"
 #include "koios/iouring_awaitables.h"
 
-#include "toolpex/spin_lock.h"
-
 #include <filesystem>
 #include <atomic>
 #include <chrono>
 #include <vector>
+#include <mutex>
 
 namespace 
 {
@@ -68,7 +67,7 @@ public:
     }
 
     ::std::vector<koios::future<bool>> m_futs;
-    toolpex::spin_lock m_futs_lock;
+    ::std::mutex m_futs_lock;
 
 private:
     dir_mutex m_lock;

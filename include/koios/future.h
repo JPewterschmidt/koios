@@ -71,12 +71,12 @@ namespace fp_detials
         }
 
         void destruct() { this->value_buffer_ptr()->~Ret(); }
-        Ret& ref() { return *value_buffer_ptr(); }
+        Ret& ref() { return *this->value_buffer_ptr(); }
 
         auto move_out()
         {
             auto result = ::std::move(ref());
-            destruct();
+            this->destruct();
             return result;
         }
 
@@ -192,26 +192,26 @@ namespace fp_detials
         // Operations with locking
         bool ready() const noexcept
         {
-            auto lk = get_unique_lock();
-            return ready(lk);
+            auto lk = this->get_unique_lock();
+            return this->ready(lk);
         }
 
         auto get()
         {
-            auto lk = get_unique_lock();
-            return get(lk);
+            auto lk = this->get_unique_lock();
+            return this->get(lk);
         }
 
         auto get_nonblk()
         {
-            auto lk = get_unique_lock();
-            if (!ready(lk)) [[unlikely]]
+            auto lk = this->get_unique_lock();
+            if (!this->ready(lk)) [[unlikely]]
                 throw koios::future_exception{};
-            return get_nonblk(lk);
+            return this->get_nonblk(lk);
         }
 
         // Operations needs a lock acquire from `get_shared_state_lock()`
-        auto get_shared_state_lock() const noexcept { return get_unique_lock(); }
+        auto get_shared_state_lock() const noexcept { return this->get_unique_lock(); }
 
         auto get_nonblk(const ::std::unique_lock<::std::mutex>& lk)
         {
@@ -234,18 +234,18 @@ namespace fp_detials
         auto get(::std::unique_lock<::std::mutex>& lk)
         {
             toolpex_assert(lk.mutex() == &m_lock);
-            if (!ready(lk)) 
-                m_cond.wait(lk, [&lk, this]{ return ready(lk); });
-            return get_nonblk(lk);
+            if (!this->ready(lk)) 
+                m_cond.wait(lk, [&lk, this]{ return this->ready(lk); });
+            return this->get_nonblk(lk);
         }
 
     private:
         void set_future_aw_ptr(future_aw_detial* ptr)
         {
-            auto lk = get_unique_lock();
+            auto lk = this->get_unique_lock();
             toolpex_assert(m_aw == nullptr);
             m_aw = ptr;
-            if (ready(lk)) [[unlikely]]
+            if (this->ready(lk)) [[unlikely]]
             {
                 m_aw->awake();
             }
@@ -253,8 +253,8 @@ namespace fp_detials
 
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr)
         {
-            auto lk = get_unique_lock();
-            set_storage_ptr(::std::move(ptr), lk);
+            auto lk = this->get_unique_lock();
+            this->set_storage_ptr(::std::move(ptr), lk);
         }
 
         void set_storage_ptr(::std::shared_ptr<promise_storage<value_type>> ptr, 
@@ -312,7 +312,7 @@ namespace fp_detials
          */
         bool ready() const noexcept 
         { 
-            if (!valid()) return false;
+            if (!this->valid()) return false;
             return m_impl_ptr->ready(); 
         }
 
@@ -441,17 +441,17 @@ public:
     }
 
 public:
-    reference_type get()        { return *fp_detials::future_base<pointer_type>::get(); }
-    reference_type get_nonblk() { return *fp_detials::future_base<pointer_type>::get_nonblk(); }
+    reference_type get()        { return *this->fp_detials::future_base<pointer_type>::get(); }
+    reference_type get_nonblk() { return *this->fp_detials::future_base<pointer_type>::get_nonblk(); }
 
     reference_type get(const ::std::unique_lock<::std::mutex>& lk)        
     { 
-        return *fp_detials::future_base<pointer_type>::get(lk); 
+        return *this->fp_detials::future_base<pointer_type>::get(lk); 
     }
 
     reference_type get_nonblk(::std::unique_lock<::std::mutex>& lk)
     { 
-        return *fp_detials::future_base<pointer_type>::get_nonblk(lk); 
+        return *this->fp_detials::future_base<pointer_type>::get_nonblk(lk); 
     }
 };
 

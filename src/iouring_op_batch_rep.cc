@@ -24,7 +24,7 @@ namespace koios::uring
 
 ::io_uring_sqe* op_batch_rep::get_sqe()
 {
-    if (!was_timeout_set())
+    if (!this->was_timeout_set())
         return &m_sqes.emplace_back();
     return &(*m_sqes.emplace(prev(m_sqes.end())));
 }

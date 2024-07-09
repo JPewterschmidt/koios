@@ -58,7 +58,7 @@ public:
 #include "koios/runtime.h"
     ~return_value_or_void_base() noexcept
     {
-        if (!caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning() && !::std::current_exception()) [[unlikely]]
+        if (!this->caller_woke_or_exception_caught() && !get_task_scheduler().is_cleaning() && !::std::current_exception()) [[unlikely]]
         {
             auto possible_ex = ::std::current_exception();
             if (possible_ex)
@@ -107,7 +107,7 @@ protected:
 #ifdef KOIOS_DEBUG
         m_caller_woke_or_exception_caught = true;
 #endif
-        if (!has_caller()) return;
+        if (!this->has_caller()) return;
         get_task_scheduler().enqueue(::std::move(m_caller));
     }
 
@@ -124,9 +124,9 @@ protected:
 /**************************************************************************************/
 /**/    auto lk = m_promise_p->get_shared_state_lock();                             /**/
 /**/    m_promise_p->set_exception(lk, ep);                                         /**/
-/**/    if (has_caller())                                                           /**/
+/**/    if (this->has_caller())                                                           /**/
 /**/    {                                                                           /**/
-/**/        wake_caller();                                                          /**/
+/**/        this->wake_caller();                                                    /**/
 /**/    }                                                                           /**/
 /**/    else                                                                        /**/
 /**/    {                                                                           /**/

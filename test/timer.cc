@@ -5,11 +5,11 @@
 #include "koios/task.h"
 #include "koios/this_task.h"
 #include "koios/functional.h"
-#include "toolpex/spin_lock.h"
 
 #include <semaphore>
 #include <vector>
 #include <chrono>
+#include <mutex>
 
 using namespace koios;
 using namespace ::std::chrono_literals;
@@ -36,7 +36,7 @@ TEST(timer, awaitable)
     ASSERT_EQ(flag2, 2);
 }
 
-toolpex::spin_lock ivec_lock;
+::std::mutex ivec_lock;
 ::std::vector<int> ivec;
 
 task<> func1()

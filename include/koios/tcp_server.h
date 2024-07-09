@@ -74,7 +74,7 @@ public:
         {
             if (m_stop_src.stop_requested()) break;
             m_count.fetch_add();
-            tcp_loop(m_stop_src.get_token(), callback).run(*attr);
+            this->tcp_loop(m_stop_src.get_token(), callback).run(*attr);
         }
     }
 

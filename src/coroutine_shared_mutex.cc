@@ -25,15 +25,15 @@ namespace koios
 void shared_mutex::try_wake_up_next() noexcept
 {
     ::std::lock_guard lk{ m_lock };
-    try_wake_up_next_uni_impl();
-    if (being_held()) return;
-    try_wake_up_shr_impl();
+    this->try_wake_up_next_uni_impl();
+    if (this->being_held()) return;
+    this->try_wake_up_shr_impl();
 }
 
 bool shared_mutex::hold_this_shr_immediately() noexcept
 {
 	::std::lock_guard lk{ m_lock };
-    if (!being_held())
+    if (!this->being_held())
     {
         m_shr_cnt.fetch_add();
         m_state = SHR;
@@ -64,7 +64,7 @@ bool shared_mutex::hold_this_immediately() noexcept
 void shared_mutex::add_waiting(task_on_the_fly t)
 {
     ::std::lock_guard lk{ m_lock };
-    const bool have_ownership = (!being_held() && !being_held_sharedly()) ? (m_state = UNI, true) : false;
+    const bool have_ownership = (!this->being_held() && !this->being_held_sharedly()) ? (m_state = UNI, true) : false;
     if (have_ownership)
     {
         m_current_writer = t.address();
@@ -84,15 +84,15 @@ void shared_mutex::release()
     case SHR: if (m_shr_cnt.fetch_sub() == 1)
               {
                   m_state = NO;
-                  try_wake_up_next_uni_impl();
+                  this->try_wake_up_next_uni_impl();
               }
               break;
 
     case UNI: m_state = NO;
               m_current_writer = nullptr;
-              try_wake_up_shr_impl();
-              if (!being_held_sharedly()) 
-                  try_wake_up_next_uni_impl();
+              this->try_wake_up_shr_impl();
+              if (!this->being_held_sharedly()) 
+                  this->try_wake_up_next_uni_impl();
               break;
 
     case SHR_DURING_UNI:
@@ -101,12 +101,12 @@ void shared_mutex::release()
 
     case NO:  assert(false);
     }
-    if (!being_held() && !being_held_sharedly()) m_state = NO;
+    if (!this->being_held() && !this->being_held_sharedly()) m_state = NO;
 }
 
 bool shared_mutex::being_held() const noexcept
 {
-    assert(health_check());
+    assert(this->health_check());
     return m_state == UNI;
 }
 
@@ -117,13 +117,13 @@ bool shared_mutex::health_check() const noexcept
 
 bool shared_mutex::being_held_sharedly() const noexcept
 {
-    assert(health_check());
+    assert(this->health_check());
     return m_state == SHR || m_state == SHR_DURING_UNI;
 }
 
 void shared_mutex::try_wake_up_next_uni_impl() noexcept
 {
-    if (being_held() || being_held_sharedly()) return;
+    if (this->being_held() || this->being_held_sharedly()) return;
     waiting_handle handle{};
     if (m_uni_waitings.try_dequeue(handle))
     {
@@ -135,7 +135,7 @@ void shared_mutex::try_wake_up_next_uni_impl() noexcept
 
 void shared_mutex::try_wake_up_shr_impl() noexcept
 {
-    if (being_held()) return;
+    if (this->being_held()) return;
     waiting_handle handle{};
     if (m_shr_waitings.try_dequeue(handle))
     {

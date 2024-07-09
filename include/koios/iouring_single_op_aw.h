@@ -32,7 +32,7 @@ namespace koios::uring
     protected:
         template<typename IoRetT> IoRetT resume_template() noexcept
         {
-            return ::std::move(batch().rep().return_slots().front());
+            return ::std::move(this->batch().rep().return_slots().front());
         }
 
     private:

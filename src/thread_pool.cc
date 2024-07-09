@@ -43,7 +43,7 @@ void thread_pool::start()
 thread_pool::~thread_pool() noexcept
 {
     if (m_manully_stop) return;
-    quick_stop();
+    this->quick_stop();
 }
 
 void thread_pool::stop() noexcept
@@ -63,7 +63,7 @@ void thread_pool::stop() noexcept
 void thread_pool::quick_stop() noexcept
 {
     m_stop_now.store(true, ::std::memory_order::release);
-    stop();
+    this->stop();
 }
 
 void thread_pool::consumer(
@@ -73,19 +73,19 @@ void thread_pool::consumer(
     const per_consumer_attr cattr{ 
         .thread_id = ::std::this_thread::get_id(),
         .main_thread_id = mt_id,
-        .number_of_threads = number_of_threads(),
+        .number_of_threads = this->number_of_threads(),
     };
-    thread_specific_preparation(cattr);
+    this->thread_specific_preparation(cattr);
     if (::std::this_thread::get_id() != mt_id)
         m_start_working.count_down();
-    while (!done(token))
+    while (!this->done(token))
     {
-        before_each_task();
+        this->before_each_task();
         if (auto task_opt = m_tasks.dequeue(cattr); !task_opt)
         {
-            if (done(token)) break;
+            if (this->done(token)) break;
             ::std::unique_lock lk{ m_lock };
-            const auto max_waiting_time = max_sleep_duration(cattr);
+            const auto max_waiting_time = this->max_sleep_duration(cattr);
             constexpr auto waiting_latch = is_profiling_mode() ? 1ms : 100ms;
             const auto actual_waiting_time = 
                 waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
@@ -116,7 +116,7 @@ bool thread_pool::done(::std::stop_token& tk) const noexcept
     if (!tk.stop_requested())
         return false;
 
-    if (need_stop_now()) return true;
+    if (this->need_stop_now()) return true;
     return m_tasks.empty();
 }
 

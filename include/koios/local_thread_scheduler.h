@@ -37,7 +37,7 @@ public:
     void enqueue(task_on_the_fly h)
     {
         m_tasks.emplace(::std::move(h));
-        run();
+        this->run();
     }
 
 private:

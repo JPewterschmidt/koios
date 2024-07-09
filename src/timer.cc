@@ -94,7 +94,7 @@ quick_stop() noexcept
     {
         ptrs->quick_stop();
     }
-    stop();
+    this->stop();
 }
 
 bool timer_event_loop::

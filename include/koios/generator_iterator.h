@@ -82,14 +82,14 @@ namespace detial
 
         result_type& operator *()
         {
-            if (!retrive_data())
+            if (!this->retrive_data())
                 throw ::std::out_of_range{ "There're no any data could be used!" };
             return *m_storage;
         }
 
         result_type* operator ->()
         {
-            if (!retrive_data())
+            if (!this->retrive_data())
                 throw ::std::out_of_range{ "There're no any data could be used!" };
             return m_storage.get();
         }

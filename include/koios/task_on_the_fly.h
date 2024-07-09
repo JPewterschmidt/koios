@@ -61,7 +61,7 @@ public:
 
     task_on_the_fly& operator=(task_on_the_fly&& other) noexcept
     {
-        destroy();
+        this->destroy();
         m_h = other.m_h;
         m_holds_ownership = other.exchange_ownership();
 
@@ -78,16 +78,16 @@ public:
      */
     void operator()()
     { 
-        give_up_ownership();
+        this->give_up_ownership();
         m_h.resume(); 
     }
 
-    operator bool() const noexcept { return holds_ownership() && m_h; }
+    operator bool() const noexcept { return this->holds_ownership() && m_h; }
     bool valid() const noexcept { return this->operator bool(); }
 
     bool done() const noexcept
     {
-        if (holds_ownership()) [[likely]] return m_h.done();
+        if (this->holds_ownership()) [[likely]] return m_h.done();
         return true;
     }
 
@@ -95,21 +95,21 @@ public:
      *  this `task_on_the_fly` still holds the ownership of the handler, 
      *  the destructor will call `::std::coroutine_handle::destroy()`.
      */
-    ~task_on_the_fly() noexcept { destroy(); }
+    ~task_on_the_fly() noexcept { this->destroy(); }
 
     void* address() const noexcept
     {
         return m_h.address();
     }
 
-    void give_up_ownership() noexcept { exchange_ownership(); }
+    void give_up_ownership() noexcept { this->exchange_ownership(); }
 
 private:
     void destroy() noexcept
     {
-        if (!holds_ownership()) return;
+        if (!this->holds_ownership()) return;
 
-        give_up_ownership();
+        this->give_up_ownership();
         m_h.destroy();
     }
 

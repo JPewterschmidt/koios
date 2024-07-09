@@ -19,6 +19,8 @@
 #ifndef KOIOS_COROUTINE_SHARED_MUTEX_H
 #define KOIOS_COROUTINE_SHARED_MUTEX_H
 
+#include <mutex>
+
 #include "koios/unique_lock.h"
 #include "koios/shared_lock.h"
 #include "koios/acq_lk_aw.h"
@@ -72,7 +74,7 @@ private:
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_shr_waitings;
     moodycamel::ConcurrentQueue<waiting_handle> m_uni_waitings;
-    toolpex::spin_lock m_lock;
+    ::std::mutex m_lock;
     holding_state m_state;
     toolpex::ref_count m_shr_cnt{0};
     void* m_current_writer{};

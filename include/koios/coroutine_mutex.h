@@ -19,6 +19,8 @@
 #ifndef KOIOS_COROUTINE_MUTEX_H
 #define KOIOS_COROUTINE_MUTEX_H
 
+#include <mutex>
+
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/moodycamel_queue_wrapper.h"
@@ -28,7 +30,6 @@
 #include "koios/acq_lk_aw.h"
 #include "koios/waiting_handle.h"
 #include "toolpex/move_only.h"
-#include "toolpex/spin_lock.h"
 
 #undef BLOCK_SIZE
 #include "concurrentqueue/concurrentqueue.h"
@@ -37,7 +38,7 @@ KOIOS_NAMESPACE_BEG
 
 /*! \brief The coroutine mutex object 
  *
- *  Based on a spin lock.
+ *  Based on `::std::mutex`.
  */
 class mutex : public toolpex::move_only
 {
@@ -89,7 +90,7 @@ private:
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
 
-    toolpex::spin_lock m_lock;  
+    ::std::mutex m_lock;  
     bool m_holded{false};
 };
 

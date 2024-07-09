@@ -79,8 +79,7 @@ task<bool> recv_pb_message(const toolpex::unique_posix_fd& fd, protobuf_msg_conc
 
     const uint32_t prefix_len = toolpex::decode_big_endian_from<uint32_t>(prefix_buf);
     auto buf = ::std::unique_ptr<::std::byte[]>{ 
-        // TODO: remove default init (fill zero) after test
-        new ::std::byte[prefix_len]{} 
+        new ::std::byte[prefix_len]
     };
     ::std::span<::std::byte> writable{ buf.get(), prefix_len };
     const size_t received = co_await recv_fill_buffer(fd, writable, 0, ec, 3min);

@@ -22,7 +22,6 @@
 #include <queue>
 #include <mutex>
 #include "koios/macros.h"
-#include "toolpex/spin_lock.h"
 
 KOIOS_NAMESPACE_BEG
 

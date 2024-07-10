@@ -117,7 +117,7 @@ public:
 
     virtual ~event_loop() noexcept 
     {
-        // TODO Prevent some event_loop destructed 
+        // Prevent some event_loop destructed 
         // when control follow run out of the domain of main function
         // while runtime has been configured as manually_stop.
         

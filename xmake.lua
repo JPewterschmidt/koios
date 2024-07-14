@@ -14,7 +14,6 @@ add_requires(
 
 includes("toolpex")
 
-
 set_languages("c++23", "c17")
 set_policy("build.warning", true)
 set_policy("build.optimization.lto", false)

@@ -1,5 +1,7 @@
-#ifndef KOIOS_IOURING_PROTOBUF_H
-#define KOIOS_IOURING_PROTOBUF_H
+// This file is part of Koios
+// https://github.com/JPewterschmidt/koios
+//
+// Copyleft 2023 - 2024, ShiXin Wang. All wrongs reserved.
 
 #include <chrono>
 #include <array>

@@ -3,6 +3,9 @@
 //
 // Copyleft 2023 - 2024, ShiXin Wang. All wrongs reserved.
 
+#ifndef KOIOS_FUTURE_AW_H
+#define KOIOS_FUTURE_AW_H
+
 #include <memory>
 
 #include "toolpex/assert.h"

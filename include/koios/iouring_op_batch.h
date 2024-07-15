@@ -46,7 +46,7 @@ namespace koios::uring
 class op_batch
 {
 public:
-    constexpr op_batch() noexcept = default;
+    op_batch() = default;
     op_batch(op_batch&&) noexcept = default;
     op_batch& operator=(op_batch&&) noexcept = default;
 

@@ -6,9 +6,11 @@
 #ifndef KOIOS_IOURING_OP_PERIPHERAL_H
 #define KOIOS_IOURING_OP_PERIPHERAL_H
 
-#include <vector>
+#include <list>
+#include <utility>
 #include <concepts>
 #include <memory>
+#include <memory_resource>
 #include <type_traits>
 #include "toolpex/move_only.h"
 
@@ -19,10 +21,10 @@ class op_peripheral_element
 {
 public:
     template<typename T>
-    op_peripheral_element(T&& t)
-        : m_buffer{ new ::std::byte[sizeof(T)] }
+    op_peripheral_element(T&& t, ::std::pmr::polymorphic_allocator<::std::byte>& alloc)
+        : m_buffer{ alloc.allocate(sizeof(T)) }
     {
-        new (m_buffer.get()) T(::std::forward<T>(t));
+        new (m_buffer) T(::std::forward<T>(t));
         m_deleter = +[](void* ptr) noexcept
         {
             T* p = reinterpret_cast<T*>(ptr);
@@ -33,32 +35,40 @@ public:
     op_peripheral_element(op_peripheral_element&& other) noexcept;
     op_peripheral_element& operator=(op_peripheral_element&& other) noexcept;
     ~op_peripheral_element() noexcept;
-    ::std::byte* ptr() noexcept { return m_buffer.get(); }
+    ::std::byte* ptr() noexcept { return m_buffer; }
 
 private:
     void delete_this() noexcept;
 
 private:
-    ::std::unique_ptr<::std::byte[]> m_buffer;
+    ::std::byte* m_buffer;
     void (*m_deleter) (void*) noexcept {};
 };
 
 class op_peripheral : public toolpex::move_only
 {
 public:
-    constexpr op_peripheral() noexcept = default;
+    op_peripheral()
+        : m_mbr(::std::make_unique<::std::pmr::monotonic_buffer_resource>()),
+          m_pa_perele(m_mbr.get()),
+          m_pa_bytes(m_mbr.get()), 
+          m_objs(m_pa_perele)
+    {
+    }
 
     template<typename DataT, typename... Args>
     requires (::std::is_nothrow_move_constructible_v<DataT>)
     DataT* add(Args&&... args)
     {
-        auto elem = op_peripheral_element(DataT(::std::forward<Args>(args)...));
-        auto* result = m_peripheral_datas.emplace_back(::std::move(elem)).ptr();
+        auto* result = m_objs.emplace_back(DataT(::std::forward<Args>(args)...), m_pa_bytes).ptr();
         return reinterpret_cast<DataT*>(result);
     }
 
 private:
-    ::std::vector<op_peripheral_element> m_peripheral_datas;
+    ::std::unique_ptr<::std::pmr::monotonic_buffer_resource> m_mbr;
+    ::std::pmr::polymorphic_allocator<op_peripheral_element> m_pa_perele;
+    ::std::pmr::polymorphic_allocator<::std::byte> m_pa_bytes;
+    ::std::list<op_peripheral_element, decltype(m_pa_perele)> m_objs;
 };
 
 } // namespace koios::uring

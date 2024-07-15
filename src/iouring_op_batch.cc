@@ -119,7 +119,7 @@ prep_write(const toolpex::unique_posix_fd& fd,
 
 op_batch& op_batch::
 prep_connect(const toolpex::unique_posix_fd& fd, 
-             toolpex::ip_address::ptr addr, ::in_port_t port) noexcept
+             toolpex::ip_address::ptr addr, ::in_port_t port)
 {
     auto [sock, len] = addr->to_sockaddr(port);
     sock_data* datap{m_peripheral.add<sock_data>(sock)};
@@ -211,7 +211,7 @@ struct path_data
 
 op_batch& op_batch::
 prep_openat(const toolpex::unique_posix_fd& dirfd, 
-            ::std::filesystem::path p, int flags, mode_t m) noexcept
+            ::std::filesystem::path p, int flags, mode_t m)
 {
     path_data* data{m_peripheral.add<path_data>(::std::move(p))};
 	auto* cur_sqe = m_rep.get_sqe();
@@ -223,7 +223,7 @@ prep_openat(const toolpex::unique_posix_fd& dirfd,
 
 op_batch& op_batch::
 prep_unlink(::std::filesystem::path path, 
-            int flags) noexcept
+            int flags)
 {
     path_data* data{m_peripheral.add<path_data>(::std::move(path))};
 
@@ -236,7 +236,7 @@ prep_unlink(::std::filesystem::path path,
 op_batch& op_batch::
 prep_unlinkat(const toolpex::unique_posix_fd& fd,
               ::std::filesystem::path path, 
-              int flags) noexcept
+              int flags)
 {
     path_data* data{m_peripheral.add<path_data>(::std::move(path))};
 
@@ -259,7 +259,7 @@ struct rename_data
 
 op_batch& op_batch::
 prep_rename(const ::std::filesystem::path& from, 
-            const ::std::filesystem::path& to) noexcept
+            const ::std::filesystem::path& to) 
 {
     auto* data = m_peripheral.add<rename_data>(from, to);
 	auto* cur_sqe = m_rep.get_sqe();
@@ -273,7 +273,7 @@ prep_renameat(const toolpex::unique_posix_fd& olddir,
               const ::std::filesystem::path& oldname, 
               const toolpex::unique_posix_fd& newdir, 
               const ::std::filesystem::path& newname, 
-              int flags) noexcept
+              int flags)
 {
     auto* data = m_peripheral.add<rename_data>(oldname, newname);
 	auto* cur_sqe = m_rep.get_sqe();
@@ -291,7 +291,7 @@ op_batch& op_batch::
 prep_renameat_noreplace(const toolpex::unique_posix_fd& olddir, 
                         const ::std::filesystem::path& oldname, 
                         const toolpex::unique_posix_fd& newdir, 
-                        const ::std::filesystem::path& newname) noexcept
+                        const ::std::filesystem::path& newname)
 {
     auto* data = m_peripheral.add<rename_data>(oldname, newname);
 	auto* cur_sqe = m_rep.get_sqe();
@@ -355,7 +355,7 @@ prep_nop() noexcept
 }
 
 op_batch& op_batch::
-timeout(::std::chrono::system_clock::time_point tp) noexcept
+timeout(::std::chrono::system_clock::time_point tp)
 {
     if (tp == ::std::chrono::system_clock::time_point::max())
         return *this;

@@ -186,7 +186,7 @@ public:
     op_batch& prep_cancel_first(uintptr_t userdata) noexcept;
     op_batch& prep_cancel_first(void* userdata) noexcept;
 
-    op_batch& prep_openat(const toolpex::unique_posix_fd& dirfd, ::std::filesystem::path p, int flags, mode_t mode) noexcept;
+    op_batch& prep_openat(const toolpex::unique_posix_fd& dirfd, ::std::filesystem::path p, int flags, mode_t mode);
 
     /*! \brief  Prepare a unlink iouring operation
      *
@@ -196,8 +196,7 @@ public:
      *
      *  \return the reference to the object which this call related to.
      */
-    op_batch& prep_unlink(::std::filesystem::path path, 
-                          int flags = 0) noexcept;
+    op_batch& prep_unlink(::std::filesystem::path path, int flags = 0);
 
     /*! \brief  Prepare a unlinkat iouring operation
      *
@@ -210,7 +209,7 @@ public:
      */
     op_batch& prep_unlinkat(const toolpex::unique_posix_fd& fd, 
                             ::std::filesystem::path path, 
-                            int flags = 0) noexcept;
+                            int flags = 0);
 
     /*! \brief  Prepare a rename iouring operation
      *
@@ -223,7 +222,7 @@ public:
      *  \return the reference to the object which this call related to.
      */
     op_batch& prep_rename(const ::std::filesystem::path& from, 
-                          const ::std::filesystem::path& to) noexcept;
+                          const ::std::filesystem::path& to);
 
     /*! \brief  Prepare a renameat (replace version) iouring operation
      *
@@ -242,7 +241,7 @@ public:
      */
     op_batch& prep_renameat(const toolpex::unique_posix_fd& olddir, const ::std::filesystem::path& oldname, 
                             const toolpex::unique_posix_fd& newdir, const ::std::filesystem::path& newname, 
-                            int flags = 0) noexcept;
+                            int flags = 0);
 
     /*! \brief  Prepare a rename iouring operation
      *
@@ -264,7 +263,7 @@ public:
     op_batch& prep_renameat_noreplace(const toolpex::unique_posix_fd& olddir, 
                                       const ::std::filesystem::path& oldname, 
                                       const toolpex::unique_posix_fd& newdir, 
-                                      const ::std::filesystem::path& newname) noexcept;
+                                      const ::std::filesystem::path& newname);
 
     /*! \brief  Prepare a POSIX socket iouring operation.
      *  \see the manual page of socket(2)
@@ -276,7 +275,7 @@ public:
     op_batch& prep_socket(int domain, int type, int protocal, unsigned int flags = 0) noexcept;
     op_batch& prep_connect(const toolpex::unique_posix_fd& fd, 
                            toolpex::ip_address::ptr addr, 
-                           ::in_port_t port) noexcept;
+                           ::in_port_t port);
 
     op_batch& prep_sync_file_range(const toolpex::unique_posix_fd& fd,
                                    unsigned len, uint64_t offset, int flags = 0) noexcept;
@@ -294,14 +293,14 @@ public:
      *  
      *  If there's already a timeout has been set, this function will overwrite it.
      */
-    op_batch& timeout(::std::chrono::system_clock::time_point tp) noexcept;
+    op_batch& timeout(::std::chrono::system_clock::time_point tp);
 
     /*! \brief  Set the timeout time duration of the whole operation batch. 
      *  
      *  If there's already a timeout has been set, this function will overwrite it.
      */
     template<typename Rep, typename Period>
-    op_batch& timeout(::std::chrono::duration<Rep, Period> dura) noexcept
+    op_batch& timeout(::std::chrono::duration<Rep, Period> dura)
     {
         if (dura == decltype(dura)::max()) return *this;
         return timeout(dura + ::std::chrono::system_clock::now());

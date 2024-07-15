@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <atomic>
 #include <ranges>
+#include <memory_resource>
 
 #include "koios/macros.h"
 #include "koios/task_scheduler.h"
@@ -123,8 +124,10 @@ protected:
     virtual ::std::chrono::nanoseconds
     max_sleep_duration(const per_consumer_attr& cattr) noexcept override
     {
-        static ::std::vector<::std::chrono::nanoseconds> duras(sizeof...(Loops));
-        duras.clear();
+        static ::std::array<::std::chrono::nanoseconds, sizeof...(Loops)> buffer{};
+        ::std::pmr::monotonic_buffer_resource mbr(buffer.data(), sizeof(buffer));
+        ::std::pmr::polymorphic_allocator<::std::chrono::nanoseconds> pa(&mbr);
+        ::std::pmr::vector<::std::chrono::nanoseconds> duras(pa);
         (duras.push_back(
             ::std::chrono::duration_cast<::std::chrono::nanoseconds>(
                 Loops::max_sleep_duration(cattr))), 

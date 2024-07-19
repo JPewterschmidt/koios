@@ -2,9 +2,12 @@
 
 #include "gtest/gtest.h"
 #include "koios/generator.h"
+#include "koios/task.h"
 #include "koios/macros.h"
 
 using namespace koios;
+namespace r = ::std::ranges;
+namespace rv = r::views;
 
 //namespace
 //{
@@ -59,3 +62,45 @@ using namespace koios;
 //        ASSERT_EQ(val1, val2);
 //    }
 //}
+    
+namespace 
+{
+    constinit int scale{10};
+
+    eager_task<int> func()
+    {
+        co_return 1;
+    }
+    
+    generator<int> gen()
+    {
+        for (int i{}; i < scale; ++i)
+        {
+            co_yield co_await func() + i; 
+        }
+        co_return;
+    }
+
+    eager_task<::std::vector<int>> main_body()
+    {
+        ::std::vector<int> result{};
+        auto g = gen();
+        ::std::optional<int> iopt;
+        while ((iopt = co_await g.next_value_async()))
+        {
+            result.push_back(*iopt);
+        }
+
+        co_return result;
+    }
+}
+
+TEST(generator, basic)
+{
+    ASSERT_EQ(
+        main_body().result(), 
+        rv::iota(0, 10) 
+            | rv::transform([](int i){ return i + 1; }) 
+            | r::to<::std::vector<int>>()
+    );
+}

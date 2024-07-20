@@ -22,18 +22,18 @@ auto identity(auto arg) -> task<decltype(arg)>
 template<typename Func, typename... Args>
 requires (
     task_callable_concept<Func> 
-    and !eager_task_callable_concept<Func>)
-auto make_eager(Func f, Args... args) 
-    -> eager_task<typename toolpex::get_return_type_t<Func>::value_type>
+    and !lazy_task_callable_concept<Func>)
+auto make_lazy(Func f, Args... args) 
+    -> lazy_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
-    // It is a best practice to co_return a co_await'ed result in make_eager coroutine.
+    // It is a best practice to co_return a co_await'ed result in make_lazy coroutine.
     co_return co_await f(::std::move(args)...);
 }
 
 template<typename Func, typename... Args>
-requires (eager_task_callable_concept<Func>)
-auto make_eager(Func f, Args... args)
-    -> eager_task<typename toolpex::get_return_type_t<Func>::value_type>
+requires (lazy_task_callable_concept<Func>)
+auto make_lazy(Func f, Args... args)
+    -> lazy_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
     return f(::std::move(args)...);
 }

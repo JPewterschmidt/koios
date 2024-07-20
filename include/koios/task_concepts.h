@@ -47,7 +47,7 @@ concept task_concept = requires(T t)
 } and awaitible_concept<T>;
 
 template<typename T>
-concept eager_task_concept = 
+concept lazy_task_concept = 
     task_concept<T> 
     and ::std::same_as<typename T::initial_suspend_type, ::std::suspend_always>;
 
@@ -62,9 +62,9 @@ concept task_callable_with_result_concept =
         Ret>;
 
 template<typename Func>
-concept eager_task_callable_concept = 
+concept lazy_task_callable_concept = 
     task_callable_concept<Func> 
-    and eager_task_concept<toolpex::get_return_type_t<Func>>;
+    and lazy_task_concept<toolpex::get_return_type_t<Func>>;
 
 template <typename...>
 struct is_all_same_type 

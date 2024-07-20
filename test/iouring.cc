@@ -35,7 +35,7 @@ task<> delete_file()
     co_await uring::unlink(g_file_name);
 }
 
-eager_task<bool> append_all_test()
+lazy_task<bool> append_all_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -61,7 +61,7 @@ eager_task<bool> append_all_test()
     co_return ::std::ranges::equal(buffer, content.substr(0, 5));
 }
 
-eager_task<bool> emit_op_fill_test()
+lazy_task<bool> emit_op_fill_test()
 {
     auto content = "123456789"sv;
     ::std::array<char, 5> buffer{};
@@ -81,7 +81,7 @@ eager_task<bool> emit_op_fill_test()
     co_return readed_nbytes == 5;
 }
 
-eager_task<bool> emit_op_fill_test2()
+lazy_task<bool> emit_op_fill_test2()
 {
     constexpr auto content = "123456789"sv;
     ::std::array<char, content.size() * 2> buffer{};
@@ -122,7 +122,7 @@ namespace efs = ::std::experimental::filesystem;
 
 namespace
 {
-    eager_task<bool> op_batch_test_basic()
+    lazy_task<bool> op_batch_test_basic()
     {
         auto ops = uring::op_batch{};
         ops.prep_socket("::1"_ip->family(), SOCK_STREAM, 0)
@@ -185,7 +185,7 @@ namespace
         }
         
     public:
-        eager_task<bool> do_test()
+        lazy_task<bool> do_test()
         {
             auto dir_fd = open_dir();
             auto ret = co_await uring::unlinkat(dir_fd, file_name, 0);

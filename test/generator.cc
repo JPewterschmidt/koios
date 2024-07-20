@@ -67,7 +67,7 @@ namespace
 {
     constinit int scale{10};
 
-    eager_task<int> func()
+    lazy_task<int> func()
     {
         co_return 1;
     }
@@ -81,7 +81,7 @@ namespace
         co_return;
     }
 
-    eager_task<::std::vector<int>> main_body()
+    lazy_task<::std::vector<int>> main_body()
     {
         ::std::vector<int> result{};
         auto g = gen();

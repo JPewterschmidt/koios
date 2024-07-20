@@ -40,7 +40,7 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    eager_task<int> func()
+    lazy_task<int> func()
     {
         co_return 1;
     }
@@ -54,7 +54,7 @@ namespace
         co_return;
     }
 
-    eager_task<> main_body()
+    lazy_task<> main_body()
     {
         auto g = gen();
         ::std::optional<int> iopt;

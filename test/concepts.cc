@@ -20,7 +20,7 @@ namespace
         void await_suspend(::std::coroutine_handle<>) {}
     };
 
-    eager_task<void> dummy_task() { co_return; }
+    lazy_task<void> dummy_task() { co_return; }
     task<void> dummy_task2() { co_return; }
 }
 
@@ -43,7 +43,7 @@ TEST(task_concepts, awaitable_related)
 TEST(task_concepts, task_related)
 {
     ASSERT_TRUE((awaitable_callable_concept<decltype(dummy_task)>));
-    ASSERT_TRUE((eager_task_callable_concept<decltype(dummy_task)>));
+    ASSERT_TRUE((lazy_task_callable_concept<decltype(dummy_task)>));
     ASSERT_TRUE((task_callable_concept<decltype(dummy_task)>));
 }
 

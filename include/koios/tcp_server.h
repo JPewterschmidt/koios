@@ -67,7 +67,7 @@ public:
 
 private:
     friend class tcp_server_until_done_aw;
-    eager_task<void> tcp_loop(
+    lazy_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept
     {
@@ -90,7 +90,7 @@ private:
             else 
             {
                 auto client = accret.get_client();
-                make_eager(userdefined, ::std::move(client)).run();
+                make_lazy(userdefined, ::std::move(client)).run();
             }
         }
 

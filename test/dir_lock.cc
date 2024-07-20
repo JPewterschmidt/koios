@@ -26,7 +26,7 @@ public:
         clean().result();
     }
 
-    eager_task<bool> acquire_test()
+    lazy_task<bool> acquire_test()
     {
         try
         {
@@ -39,7 +39,7 @@ public:
         co_return true;
     }
 
-    eager_task<bool> execlusive_availability()
+    lazy_task<bool> execlusive_availability()
     {
         auto guard = co_await m_lock.acquire();
         co_await this_task::sleep_for(50ms);
@@ -52,7 +52,7 @@ public:
 
     bool execlusive_availability_test_fail() const { return m_fail.load(); }
 
-    eager_task<> clean()
+    lazy_task<> clean()
     {
         co_await uring::unlink("koios_dir_lock");
     }

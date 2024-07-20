@@ -21,7 +21,7 @@ int flag2{};
 
 ::std::binary_semaphore bs{0};
 
-eager_task<void> func()
+lazy_task<void> func()
 {
     co_await this_task::sleep_for(5ms);
     flag1 = 1;
@@ -73,16 +73,16 @@ task<> func3()
     co_return;
 }
 
-eager_task<void> mainfunc()
+lazy_task<void> mainfunc()
 {
     // add_event should never be called in main thread.
-    get_task_scheduler().add_event<timer_event_loop>(2ms, make_eager(func1));
-    get_task_scheduler().add_event<timer_event_loop>(4ms, make_eager(func2));
-    get_task_scheduler().add_event<timer_event_loop>(8ms, make_eager(func3));
+    get_task_scheduler().add_event<timer_event_loop>(2ms, make_lazy(func1));
+    get_task_scheduler().add_event<timer_event_loop>(4ms, make_lazy(func2));
+    get_task_scheduler().add_event<timer_event_loop>(8ms, make_lazy(func3));
     co_return;
 }
 
-eager_task<bool> test_sleep_until_3ms()
+lazy_task<bool> test_sleep_until_3ms()
 {
     auto now = ::std::chrono::system_clock::now();
     co_await this_task::sleep_until(now + 3ms);

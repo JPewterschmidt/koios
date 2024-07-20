@@ -131,7 +131,7 @@ do_occured_nonblk()
     {
         ::std::cout << 
             "you should call async uring operation "
-            "in a eager_task or any subsequent normal task.";
+            "in a lazy_task or any subsequent normal task.";
         ::exit(1);
     }
     ptr->do_occured_nonblk();
@@ -147,7 +147,7 @@ add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     {
         ::std::cout << 
             "you should call async uring operation "
-            "in a eager_task or any subsequent normal task.";
+            "in a lazy_task or any subsequent normal task.";
         ::exit(1);
     }
     return impl->add_event(::std::move(h), ops);

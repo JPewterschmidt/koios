@@ -95,7 +95,7 @@ bool dir_mutex::create_lock_file() const
     return true;
 }
 
-eager_task<> dir_mutex::polling_lock_file(
+lazy_task<> dir_mutex::polling_lock_file(
     ::std::stop_token tk, 
     ::std::chrono::milliseconds period)
 {
@@ -145,7 +145,7 @@ bool dir_mutex::hold_this_immediately()
     return success;
 }
 
-eager_task<> dir_mutex::delete_lock_file()
+lazy_task<> dir_mutex::delete_lock_file()
 {
     co_await uring::unlinkat(m_dirfd, lock_file_name());
 }

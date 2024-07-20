@@ -96,7 +96,7 @@ protected:
           m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
           m_std_promise_p{ p.get_std_promise_pointer() }
     {
-        if constexpr (this->is_lazy()) m_coro_handle.give_up_ownership();
+        if constexpr (this->is_eager()) m_coro_handle.give_up_ownership();
     }
 
 public:
@@ -146,7 +146,7 @@ public:
         static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!this->is_lazy())
+        if constexpr (!this->is_eager())
         {
             if (!this->future().ready())
             {   
@@ -163,7 +163,7 @@ public:
         static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
                       "you should call `run_and_get_future()` nor `run()`.");
-        if constexpr (!this->is_lazy())
+        if constexpr (!this->is_eager())
         {
             if (!this->future().ready())
             {   
@@ -195,7 +195,7 @@ public:
     [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
     {
         auto result = this->get_future();
-        if constexpr (!this->is_lazy())
+        if constexpr (!this->is_eager())
         {
             if (!this->has_scheduled() && !result.ready())
             {   
@@ -211,7 +211,7 @@ public:
         const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
     {
         auto result = this->get_future();
-        if constexpr (!this->is_lazy())
+        if constexpr (!this->is_eager())
         {
             if (!this->has_scheduled() && !result.ready())
             {   
@@ -253,7 +253,7 @@ public:
      *  And this is a static consteval function.
      */
     [[nodiscard]] static consteval bool is_discardable() { return ::std::same_as<Discardable, discardable>; }
-    [[nodiscard]] static consteval bool is_lazy() { return ::std::same_as<initial_suspend_type, lazy_aw>; }
+    [[nodiscard]] static consteval bool is_eager() { return ::std::same_as<initial_suspend_type, eager_aw>; }
 
 private:
     [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
@@ -269,7 +269,7 @@ private:
      */
     [[nodiscard]] future_type get_future()
     {
-        if constexpr (!this->is_lazy())
+        if constexpr (!this->is_eager())
         {
             if (this->has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
         }
@@ -284,44 +284,44 @@ private:
     ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
 };
 
-template<typename T = void, typename InitialSuspendAw = lazy_aw>
+template<typename T = void, typename InitialSuspendAw = eager_aw>
 using async_task = typename _task<T, discardable, InitialSuspendAw>::_type;
 
-template<typename T = void, typename InitialSuspendAw = lazy_aw>
+template<typename T = void, typename InitialSuspendAw = eager_aw>
 using nodiscard_task = typename _task<T, non_discardable, InitialSuspendAw>::_type;
 
-template<typename T = void, typename InitialSuspendAw = lazy_aw>
+template<typename T = void, typename InitialSuspendAw = eager_aw>
 using task = async_task<T, InitialSuspendAw>;
 
-template<typename T = void, typename InitialSuspendAw = ::std::suspend_always>
-using eager_task = async_task<T, InitialSuspendAw>;
+template<typename T = void, typename InitialSuspendAw = lazy_aw>
+using lazy_task = async_task<T, InitialSuspendAw>;
 
 using taskec = task<::std::error_code>;
-using etaskec = eager_task<::std::error_code>;
+using lztaskec = lazy_task<::std::error_code>;
 
 extern template class koios::_task<void, discardable, ::std::suspend_always>::_type;
-extern template class koios::_task<void, discardable, lazy_aw>::_type;
-extern template class koios::_task<void, non_discardable, lazy_aw>::_type;
-extern template class koios::_task<bool, discardable, lazy_aw>::_type;
-extern template class koios::_task<int, discardable, lazy_aw>::_type;
-extern template class koios::_task<size_t, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::string, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::string_view, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::error_code, discardable, lazy_aw>::_type;
-extern template class koios::_task<uint8_t, discardable, lazy_aw>::_type;
-extern template class koios::_task<uint32_t, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::byte*, discardable, lazy_aw>::_type;
-extern template class koios::_task<const ::std::byte*, discardable, lazy_aw>::_type;
-extern template class koios::_task<char*, discardable, lazy_aw>::_type;
-extern template class koios::_task<const char*, discardable, lazy_aw>::_type;
-extern template class koios::_task<void*, discardable, lazy_aw>::_type;
-extern template class koios::_task<const void*, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<::std::byte>, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<const ::std::byte>, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<char>, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<const char>, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<uint8_t>, discardable, lazy_aw>::_type;
-extern template class koios::_task<::std::span<const uint8_t>, discardable, lazy_aw>::_type;
+extern template class koios::_task<void, discardable, eager_aw>::_type;
+extern template class koios::_task<void, non_discardable, eager_aw>::_type;
+extern template class koios::_task<bool, discardable, eager_aw>::_type;
+extern template class koios::_task<int, discardable, eager_aw>::_type;
+extern template class koios::_task<size_t, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::string, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::string_view, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::error_code, discardable, eager_aw>::_type;
+extern template class koios::_task<uint8_t, discardable, eager_aw>::_type;
+extern template class koios::_task<uint32_t, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::byte*, discardable, eager_aw>::_type;
+extern template class koios::_task<const ::std::byte*, discardable, eager_aw>::_type;
+extern template class koios::_task<char*, discardable, eager_aw>::_type;
+extern template class koios::_task<const char*, discardable, eager_aw>::_type;
+extern template class koios::_task<void*, discardable, eager_aw>::_type;
+extern template class koios::_task<const void*, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<::std::byte>, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<const ::std::byte>, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<char>, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<const char>, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<uint8_t>, discardable, eager_aw>::_type;
+extern template class koios::_task<::std::span<const uint8_t>, discardable, eager_aw>::_type;
 
 KOIOS_NAMESPACE_END
 

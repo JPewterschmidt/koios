@@ -54,7 +54,7 @@ namespace
 bool success1{};
 bool success2{};
 
-eager_task<> dummy()
+lazy_task<> dummy()
 {
     co_return;
 }

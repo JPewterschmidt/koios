@@ -32,14 +32,15 @@ public:
     constexpr void await_resume() const noexcept { }
 };
 
-using lazy_aw = ::std::suspend_never;
+using eager_aw = ::std::suspend_never;
+using lazy_aw = ::std::suspend_always;
 
 /*! \brief life-cycle control class of a task
  *  \tparam FinalSuspendAwaitable Class which contains the methods
  *                                when coroutine get into the final suspend phase.
  */
 template<
-    typename InitialSuspendAwaitable = lazy_aw, 
+    typename InitialSuspendAwaitable = eager_aw, 
     typename FinalSuspendAwaitable = destroy_aw>
 class promise_base
 {

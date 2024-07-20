@@ -197,7 +197,7 @@ template<typename T, typename Err, typename InitialSuspendAw = lazy_aw>
 using expected_task = typename _task<expected<T, Err>, discardable, InitialSuspendAw>::_type;
 
 template<typename T, typename Err, typename InitialSuspendAw = ::std::suspend_always>
-using eager_expected_task = typename _task<expected<T, Err>, discardable, InitialSuspendAw>::_type;
+using lazy_expected_task = typename _task<expected<T, Err>, discardable, InitialSuspendAw>::_type;
 
 template<typename T = void>
 using exp_taskec = expected_task<T, ::std::error_code>;

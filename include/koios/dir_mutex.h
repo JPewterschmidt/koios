@@ -71,9 +71,9 @@ private:
     friend class dir_mutex_acq_aw;
     bool hold_this_immediately();
     static constexpr ::std::string_view lock_file_name() { return "koios_dir_lock"; }
-    eager_task<> polling_lock_file(::std::stop_token tk, ::std::chrono::milliseconds period);
+    lazy_task<> polling_lock_file(::std::stop_token tk, ::std::chrono::milliseconds period);
     bool create_lock_file() const;
-    eager_task<> delete_lock_file();
+    lazy_task<> delete_lock_file();
 
 private:
     ::std::filesystem::path m_path;

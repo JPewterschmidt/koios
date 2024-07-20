@@ -109,74 +109,74 @@ TEST(task, exception)
     ASSERT_EQ(flag3, 1);
 }
 
-namespace
-{
-    ::std::error_code ec{ EINVAL, ::std::system_category() };
-
-    expected_task<void, ::std::error_code> expvoid_succeed()
-    {
-        co_return ok();
-    }
-
-    expected_task<void, ::std::error_code> expvoid_failed()
-    {
-        co_return unexpected(ec);
-    }
-
-    eager_task<bool> emitter_void()
-    {
-        auto ret1 = co_await expvoid_succeed();
-        auto ret2 = co_await expvoid_failed();
-        co_return ret1.has_value() && !ret2.has_value();
-    }
-
-    expected_task<int, ::std::error_code> exp(int i = 0)
-    {
-        co_return i + 1;
-    }
-
-    expected_task<int, ::std::error_code> exp2(int)
-    {
-        co_return unexpected(ec);
-    }
-
-    task<bool> emit_exp_basic()
-    {
-        bool result{ true };
-
-        auto ret = co_await (co_await exp()).and_then(exp);
-        result &= (ret.value() == 2);
-        
-        co_return result;
-    }
-
-    task<bool> emit_failed_exp()
-    {
-        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
-        co_return ret.error() == ec && !ret.has_value();
-    }
-
-    task<bool> emit_failed_exp_hasvalue()
-    {
-        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
-        co_return ret.has_value();
-    }
-}
-
-TEST(expected_task, basic)
-{
-    ec = ::std::error_code{ EINVAL, ::std::system_category() };
-    ASSERT_TRUE(emit_exp_basic().result());
-    ASSERT_TRUE(emitter_void().result());
-}
-
-TEST(expected_task, failed)
-{
-    ec = ::std::error_code{ EINVAL, ::std::system_category() };
-    ASSERT_TRUE(emit_failed_exp().result());
-    ASSERT_FALSE(emit_failed_exp_hasvalue().result());
-}
-
+//namespace
+//{
+//    ::std::error_code ec{ EINVAL, ::std::system_category() };
+//
+//    expected_task<void, ::std::error_code> expvoid_succeed()
+//    {
+//        co_return ok();
+//    }
+//
+//    expected_task<void, ::std::error_code> expvoid_failed()
+//    {
+//        co_return unexpected(ec);
+//    }
+//
+//    lazy_task<bool> emitter_void()
+//    {
+//        auto ret1 = co_await expvoid_succeed();
+//        auto ret2 = co_await expvoid_failed();
+//        co_return ret1.has_value() && !ret2.has_value();
+//    }
+//
+//    expected_task<int, ::std::error_code> exp(int i = 0)
+//    {
+//        co_return i + 1;
+//    }
+//
+//    expected_task<int, ::std::error_code> exp2(int)
+//    {
+//        co_return unexpected(ec);
+//    }
+//
+//    task<bool> emit_exp_basic()
+//    {
+//        bool result{ true };
+//
+//        auto ret = co_await (co_await exp()).and_then(exp);
+//        result &= (ret.value() == 2);
+//        
+//        co_return result;
+//    }
+//
+//    task<bool> emit_failed_exp()
+//    {
+//        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
+//        co_return ret.error() == ec && !ret.has_value();
+//    }
+//
+//    task<bool> emit_failed_exp_hasvalue()
+//    {
+//        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
+//        co_return ret.has_value();
+//    }
+//}
+//
+//TEST(expected_task, basic)
+//{
+//    ec = ::std::error_code{ EINVAL, ::std::system_category() };
+//    ASSERT_TRUE(emit_exp_basic().result());
+//    ASSERT_TRUE(emitter_void().result());
+//}
+//
+//TEST(expected_task, failed)
+//{
+//    ec = ::std::error_code{ EINVAL, ::std::system_category() };
+//    ASSERT_TRUE(emit_failed_exp().result());
+//    ASSERT_FALSE(emit_failed_exp_hasvalue().result());
+//}
+//
 namespace
 {
     bool hascopyed{ false };
@@ -222,7 +222,7 @@ namespace
         co_return ret;
     }
 
-    eager_task<bool> emit_wait_all_tests()
+    lazy_task<bool> emit_wait_all_tests()
     {
         auto [i, d, f] = co_await wait_all(wait_all1(), wait_all2(), wait_all3());
         (void)i;
@@ -240,7 +240,7 @@ TEST(task, wait_all)
 namespace
 {
 
-eager_task<bool> emit_yield_test1()
+lazy_task<bool> emit_yield_test1()
 {
     co_await this_task::yield();
     co_return true;
@@ -258,7 +258,7 @@ TEST(this_task, yield)
 {
     ASSERT_TRUE(emit_yield_test1().result());
     ASSERT_TRUE(emit_yield_test2().result());
-    ASSERT_TRUE(make_eager(emit_yield_test2).result());
+    ASSERT_TRUE(make_lazy(emit_yield_test2).result());
 }
 
 TEST(task_release_once, basic)

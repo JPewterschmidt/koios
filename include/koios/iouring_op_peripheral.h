@@ -48,10 +48,10 @@ private:
 class op_peripheral : public toolpex::move_only
 {
 public:
-    op_peripheral()
-        : m_mbr(::std::make_unique<::std::pmr::monotonic_buffer_resource>()),
-          m_pa_perele(m_mbr.get()),
-          m_pa_bytes(m_mbr.get()), 
+    op_peripheral(::std::pmr::memory_resource* mr = nullptr)
+        : m_mr(mr ? mr : ::std::pmr::get_default_resource()),
+          m_pa_perele(m_mr),
+          m_pa_bytes(m_mr), 
           m_objs(m_pa_perele)
     {
     }
@@ -65,7 +65,7 @@ public:
     }
 
 private:
-    ::std::unique_ptr<::std::pmr::monotonic_buffer_resource> m_mbr;
+    ::std::pmr::memory_resource* m_mr;
     ::std::pmr::polymorphic_allocator<op_peripheral_element> m_pa_perele;
     ::std::pmr::polymorphic_allocator<::std::byte> m_pa_bytes;
     ::std::list<op_peripheral_element, decltype(m_pa_perele)> m_objs;

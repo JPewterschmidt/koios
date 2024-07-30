@@ -56,6 +56,9 @@ public:
     {
     }
 
+    op_peripheral(op_peripheral&&) noexcept = default;
+    op_peripheral& operator=(op_peripheral&&) noexcept = default;
+
     template<typename DataT, typename... Args>
     requires (::std::is_nothrow_move_constructible_v<DataT>)
     DataT* add(Args&&... args)

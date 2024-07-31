@@ -46,7 +46,13 @@ namespace koios::uring
 class op_batch
 {
 public:
-    op_batch() = default;
+    op_batch(::std::pmr::memory_resource* mr = nullptr)
+        : m_mr{ mr ? mr : ::std::pmr::get_default_resource() }, 
+          m_rep{ m_mr }, 
+          m_peripheral{ m_mr }
+    {
+    }
+
     op_batch(op_batch&&) noexcept = default;
     op_batch& operator=(op_batch&&) noexcept = default;
 
@@ -331,6 +337,7 @@ public:
     const op_batch_rep& rep() const noexcept { return m_rep; }
 
 private:
+    ::std::pmr::memory_resource* m_mr{};
     op_batch_rep m_rep;
     op_peripheral m_peripheral;
 };

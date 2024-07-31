@@ -50,8 +50,8 @@ private:
 class op_peripheral : public toolpex::move_only
 {
 public:
-    op_peripheral(::std::pmr::memory_resource* mr = nullptr)
-        : m_mr(mr ? mr : ::std::pmr::get_default_resource()),
+    op_peripheral(::std::pmr::memory_resource* mr)
+        : m_mr{ mr }, 
           m_objs(::std::pmr::polymorphic_allocator<op_peripheral_element>(m_mr))
     {
     }

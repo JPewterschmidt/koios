@@ -56,13 +56,7 @@ namespace
 
     lazy_task<> main_body()
     {
-        auto g = gen();
-        ::std::optional<int> iopt;
-        while ((iopt = co_await g.next_value_async()))
-        {
-            ::std::cout << *iopt << " ";
-        }
-        ::std::cout << ::std::endl;
+        co_await uring::unlink("./no-exists");
 
         co_return;
     }

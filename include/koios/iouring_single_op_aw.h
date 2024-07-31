@@ -6,6 +6,9 @@
 #ifndef KOIOS_IOURING_SINGLE_OP_AW_H
 #define KOIOS_IOURING_SINGLE_OP_AW_H
 
+#include <memory>
+#include <memory_resource>
+
 #include "koios/iouring_ioret.h"
 #include "koios/iouring_op_batch.h"
 
@@ -14,6 +17,15 @@ namespace koios::uring
     class op_aw_base
     {
     public:
+        op_aw_base() 
+            : m_mbr{ ::std::make_unique<::std::pmr::monotonic_buffer_resource>() }, 
+              m_batch(m_mbr.get())
+        {
+        }
+        
+        op_aw_base(op_aw_base&&) noexcept = default;
+        op_aw_base& operator=(op_aw_base&&) noexcept = default;
+
         auto& batch() { return m_batch; }
 
     protected:
@@ -23,6 +35,7 @@ namespace koios::uring
         }
 
     private:
+        ::std::unique_ptr<::std::pmr::monotonic_buffer_resource> m_mbr;
         op_batch m_batch;
     };
 

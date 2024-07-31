@@ -29,15 +29,17 @@ operator=(op_peripheral_element&& other) noexcept
 op_peripheral_element::
 ~op_peripheral_element() noexcept
 {
-    this->delete_this();
+    const ::std::size_t sz = this->delete_this();
+    m_alloc.deallocate(::std::exchange(m_buffer, nullptr), sz);
 }
 
-void 
+::std::size_t
 op_peripheral_element::
 delete_this() noexcept
 {
     toolpex_assert(m_deleter);
-    if (m_buffer) m_deleter(m_buffer);
+    if (m_buffer) return m_deleter(m_buffer);
+    return 0;
 }
 
 } // namespace koios::uring

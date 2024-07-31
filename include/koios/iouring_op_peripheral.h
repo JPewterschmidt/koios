@@ -21,14 +21,15 @@ class op_peripheral_element
 {
 public:
     template<typename T>
-    op_peripheral_element(T&& t, ::std::pmr::polymorphic_allocator<::std::byte>& alloc)
-        : m_buffer{ alloc.allocate(sizeof(T)) }
+    op_peripheral_element(T&& t, const ::std::pmr::polymorphic_allocator<::std::byte>& alloc)
+        : m_alloc{ alloc }, m_buffer{ m_alloc.allocate(sizeof(T)) }
     {
         new (m_buffer) T(::std::forward<T>(t));
-        m_deleter = +[](void* ptr) noexcept
+        m_deleter = +[](void* ptr) noexcept -> ::std::size_t
         {
             T* p = reinterpret_cast<T*>(ptr);
             p->~T();
+            return sizeof(T);
         };
     }
 
@@ -38,37 +39,40 @@ public:
     ::std::byte* ptr() noexcept { return m_buffer; }
 
 private:
-    void delete_this() noexcept;
+    ::std::size_t delete_this() noexcept;
 
 private:
+    ::std::pmr::polymorphic_allocator<::std::byte> m_alloc;
     ::std::byte* m_buffer;
-    void (*m_deleter) (void*) noexcept {};
+    ::std::size_t (*m_deleter) (void*) noexcept {};
 };
 
 class op_peripheral : public toolpex::move_only
 {
 public:
-    op_peripheral()
-        : m_mbr(::std::make_unique<::std::pmr::monotonic_buffer_resource>()),
-          m_pa_perele(m_mbr.get()),
-          m_pa_bytes(m_mbr.get()), 
-          m_objs(m_pa_perele)
+    op_peripheral(::std::pmr::memory_resource* mr = nullptr)
+        : m_mr(mr ? mr : ::std::pmr::get_default_resource()),
+          m_objs(::std::pmr::polymorphic_allocator<op_peripheral_element>(m_mr))
     {
     }
+
+    op_peripheral(op_peripheral&&) noexcept = default;
+    op_peripheral& operator=(op_peripheral&&) noexcept = default;
 
     template<typename DataT, typename... Args>
     requires (::std::is_nothrow_move_constructible_v<DataT>)
     DataT* add(Args&&... args)
     {
-        auto* result = m_objs.emplace_back(DataT(::std::forward<Args>(args)...), m_pa_bytes).ptr();
+        auto* result = m_objs.emplace_back(
+            DataT(::std::forward<Args>(args)...), 
+            ::std::pmr::polymorphic_allocator<::std::byte>(m_mr)
+        ).ptr();
         return reinterpret_cast<DataT*>(result);
     }
 
 private:
-    ::std::unique_ptr<::std::pmr::monotonic_buffer_resource> m_mbr;
-    ::std::pmr::polymorphic_allocator<op_peripheral_element> m_pa_perele;
-    ::std::pmr::polymorphic_allocator<::std::byte> m_pa_bytes;
-    ::std::list<op_peripheral_element, decltype(m_pa_perele)> m_objs;
+    ::std::pmr::memory_resource* m_mr;
+    ::std::list<op_peripheral_element, ::std::pmr::polymorphic_allocator<op_peripheral_element>> m_objs;
 };
 
 } // namespace koios::uring

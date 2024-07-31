@@ -7,7 +7,10 @@
 #define KOIOS_IOURING_OP_BATCH_REP_H
 
 #include <vector>
+#include <memory>
 #include <liburing.h>
+#include <memory_resource>
+
 #include "toolpex/move_only.h"
 #include "toolpex/assert.h"
 #include "koios/iouring_ioret.h"
@@ -23,7 +26,15 @@ namespace koios::uring
 class op_batch_rep : public toolpex::move_only
 {
 public:
-    constexpr op_batch_rep() = default;
+    op_batch_rep(::std::pmr::memory_resource* mr = nullptr)
+        : m_mr{ mr ? mr : ::std::pmr::get_default_resource() }, 
+          m_sqes(::std::pmr::polymorphic_allocator<::io_uring_sqe>(m_mr)), 
+          m_rets(::std::pmr::polymorphic_allocator<ioret_for_any_base>(m_mr))
+    {
+    }
+
+    op_batch_rep(op_batch_rep&&) noexcept = default;
+    op_batch_rep& operator=(op_batch_rep&&) noexcept = default;
 
     /*! \brief Get the pointer to the next new writable sqe.
      *  
@@ -59,15 +70,17 @@ public:
 
     void set_user_data(void* userdata);
     void set_user_data(uintptr_t userdata);
+
     void set_timeout(bool val = true) noexcept { m_was_timeout_set = val; }
     bool was_timeout_set() const noexcept { return m_was_timeout_set; }
 
 private:
-    ::std::vector<::io_uring_sqe> m_sqes;
-    ::std::vector<ioret_for_any_base> m_rets;
+    ::std::pmr::memory_resource* m_mr{};
+    ::std::vector<::io_uring_sqe, ::std::pmr::polymorphic_allocator<::io_uring_sqe>> m_sqes;
+    ::std::vector<ioret_for_any_base, ::std::pmr::polymorphic_allocator<ioret_for_any_base>> m_rets;
     bool m_was_timeout_set{};
 };
 
-}
+} // namespace koios::uring
 
 #endif

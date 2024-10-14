@@ -107,7 +107,8 @@ public:
 
         ::std::optional<T> await_resume() 
         {
-            m_lock.lock();
+            if (!m_lock.owns_lock())
+                m_lock.lock();
             auto ret = m_parent.value_opt_impl();
             m_lock = {};
 

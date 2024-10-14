@@ -86,6 +86,7 @@ public:
 
     void* address() const noexcept
     {
+        if (!holds_ownership()) return nullptr;
         return m_h.address();
     }
 

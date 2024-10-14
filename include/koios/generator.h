@@ -118,7 +118,7 @@ public:
 
     private:
         mutable ::std::unique_lock<::std::mutex> m_lock;
-        task_on_the_fly m_h{};
+        task_on_the_fly m_h{}; // TODO replace to generator_on_the_fly
         generator_promise_type& m_parent;
     };
 

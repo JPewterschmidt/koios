@@ -145,7 +145,7 @@ namespace
         for (int i{}; i < 10; ++i)
         {
             opt = co_await g.next_value_async();
-            if (!opt.empty())
+            if (opt.has_value())
                 co_return false;
         }
 

@@ -134,6 +134,23 @@ namespace
         co_await numbers(10).to(::std::back_inserter(result));
         co_return result;
     }
+
+    task<bool> test_body_6()
+    {
+        auto g = numbers(10);
+        ::std::optional<int> opt;
+        for (int i{}; i < 10; ++i)
+            opt = co_await g.next_value_async();
+
+        for (int i{}; i < 10; ++i)
+        {
+            opt = co_await g.next_value_async();
+            if (!opt.empty())
+                co_return false;
+        }
+
+        co_return true;
+    }
 }
 
 TEST(generator, to)
@@ -146,4 +163,9 @@ TEST(generator, to)
 TEST(generator, merge)
 {
     ASSERT_EQ(test_body_4().result(), (::std::vector{ 0,0,1,1,2,2,3,3,4 }));
+}
+
+TEST(generator, over_getting)
+{
+    ASSERT_TRUE(test_body_6().result());
 }

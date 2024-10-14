@@ -319,7 +319,6 @@ public:
         return { m_coro };
     }
 
-    //template<template<typename> typename Container>
     template<typename PushBackAble>
     task<PushBackAble> to()
     {

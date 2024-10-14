@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "koios/macros.h"
+#include "koios/task_concepts.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -20,6 +21,7 @@ concept generator_concept = requires(G g)
     { g.move_next() } -> toolpex::boolean_testable;
     { g.current_value() };
     { g.has_value() } -> toolpex::boolean_testable;
+    { g.next_value_async() } -> awaitible_concept;
 };
 
 KOIOS_NAMESPACE_END

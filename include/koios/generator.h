@@ -319,7 +319,6 @@ public:
         return { m_coro };
     }
 
-    //template<template<typename> typename Container>
     template<typename PushBackAble>
     task<PushBackAble> to()
     {
@@ -339,6 +338,17 @@ public:
     task<PushBackAble<result_type>> to()
     {
         return to<PushBackAble<result_type>>();
+    }
+
+    task<> to(auto iter)
+    {
+        ::std::optional<result_type> cur;
+        for (;;) 
+        {
+            cur = co_await next_value_async();
+            if (cur) (*iter++) = ::std::move(*cur);
+            else break;
+        }
     }
 };
 

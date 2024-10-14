@@ -110,7 +110,7 @@ public:
             if (!m_lock.owns_lock())
                 m_lock.lock();
             auto ret = m_parent.value_opt_impl();
-            m_lock = {};
+            m_lock.unlock();
 
             return ret;
         }

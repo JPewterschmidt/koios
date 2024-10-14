@@ -46,7 +46,7 @@ public:
         m_h = nullptr;
     }
 
-    operator bool() const noexcept { return m_h; }
+    operator bool() const noexcept { return !!address(); }
     bool valid() const noexcept { return this->operator bool(); }
 
     bool done() const noexcept

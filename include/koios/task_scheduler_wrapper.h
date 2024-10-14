@@ -11,6 +11,7 @@
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
+#include "koios/generator_on_the_fly.h"
 #include "koios/per_consumer_attr.h"
 #include "koios/task_scheduler_concept.h"
 
@@ -41,14 +42,15 @@ public:
      */
     template<task_scheduler_concept Schr>
     task_scheduler_wrapper(Schr& scheduler) noexcept
-        : m_enqueue_impl { enqueue_impl_init<Schr>() }, 
+        : m_enqueue_task_impl { enqueue_task_impl_init<Schr>() }, 
+          m_enqueue_generator_impl { enqueue_generator_impl_init<Schr>() }, 
           m_schr{ &scheduler }
     {
     }
 
 private:
     template<typename Schr>
-    auto enqueue_impl_init()
+    auto enqueue_task_impl_init()
     {
         if constexpr (tsw_detials::has_thread_specific_enqueue<Schr>)
         {
@@ -70,6 +72,29 @@ private:
         }
     }
 
+    template<typename Schr>
+    auto enqueue_generator_impl_init()
+    {
+        if constexpr (tsw_detials::has_thread_specific_enqueue<Schr>)
+        {
+            return +[](void* schr, const per_consumer_attr* attr, generator_on_the_fly h) mutable noexcept
+            {
+                [[assume(bool(h))]];
+                if (attr == nullptr)
+                    static_cast<Schr*>(schr)->enqueue(::std::move(h));
+                else static_cast<Schr*>(schr)->enqueue(*attr, ::std::move(h));
+            };
+        }
+        else
+        {
+            return +[](void* schr, [[maybe_unused]] const per_consumer_attr*, generator_on_the_fly h) mutable noexcept
+            {
+                [[assume(bool(h))]];
+                static_cast<Schr*>(schr)->enqueue(::std::move(h));
+            };
+        }
+    }
+
 public:
     task_scheduler_wrapper(const task_scheduler_wrapper&) = delete;
     task_scheduler_wrapper& operator=(const task_scheduler_wrapper&) = delete;
@@ -79,16 +104,27 @@ public:
      */
     void enqueue(task_on_the_fly h) const
     {
-        if (h) m_enqueue_impl(m_schr, nullptr, ::std::move(h));
+        if (h) m_enqueue_task_impl(m_schr, nullptr, ::std::move(h));
+    }
+
+    void enqueue(generator_on_the_fly h) const
+    {
+        if (h) m_enqueue_generator_impl(m_schr, nullptr, ::std::move(h));
     }
 
     void enqueue(const per_consumer_attr& attr, task_on_the_fly h) const
     {
-        if (h) m_enqueue_impl(m_schr, &attr, ::std::move(h));
+        if (h) m_enqueue_task_impl(m_schr, &attr, ::std::move(h));
+    }
+
+    void enqueue(const per_consumer_attr& attr, generator_on_the_fly h) const
+    {
+        if (h) m_enqueue_generator_impl(m_schr, &attr, ::std::move(h));
     }
 
 private:
-    void (*m_enqueue_impl)(void*, const per_consumer_attr*, task_on_the_fly);
+    void (*m_enqueue_task_impl)(void*, const per_consumer_attr*, task_on_the_fly);
+    void (*m_enqueue_generator_impl)(void*, const per_consumer_attr*, generator_on_the_fly);
     void* const m_schr{};
 };
 

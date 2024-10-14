@@ -110,7 +110,7 @@ public:
             if (!m_lock.owns_lock())
                 m_lock.lock();
             auto ret = m_parent.value_opt_impl();
-            toolpex_assert(!!m_waitting);
+            toolpex_assert(!!m_parent.m_waitting);
             m_parent.m_waitting = {};
             m_lock = {};
 

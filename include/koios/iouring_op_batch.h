@@ -12,8 +12,12 @@
 #include <filesystem>
 #include <span>
 #include <sys/types.h>
+#include <memory>
+#include <memory_resource>
+
 #include "toolpex/unique_posix_fd.h"
 #include "toolpex/ipaddress.h"
+
 #include "koios/traits.h"
 #include "koios/task.h"
 #include "koios/iouring_ioret.h"
@@ -47,7 +51,8 @@ class op_batch
 {
 public:
     op_batch(::std::pmr::memory_resource* mr = nullptr)
-        : m_mr{ mr ? mr : ::std::pmr::get_default_resource() }, 
+        : m_mbr{ mr ? nullptr : ::std::make_unique<::std::pmr::monotonic_buffer_resource>() }, 
+          m_mr{ mr ? mr : m_mbr.get() }, 
           m_rep{ m_mr }, 
           m_peripheral{ m_mr }
     {
@@ -337,6 +342,7 @@ public:
     const op_batch_rep& rep() const noexcept { return m_rep; }
 
 private:
+    ::std::unique_ptr<::std::pmr::monotonic_buffer_resource> m_mbr{};
     ::std::pmr::memory_resource* m_mr{};
     op_batch_rep m_rep;
     op_peripheral m_peripheral;

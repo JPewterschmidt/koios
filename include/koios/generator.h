@@ -339,6 +339,17 @@ public:
     {
         return to<PushBackAble<result_type>>();
     }
+
+    task<> to(auto iter)
+    {
+        ::std::optional<result_type> cur;
+        for (;;) 
+        {
+            cur = co_await next_value_async();
+            if (cur) (*iter++) = ::std::move(*cur);
+            else break;
+        }
+    }
 };
 
 template<typename T, typename Alloc = ::std::allocator<T>>

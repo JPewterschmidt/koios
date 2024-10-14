@@ -127,16 +127,23 @@ namespace
     {
         co_return co_await merge(numbers(5), numbers(4)).to<::std::vector>();
     }
+
+    task<::std::vector<int>> test_body_5()
+    {
+        ::std::vector<int> result;
+        co_await numbers(10).to(::std::back_inserter(result));
+        co_return result;
+    }
 }
 
 TEST(generator, to)
 {
     ASSERT_EQ(test_body_2().result(), rv::iota(0, 10) | r::to<::std::vector>());
     ASSERT_EQ(test_body_3().result(), rv::iota(0, 10) | r::to<::std::vector>());
+    ASSERT_EQ(test_body_5().result(), rv::iota(0, 10) | r::to<::std::vector>());
 }
 
 TEST(generator, merge)
 {
     ASSERT_EQ(test_body_4().result(), (::std::vector{ 0,0,1,1,2,2,3,3,4 }));
 }
-

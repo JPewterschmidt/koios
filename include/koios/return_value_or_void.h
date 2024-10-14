@@ -103,6 +103,9 @@ protected:
     // Called by `unhandled_exception`
     void deal_exception(::std::exception_ptr ep)
     {
+#ifdef KOIOS_NOEXCEPT
+        ::std::terminate();
+#endif
 #ifdef KOIOS_DEBUG
         m_caller_woke_or_exception_caught = true;
 #endif
@@ -111,7 +114,7 @@ protected:
 /**************************************************************************************/
 /**/    auto lk = m_promise_p->get_shared_state_lock();                             /**/
 /**/    m_promise_p->set_exception(lk, ep);                                         /**/
-/**/    if (this->has_caller())                                                           /**/
+/**/    if (this->has_caller())                                                     /**/
 /**/    {                                                                           /**/
 /**/        this->wake_caller();                                                    /**/
 /**/    }                                                                           /**/

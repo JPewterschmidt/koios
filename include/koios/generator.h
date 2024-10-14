@@ -110,7 +110,9 @@ public:
             if (!m_lock.owns_lock())
                 m_lock.lock();
             auto ret = m_parent.value_opt_impl();
-            m_lock.unlock();
+            toolpex_assert(!!m_waitting);
+            m_parent.m_waitting = {};
+            m_lock = {};
 
             return ret;
         }
@@ -139,6 +141,7 @@ public:
         if (m_waitting)
         {
             wake_up(::std::move(m_waitting));
+            m_waitting = {};
         }
     }
 

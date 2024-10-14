@@ -12,12 +12,15 @@
 #include <stdexcept>
 #include <memory>
 #include <mutex>
+#include <functional>
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
 #include "koios/generator_iterator.h"
+#include "koios/generator_concepts.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/waiting_handle.h"
+#include "koios/task.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -315,10 +318,70 @@ public:
     {
         return { m_coro };
     }
+
+    //template<template<typename> typename Container>
+    template<typename PushBackAble>
+    task<PushBackAble> to()
+    {
+        PushBackAble result;
+        ::std::optional<result_type> cur;
+        for (;;) 
+        {
+            cur = co_await next_value_async();
+            if (cur) result.push_back(::std::move(*cur));       
+            else break;
+        }
+
+        co_return result;
+    }
+
+    template<template<typename...> class PushBackAble>
+    task<PushBackAble<result_type>> to()
+    {
+        return to<PushBackAble<result_type>>();
+    }
 };
 
 template<typename T, typename Alloc = ::std::allocator<T>>
 using generator = typename _generator<T, Alloc>::_type;
+
+template<generator_concept Generator, typename Comp = ::std::less<typename Generator::result_type>>
+Generator
+merge(Generator lhs, Generator rhs, Comp comp = {})
+{
+    using T = Generator::result_type;
+    ::std::optional<T> lhs_cur = co_await lhs.next_value_async();
+    ::std::optional<T> rhs_cur = co_await rhs.next_value_async();
+    for (;;)
+    {
+        if (lhs_cur && rhs_cur)
+        {
+            if (comp(*lhs_cur, *rhs_cur))
+            {
+                co_yield ::std::move(*lhs_cur);
+                lhs_cur = co_await lhs.next_value_async();
+            }
+            else
+            {
+                co_yield ::std::move(*rhs_cur);
+                rhs_cur = co_await rhs.next_value_async();
+            }
+            continue;
+
+        }
+        else if (lhs_cur)
+        {
+            co_yield ::std::move(*lhs_cur);
+            lhs_cur = co_await lhs.next_value_async();
+        }
+        else if (rhs_cur)
+        {
+            co_yield ::std::move(*rhs_cur);
+            rhs_cur = co_await rhs.next_value_async();
+        }
+        else break;
+    }
+}
 
 KOIOS_NAMESPACE_END
 

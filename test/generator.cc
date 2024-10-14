@@ -81,7 +81,7 @@ namespace
         co_return;
     }
 
-    lazy_task<::std::vector<int>> main_body()
+    lazy_task<::std::vector<int>> test_body_1()
     {
         ::std::vector<int> result{};
         auto g = gen();
@@ -98,9 +98,45 @@ namespace
 TEST(generator, basic)
 {
     ASSERT_EQ(
-        main_body().result(), 
+        test_body_1().result(), 
         rv::iota(0, 10) 
             | rv::transform([](int i){ return i + 1; }) 
             | r::to<::std::vector<int>>()
     );
 }
+
+namespace 
+{
+    generator<int> numbers(int until)
+    {
+        for (int i{}; i < until; ++i)
+            co_yield i;
+    }
+
+    task<::std::vector<int>> test_body_2()
+    {
+        co_return co_await numbers(10).to<::std::vector>();
+    }
+
+    task<::std::vector<int>> test_body_3()
+    {
+        co_return co_await numbers(10).to<::std::vector<int>>();
+    }
+
+    task<::std::vector<int>> test_body_4()
+    {
+        co_return co_await merge(numbers(5), numbers(4)).to<::std::vector>();
+    }
+}
+
+TEST(generator, to)
+{
+    ASSERT_EQ(test_body_2().result(), rv::iota(0, 10) | r::to<::std::vector>());
+    ASSERT_EQ(test_body_3().result(), rv::iota(0, 10) | r::to<::std::vector>());
+}
+
+TEST(generator, merge)
+{
+    ASSERT_EQ(test_body_4().result(), (::std::vector{ 0,0,1,1,2,2,3,3,4 }));
+}
+

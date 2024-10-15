@@ -86,7 +86,7 @@ public:
 
     void* address() const noexcept
     {
-        if (!holds_ownership()) return nullptr;
+        if (!holds_ownership()) [[unlikely]] return nullptr;
         return m_h.address();
     }
 

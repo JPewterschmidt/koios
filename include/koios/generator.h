@@ -55,6 +55,15 @@ public:
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
     using storage_type = ::std::unique_ptr<T, value_deleter>;
 
+    ~generator_promise_type() noexcept
+    {
+        if (m_waitting)
+        {
+            // To make sure it won't be destroyed by accidentally.
+            wake_up(::std::move(m_waitting));
+        }
+    }
+
 private:
     mutable ::std::mutex m_mutex;
     storage_type m_current_value_p{ nullptr }; /*! Holds the memory and the return value object. */

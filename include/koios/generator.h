@@ -99,6 +99,9 @@ public:
             }
             else if (!m_parent.value_storage())
             {
+                // Let the generator calculate the next value.
+                // but without unlocking the current mutex,
+                // until await_suspend gets and sets the `m_waitting` handler.
                 wake_up(::std::move(m_h));
                 return false;
             }
@@ -111,15 +114,18 @@ public:
             toolpex_assert(!m_parent.m_waitting);
             toolpex_assert(m_lock.owns_lock());
             m_parent.m_waitting = ::std::move(t);
+
+            // Now, `yield_value` will emplace the value and continue.
             m_lock.unlock();
         }
 
         ::std::optional<T> await_resume() 
         {
+            // If the generator are already drained, `await_ready` would return `true`
+            // that makes `await_suspend`won't be called, therefore the lock won't be unlocked.
             if (!m_lock.owns_lock())
                 m_lock.lock();
             auto ret = m_parent.value_opt_impl();
-            m_parent.m_waitting = {};
             m_lock = {};
 
             return ret;
@@ -149,7 +155,6 @@ public:
         if (m_waitting)
         {
             wake_up(::std::move(m_waitting));
-            m_waitting = {};
         }
     }
 
@@ -161,6 +166,7 @@ public:
     template<typename TT>
     auto yield_value(TT&& val)
     {
+        // Need to wait until the caller coroutine get and set the `m_waitting`
         ::std::unique_lock lk{ m_mutex };
         m_current_value_p.reset(
             this->alloc_and_construct(::std::forward<TT>(val))
@@ -168,7 +174,6 @@ public:
         if (m_waitting)
         {
             wake_up(::std::move(m_waitting));
-            m_waitting = {};
         }
         return ::std::suspend_always{};
     }

@@ -4,8 +4,9 @@
 
 int main(int argc, char** argv)
 {
+    size_t thrs = 20;
     ::testing::InitGoogleTest(&argc, argv);
-    koios::runtime_init(20);
+    koios::runtime_init(thrs);
     auto result = RUN_ALL_TESTS();
     //for (int i = 0; i < 10; ++i)
     //{

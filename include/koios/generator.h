@@ -37,8 +37,9 @@ struct _generator
  */
 template<typename T, typename Alloc>
 class generator_promise_type 
-    : public promise_base<::std::suspend_always, ::std::suspend_always>
+    : public promise_base<lazy_aw, ::std::suspend_always>
 {
+    size_t m_debug_canary{888};
 public:
     /*! The deleter for `::std::unique_ptr`, which firstly destruct the object on it,
      *  the deallocate it by the allocator.
@@ -53,42 +54,32 @@ public:
     };
 
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
-    using storage_type = ::std::unique_ptr<T, value_deleter>;
 
     ~generator_promise_type() noexcept
     {
-        if (m_waitting)
-        {
-            // To make sure it won't be destroyed by accidentally.
-            wake_up(::std::move(m_waitting));
-        }
+        toolpex_assert(!m_waitting);
+        m_debug_canary = 1666;
     }
 
 private:
     mutable ::std::mutex m_mutex;
-    storage_type m_current_value_p{ nullptr }; /*! Holds the memory and the return value object. */
+    ::std::byte m_value_storage[sizeof(T)];
+    bool m_has_val{};
     task_on_the_fly m_waitting{};
     bool m_finalized{};
-
-    /*! \brief allocate memory then initialize the object at.
-     *  \return the pointer to the memory buffer allocated.
-     */
-    template<typename TT>
-    static T* alloc_and_construct(TT&& tt)
-    {
-        T* buffer = Alloc{}.allocate(1);
-        ::std::construct_at(buffer, ::std::forward<TT>(tt));
-        return buffer;
-    }
 
 public:
     class get_yielded_aw
     {
+        size_t m_debug_canary{};
+        bool m_debug_after_resume{};
     public:
         get_yielded_aw(::std::coroutine_handle<generator_promise_type> h) noexcept
             : m_h{ h }, m_parent{ h.promise() }
         {
         }
+
+        ~get_yielded_aw() noexcept { m_debug_canary = 0x8888; }
 
         bool await_ready() noexcept
         {
@@ -97,7 +88,7 @@ public:
             {
                 return true;
             }
-            else if (!m_parent.value_storage())
+            else if (!m_parent.has_value_impl())
             {
                 wake_up(::std::move(m_h));
                 return false;
@@ -116,11 +107,12 @@ public:
 
         ::std::optional<T> await_resume() 
         {
+            toolpex_assert(!m_debug_after_resume);
             if (!m_lock.owns_lock())
                 m_lock.lock();
             auto ret = m_parent.value_opt_impl();
-            m_parent.m_waitting = {};
             m_lock = {};
+            m_debug_after_resume = true;
 
             return ret;
         }
@@ -149,7 +141,6 @@ public:
         if (m_waitting)
         {
             wake_up(::std::move(m_waitting));
-            m_waitting = {};
         }
     }
 
@@ -162,9 +153,8 @@ public:
     auto yield_value(TT&& val)
     {
         ::std::unique_lock lk{ m_mutex };
-        m_current_value_p.reset(
-            this->alloc_and_construct(::std::forward<TT>(val))
-        );
+        new (this->value_storage()) T(::std::forward<TT>(val));
+        m_has_val = true;
         if (m_waitting)
         {
             wake_up(::std::move(m_waitting));
@@ -179,12 +169,12 @@ public:
     bool has_value() const noexcept
     {
         ::std::unique_lock lk{ m_mutex };
-        return this->has_value_impl();
+        return this->m_has_val;
     }
 
     bool has_value_impl() const noexcept
     {
-        return !m_finalized && bool(m_current_value_p);
+        return !m_finalized && m_has_val;
     }
 
     /*! \brief Take the ownership of the current yield value.
@@ -198,8 +188,10 @@ public:
 
     T value_impl()
     {
-        auto resultp = ::std::move(m_current_value_p);
-        return ::std::move(*resultp);
+        T result = ::std::move(*this->value_storage());
+        this->value_storage()->~T();
+        m_has_val = false;
+        return result;
     }
 
     ::std::optional<T> value_opt()
@@ -222,11 +214,11 @@ public:
     bool finalized_impl() const noexcept { return m_finalized; }
 
     /*! \return Reference of the storage which holds the yield value and its memory buffer. */
-    auto& value_storage() noexcept { return m_current_value_p; }
-    const auto& value_storage() const noexcept { return m_current_value_p; }
+    auto* value_storage() noexcept { return reinterpret_cast<T*>(&m_value_storage[0]); }
+    const auto* value_storage() const noexcept { return reinterpret_cast<const T*>(&m_value_storage[0]); }
 
     /*! \brief destruct the current yield value and deallocate the memory. */
-    void clear() noexcept { m_current_value_p.reset(); }
+    void clear() noexcept { m_value_storage.reset(); }
 };
 
 /*! \brief The generator type
@@ -292,6 +284,11 @@ public:
     {
     }
 
+    ~_type() noexcept
+    {
+        if (m_need_destroy_in_dtor) m_coro.destroy();
+    }
+
     _type& operator = (_type&& other) noexcept
     {
         this->destroy_current_coro();
@@ -302,20 +299,10 @@ public:
         return *this;
     }
 
-    /*! \brief Will destroy the coroutine handler, wether the generator has been `move_next`
-     */
-    ~_type() noexcept { this->destroy_current_coro(); }
-
 private:
     _type(::std::coroutine_handle<promise_type> h) 
         : m_coro{ h } 
     {
-    }
-
-    void destroy_current_coro() noexcept
-    {
-        if (::std::exchange(m_need_destroy_in_dtor, false)) [[likely]]
-            m_coro.destroy();
     }
 
     ::std::coroutine_handle<promise_type> m_coro;
@@ -332,7 +319,7 @@ public:
     }
 
     template<typename PushBackAble>
-    task<PushBackAble> to()
+    task<PushBackAble> to() &
     {
         PushBackAble result;
         ::std::optional<result_type> cur;
@@ -347,12 +334,12 @@ public:
     }
 
     template<template<typename...> class PushBackAble>
-    task<PushBackAble<result_type>> to()
+    task<PushBackAble<result_type>> to() &
     {
         return to<PushBackAble<result_type>>();
     }
 
-    task<> to(auto iter)
+    task<> to(auto iter) &
     {
         ::std::optional<result_type> cur;
         for (;;) 
@@ -388,7 +375,6 @@ merge(Generator lhs, Generator rhs, Comp comp = {})
                 co_yield ::std::move(*rhs_cur);
                 rhs_cur = co_await rhs.next_value_async();
             }
-            continue;
 
         }
         else if (lhs_cur)

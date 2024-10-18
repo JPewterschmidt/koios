@@ -72,6 +72,7 @@ public:
     class get_yielded_aw
     {
         size_t m_debug_canary{};
+        bool m_debug_after_ready{};
         bool m_debug_after_resume{};
     public:
         get_yielded_aw(::std::coroutine_handle<generator_promise_type> h) noexcept
@@ -79,13 +80,21 @@ public:
         {
         }
 
-        ~get_yielded_aw() noexcept { m_debug_canary = 0x8888; }
+        ~get_yielded_aw() noexcept 
+        { 
+            toolpex_assert(m_debug_after_resume);
+            toolpex_assert(m_debug_after_ready);
+            m_debug_canary = 0x8888; 
+        }
 
         bool await_ready() noexcept
         {
-            m_lock = ::std::unique_lock{ m_parent.m_mutex };
+            toolpex_assert(!m_debug_after_ready);
+            m_debug_after_ready = true;
+            m_parent.m_mutex.lock();
             if (m_parent.finalized_impl())
             {
+                m_without_suspend = true;
                 return true;
             }
             else if (!m_parent.has_value_impl())
@@ -100,27 +109,29 @@ public:
         void await_suspend(task_on_the_fly t) noexcept
         {
             toolpex_assert(!m_parent.m_waitting);
-            toolpex_assert(m_lock.owns_lock());
+            toolpex_assert(!m_parent.m_mutex.try_lock());
             m_parent.m_waitting = ::std::move(t);
-            m_lock.unlock();
+            m_parent.m_mutex.unlock();
         }
 
         ::std::optional<T> await_resume() 
         {
             toolpex_assert(!m_debug_after_resume);
-            if (!m_lock.owns_lock())
-                m_lock.lock();
+            if (m_without_suspend)
+            {
+                m_parent.m_mutex.lock();
+            }
             auto ret = m_parent.value_opt_impl();
-            m_lock = {};
             m_debug_after_resume = true;
 
             return ret;
         }
 
     private:
-        mutable ::std::unique_lock<::std::mutex> m_lock;
         generator_on_the_fly m_h{}; 
         generator_promise_type& m_parent;
+
+        bool m_without_suspend{};
     };
 
 public:

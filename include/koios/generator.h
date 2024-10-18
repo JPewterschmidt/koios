@@ -16,13 +16,45 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
-#include "koios/generator_iterator.h"
 #include "koios/generator_concepts.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/waiting_handle.h"
 #include "koios/task.h"
 
 KOIOS_NAMESPACE_BEG
+
+namespace generator_detials
+{
+
+template<typename T>
+struct shared_state
+{
+    task_on_the_fly m_generator_coro;
+    task_on_the_fly m_waitting_coro;
+    toolpex::object_storage m_yielded_val;
+    bool m_finalzed{};
+
+    bool has_value() const noexcept
+    {
+        return !m_finalized && m_yielded_val.has_value();
+    }
+
+    bool finalized() const noexcept
+    {
+        return m_finalized;
+    }
+
+    template<typename TT>
+    void set_value(TT&& val)
+    {
+        m_yielded_val.set_value(::std::forward<TT>(val));
+    }
+};
+
+template<typename T>
+using shared_state_sptr = ::std::shared_ptr<shared_state<T>>;
+
+} // namespace generator_detials
 
 template<typename T, typename Alloc>
 struct _generator
@@ -62,76 +94,43 @@ public:
     }
 
 private:
-    mutable ::std::mutex m_mutex;
-    ::std::byte m_value_storage[sizeof(T)];
-    bool m_has_val{};
     task_on_the_fly m_waitting{};
     bool m_finalized{};
+    generator_detials::shared_state_sptr m_shared_state{ ::std::make_shared<shared_state<T>>() };
 
 public:
     class get_yielded_aw
     {
-        size_t m_debug_canary{};
-        bool m_debug_after_ready{};
-        bool m_debug_after_resume{};
     public:
-        get_yielded_aw(::std::coroutine_handle<generator_promise_type> h) noexcept
-            : m_h{ h }, m_parent{ h.promise() }
+        get_yielded_aw(generator_detials::shared_state* ss) noexcept
+            : m_ss{ ss }
         {
-        }
-
-        ~get_yielded_aw() noexcept 
-        { 
-            toolpex_assert(m_debug_after_resume);
-            toolpex_assert(m_debug_after_ready);
-            m_debug_canary = 0x8888; 
         }
 
         bool await_ready() noexcept
         {
-            toolpex_assert(!m_debug_after_ready);
-            m_debug_after_ready = true;
-            m_parent.m_mutex.lock();
-            if (m_parent.finalized_impl())
-            {
-                m_without_suspend = true;
-                return true;
-            }
-            else if (!m_parent.has_value_impl())
-            {
-                wake_up(::std::move(m_h));
-                return false;
-            }
-
-            return m_parent.has_value_impl();
+            return m_ss->finalized();
         }
 
         void await_suspend(task_on_the_fly t) noexcept
         {
-            toolpex_assert(!m_parent.m_waitting);
-            toolpex_assert(!m_parent.m_mutex.try_lock());
-            m_parent.m_waitting = ::std::move(t);
-            m_parent.m_mutex.unlock();
+            m_ss->m_waitting_coro = ::std::move(t);
+            toolpex_assert(!!m_ss->m_generator_coro);
+            wake_up(::std::move(m_ss->m_generator_coro);
         }
 
         ::std::optional<T> await_resume() 
         {
             toolpex_assert(!m_debug_after_resume);
-            if (m_without_suspend)
-            {
-                m_parent.m_mutex.lock();
-            }
-            auto ret = m_parent.value_opt_impl();
-            m_debug_after_resume = true;
+            ::std::optional<T> result;
+            if (!m_ss->m_finalized)
+                result->emplace(m_ss->m_yielded_val.get_value());
 
-            return ret;
+            return result;
         }
 
     private:
-        generator_on_the_fly m_h{}; 
-        generator_promise_type& m_parent;
-
-        bool m_without_suspend{};
+        generator_detials::shared_state* m_ss;
     };
 
 public:
@@ -142,17 +141,13 @@ public:
 
     _generator<T, Alloc>::_type get_return_object() 
     { 
-        return { handle_type::from_promise(*this) }; 
+        return { handle_type::from_promise(*this), m_shared_state }; 
     }
 
     void return_void() noexcept 
     { 
-        ::std::unique_lock lk{ m_mutex }; 
-        m_finalized = true; 
-        if (m_waitting)
-        {
-            wake_up(::std::move(m_waitting));
-        }
+        m_shared_state->m_finalized = true;
+        wake_up(m_shared_state->m_waitting_coro);
     }
 
     void unhandled_exception() const { throw; }
@@ -163,27 +158,37 @@ public:
     template<typename TT>
     auto yield_value(TT&& val)
     {
-        ::std::unique_lock lk{ m_mutex };
-        new (this->value_storage()) T(::std::forward<TT>(val));
-        m_has_val = true;
-        if (m_waitting)
-        {
-            wake_up(::std::move(m_waitting));
-            m_waitting = {};
-        }
-        return ::std::suspend_always{};
+        toolpex_assert(!!m_shared_state);
+        m_shared_state->m_yielded_val.set_value(::std::forward<TT>(val));
+
+        struct yield_generator_getter_aw 
+        { 
+            yield_generator_getter_aw(generator_promise_type* parent) noexcept
+                : m_parent{ parent }
+            {
+            }
+
+            constexpr bool await_ready() const noexcept { return false; }
+            void await_suspend(task_on_the_fly h) noexcept
+            {
+                auto& ss = *m_parent->m_shared_state;
+                ss.m_generator_coro = ::std::move(h);
+                wake_up(::std::move(ss.m_waitting_coro));
+            }
+            
+            constexpr void await_resume() const noexcept {}
+            
+            generator_promise_type* m_parent;
+            generator_detials::shared_state* m_ss;
+        };
+
+        return yield_generator_getter_aw{ this };
     }
 
     /*! \retval true Current yield value was not been moved.
      *  \retval false Current yield value was moved out.
      */
     bool has_value() const noexcept
-    {
-        ::std::unique_lock lk{ m_mutex };
-        return this->m_has_val;
-    }
-
-    bool has_value_impl() const noexcept
     {
         return !m_finalized && m_has_val;
     }
@@ -193,36 +198,27 @@ public:
      */
     T value()
     {
-        ::std::unique_lock lk{ m_mutex };
-        return this->value_impl();
-    }
-
-    T value_impl()
-    {
-        T result = ::std::move(*this->value_storage());
-        this->value_storage()->~T();
-        m_has_val = false;
+        generator_detials::shared_state c = m_shared_state->get_value();
+        T result = ::std::move(c.m_yielded_val);
         return result;
     }
 
     ::std::optional<T> value_opt()
     {
-        ::std::unique_lock lk{ m_mutex };
         return this->value_opt_impl();
     }
 
     ::std::optional<T> value_opt_impl()
     {
         ::std::optional<T> result{};
-        if (this->has_value_impl())
+        if (this->has_value())
         {
             result.emplace(value_impl());
         }
         return result;
     }
 
-    bool finalized() const noexcept { ::std::unique_lock lk{ m_mutex }; return this->finalized_impl(); }
-    bool finalized_impl() const noexcept { return m_finalized; }
+    bool finalized() const noexcept { return m_finalized; }
 
     /*! \return Reference of the storage which holds the yield value and its memory buffer. */
     auto* value_storage() noexcept { return reinterpret_cast<T*>(&m_value_storage[0]); }
@@ -248,85 +244,47 @@ public:
     using result_type = T;
     using allocator = Alloc;
 
-    /*! \brief Resume the execution of the generator, and update the yield value.
-     *  \retval true Move successfully, you could take the newly yield value.
-     *  \retval false Move failure, usually caused by there're actuall no more yield value.
-     */
-    bool move_next()
-    {
-        if (m_coro == nullptr)
-            return false;
-        m_coro.promise().clear();
-        return (m_coro.resume(), !m_coro.done());
-    }
-
     /*! \retval true There's a yield value you could retrive.
      *  \retval false There's no any yield value you could retrived.
      */
-    bool has_value() const noexcept { return m_coro ? m_coro.promise().has_value() : false; }
+    bool has_value() const noexcept 
+    { 
+        toolpex_assert(!!m_shared_state);
+        return m_shared_state->has_value();
+    }
 
     /*! \return the non-constant reference type of the yield value. 
      *  You could call this with `std::move`
      */
     decltype(auto) current_value()
     {
-        auto& promise = m_coro.promise();
-        if (!promise.has_value()) 
+        if (!m_shared_state->has_value()) 
         {
             throw ::std::out_of_range{ 
                 "There's no next val could be retrived, call `has_value()` first! "
                 "Or, you may perform co_await call, it's not supported yet."
             };
         }
-        return promise.value();
-    }
-
-    /*! \return The reference of the storage which holds the memory buffer and the yield value.
-     */
-    auto& current_value_storage()
-    {
-        return m_coro.promise().value_storage();
+        return m_shared_state->m_yielded_val.value_ref();
     }
 
     _type(const _type&) = delete;
-    _type(_type&& other) noexcept
-        : m_coro{ ::std::exchange(other.m_coro, nullptr) }, 
-          m_need_destroy_in_dtor{ ::std::exchange(other.m_need_destroy_in_dtor, false) }
-    {
-    }
-
-    ~_type() noexcept
-    {
-        if (m_need_destroy_in_dtor) m_coro.destroy();
-    }
-
-    _type& operator = (_type&& other) noexcept
-    {
-        this->destroy_current_coro();
-
-        m_coro = ::std::exchange(other.m_coro, nullptr);
-        m_need_destroy_in_dtor = ::std::exchange(other.m_need_destroy_in_dtor, false);
-
-        return *this;
-    }
+    _type(_type&& other) noexcept = default;
+    _type& operator = (_type&& other) noexcept = default;
 
 private:
-    _type(::std::coroutine_handle<promise_type> h) 
-        : m_coro{ h } 
+    _type(task_on_the_fly h, ::std::shared_ptr<toolpex::object_storage<::std::pair<result_type, task_on_the_fly>>> storage) noexcept
+        : m_shared_state{ ::std::move(storage) }
     {
+        m_shared_state->m_generator_coro = ::std::move(h);
     }
 
-    ::std::coroutine_handle<promise_type> m_coro;
-    bool m_need_destroy_in_dtor{ true };
+    ::std::shared_ptr<toolpex::object_storage<generator_detials::shared_state<T>>> m_shared_state;
 
 public:
-    using iterator = detial::sync_generator_iterator<_generator<T, Alloc>::_type>;
-    iterator begin() noexcept { return { *this }; }
-    constexpr detial::sync_generator_iterator_sentinel end() const noexcept { return {}; };
-
     [[nodiscard]] typename promise_type::get_yielded_aw next_value_async() & noexcept
     {
-        return { m_coro };
+        return { m_shared_state };
     }
 
     template<typename PushBackAble>

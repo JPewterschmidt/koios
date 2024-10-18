@@ -13,7 +13,6 @@
 #include "koios/task_concepts.h"
 #include "koios/thread_pool.h"
 #include "koios/task_on_the_fly.h"
-#include "koios/generator_on_the_fly.h"
 #include "koios/std_queue_wrapper.h"
 #include "koios/moodycamel_queue_wrapper.h"
 #include "koios/work_stealing_queue.h"
@@ -51,22 +50,12 @@ public:
         if (h) this->thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
     }
 
-    void enqueue(generator_on_the_fly h) noexcept
-    {
-        if (h) this->thread_pool::enqueue_no_future([h = ::std::move(h)] mutable { h(); });
-    }
-
     void enqueue(const per_consumer_attr& ca, task_concept auto t) noexcept
     {
         this->enqueue(ca, task_on_the_fly(t));
     }
 
     void enqueue(const per_consumer_attr& ca, task_on_the_fly h) noexcept
-    {
-        if (h) thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
-    }
-
-    void enqueue(const per_consumer_attr& ca, generator_on_the_fly h) noexcept
     {
         if (h) thread_pool::enqueue_no_future(ca, [h = ::std::move(h)] mutable { h(); });
     }

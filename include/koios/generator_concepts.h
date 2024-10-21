@@ -19,7 +19,6 @@ concept generator_concept = requires(G g)
 {
     typename G::promise_type;
     typename G::result_type;
-    { g.move_next() } -> toolpex::boolean_testable;
     { g.current_value() };
     { g.has_value() } -> toolpex::boolean_testable;
     { g.next_value_async() } -> awaitible_concept;

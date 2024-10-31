@@ -53,33 +53,3 @@ target("koios")
         "include", 
         { public = true }
     )
-
-target("test")
-    set_kind("binary")
-    add_packages("concurrentqueue")
-    add_cxflags("-Wconversion", { force = true })
-    add_deps("koios", "toolpex")
-    add_files( "test/*.cc")
-    set_warnings("all", "error")
-    add_packages(
-        "gtest", "spdlog"
-    )
-    after_build(function (target)
-        os.execv(target:targetfile(), {"--gtest_color=yes"})
-        print("xmake: unittest complete.")
-    end)
-    on_run(function (target)
-        --nothing
-    end)
-    
-target("example")
-    set_kind("binary")
-    add_cxflags("-Wconversion", { force = true })
-    add_deps("koios", "toolpex")
-    add_files( "example/*.cc")
-    add_packages("spdlog")
-    set_policy("build.warning", true)
-    add_packages(
-        "gflags", 
-        "concurrentqueue"
-    )

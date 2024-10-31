@@ -18,6 +18,7 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
+
 #include "koios/generator_concepts.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/waiting_handle.h"
@@ -88,7 +89,7 @@ public:
     };
 
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
-
+   
     ~generator_promise_type() noexcept
     {
         toolpex_assert(!m_shared_state->m_waitting_coro);
@@ -325,7 +326,6 @@ merge(Generator lhs, Generator rhs, Comp comp = {})
                 co_yield ::std::move(*rhs_cur);
                 rhs_cur = co_await rhs.next_value_async();
             }
-
         }
         else if (lhs_cur)
         {

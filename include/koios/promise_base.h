@@ -16,7 +16,17 @@
  
 KOIOS_NAMESPACE_BEG
 
-/*! \brief Coroutine which has been suspended by this awaitable class will be `destroy()`.
+/*! \brief the alias of `::std::suspend_never`
+ *
+ *  NEW: 
+ *  As the standard guaranteed: coroutine state will be destroyed right after the final suspend point.
+ *  that means there's no need to call `destroy()` manually. Using `suspend_never` as the final SP
+ *  meets the requirement of this project.
+ *  For other coroutine runtime or future development, you can re design a AW to delay the destroy 
+ *  of a coroutine.
+ *  
+ *  OLD: 
+ *  Coroutine which has been suspended by this awaitable class will be `destroy()`.
  *  Often used as awaitable object for `final_suspend()`.
  *  Will take ownership of the task's handler at the end of the `task` lifetime and `destroy()` it. 
  *  There are two more classes that can hold handler ownership.
@@ -24,13 +34,7 @@ KOIOS_NAMESPACE_BEG
  *  \see `task`
  *  \see `task_on_the_fly`
  */
-class destroy_aw 
-{
-public:
-    constexpr bool await_ready() const noexcept { return false; }
-    constexpr void await_suspend(task_on_the_fly h) const noexcept { }
-    constexpr void await_resume() const noexcept { }
-};
+using destroy_aw = ::std::suspend_never;
 
 using eager_aw = ::std::suspend_never;
 using lazy_aw = ::std::suspend_always;

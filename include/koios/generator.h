@@ -57,11 +57,12 @@ public:
 
     ~generator_promise_type() noexcept
     {
-        if (m_waitting)
-        {
-            // To make sure it won't be destroyed by accidentally.
-            wake_up(::std::move(m_waitting));
-        }
+        toolpex_assert(!m_waitting);
+        //if (m_waitting)
+        //{
+        //    // To make sure it won't be destroyed by accidentally.
+        //    wake_up(::std::move(m_waitting));
+        //}
     }
 
 private:
@@ -97,7 +98,7 @@ public:
             {
                 return true;
             }
-            else if (!m_parent.value_storage())
+            else if (!m_parent.has_value_impl())
             {
                 // Let the generator calculate the next value.
                 // but without unlocking the current mutex,

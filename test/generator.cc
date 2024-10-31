@@ -128,18 +128,14 @@ TEST(generator, over_getting)
 
 namespace
 {
-    bool flag{};
+    task<int> inner_t(int i)
+    {
+        co_await uring::nop();
+        co_return i;
+    }
 
     generator<int> g_t()
     {
-        lazy_task<int> inner_t(int i)
-        {
-            co_await uring::nop();
-            co_return i;
-        }
-
-        co_yield uring::nop();
-
         for (int i{}; i < 10; ++i)
         {
             co_yield co_await inner_t(i);
@@ -147,18 +143,17 @@ namespace
         }
         co_await uring::nop();
 
-        co_return 0;
+        co_yield 0;
     }
 
-    task<bool> g_t_test_body()
+    task<::std::vector<int>> g_t_test_body()
     {
-        auto g = gt();
-        auto v = co_await g.to<::std::vector>();
-        co_return v == ::std::vector<int>{ 1,2,3,4,5,6,7,8,9,0 };
+        auto g = g_t();
+        co_return co_await g.to<::std::vector>();
     }
 }
 
 TEST(generator, g_t)
 {
-    ASSERT_TRUR(g_t_test_body().result());   
+    ASSERT_EQ(g_t_test_body().result(), (::std::vector<int>{ 0,1,2,3,4,5,6,7,8,9,0 }));
 }

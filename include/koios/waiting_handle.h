@@ -27,7 +27,6 @@ inline void wake_up(waiting_handle& h)
 }
 
 void wake_up(task_on_the_fly f);
-void wake_up(generator_on_the_fly f);
 
 } // namespace koios
 

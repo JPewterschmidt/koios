@@ -4,6 +4,7 @@
 #include "koios/generator.h"
 #include "koios/task.h"
 #include "koios/macros.h"
+#include "koios/iouring_op_functions.h"
 
 #include "toolpex/lifetimetoy.h"
 
@@ -119,4 +120,41 @@ TEST(generator, merge)
 TEST(generator, over_getting)
 {
     ASSERT_TRUE(test_body_6().result());
+}
+
+namespace
+{
+    bool flag{};
+
+    generator<int> g_t()
+    {
+        lazy_task<int> inner_t(int i)
+        {
+            co_await uring::nop();
+            co_return i;
+        }
+
+        co_yield uring::nop();
+
+        for (int i{}; i < 10; ++i)
+        {
+            co_yield co_await inner_t(i);
+            co_await uring::nop();
+        }
+        co_await uring::nop();
+
+        co_return 0;
+    }
+
+    task<bool> g_t_test_body()
+    {
+        auto g = gt();
+        auto v = co_await g.to<::std::vector>();
+        co_return v == ::std::vector<int>{ 1,2,3,4,5,6,7,8,9,0 };
+    }
+}
+
+TEST(generator, g_t)
+{
+    ASSERT_TRUR(g_t_test_body().result());   
 }

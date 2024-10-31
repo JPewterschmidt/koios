@@ -14,10 +14,4 @@ void wake_up(task_on_the_fly t)
     schr.enqueue(::std::move(t));
 }
 
-void wake_up(generator_on_the_fly f)
-{
-    auto& schr = get_task_scheduler();
-    schr.enqueue(::std::move(f));
-}
-
 } // namespace koios

@@ -65,23 +65,27 @@ namespace
 
     task<::std::vector<lifetimetoy>> test_body_2()
     {
-        co_return co_await numbers(10).to<::std::vector>();
+        auto g = numbers(10);
+        co_return co_await g.to<::std::vector>();
     }
 
     task<::std::vector<lifetimetoy>> test_body_3()
     {
-        co_return co_await numbers(10).to<::std::vector<lifetimetoy>>();
+        auto g = numbers(10);
+        co_return co_await g.to<::std::vector<lifetimetoy>>();
     }
 
     task<::std::vector<lifetimetoy>> test_body_4()
     {
-        co_return co_await merge(numbers(5), numbers(4)).to<::std::vector>();
+        auto mg = merge(numbers(5), numbers(4));
+        co_return co_await mg.to<::std::vector>();
     }
 
     task<::std::vector<lifetimetoy>> test_body_5()
     {
         ::std::vector<lifetimetoy> result;
-        co_await numbers(10).to(::std::back_inserter(result));
+        auto g = numbers(10);
+        co_await g.to(::std::back_inserter(result));
         co_return result;
     }
 

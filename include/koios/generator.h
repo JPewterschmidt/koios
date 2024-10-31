@@ -89,8 +89,12 @@ public:
 
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
 
+    ~generator_promise_type() noexcept
+    {
+        toolpex_assert(!m_shared_state->m_waitting_coro);
+    }
+
 private:
-    bool m_finalized{};
     generator_detials::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_detials::shared_state<T>>() };
 
 public:
@@ -202,7 +206,7 @@ public:
         return result;
     }
 
-    bool finalized() const noexcept { return m_finalized; }
+    bool finalized() const noexcept { return m_shared_state->m_finalized; }
 };
 
 /*! \brief The generator type

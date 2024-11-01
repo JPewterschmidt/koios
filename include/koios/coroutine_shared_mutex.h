@@ -62,7 +62,7 @@ private:
     moodycamel::ConcurrentQueue<waiting_handle> m_shr_waitings;
     moodycamel::ConcurrentQueue<waiting_handle> m_uni_waitings;
     ::std::mutex m_lock;
-    holding_state m_state;
+    holding_state m_state{ holding_state::NO };
     toolpex::ref_count m_shr_cnt{0};
     void* m_current_writer{};
 };

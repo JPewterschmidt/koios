@@ -47,7 +47,7 @@ private:
 
     void release();
 
-    enum holding_state { NO, SHR, UNI, SHR_DURING_UNI };
+    enum holding_state { NO = 0, SHR, UNI, SHR_DURING_UNI };
 
 private:
     bool being_held() const noexcept;

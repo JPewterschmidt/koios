@@ -45,9 +45,9 @@ tcp_server(toolpex::ip_address::ptr addr,
 tcp_server::
 tcp_server(tcp_server&& other) noexcept
     : m_sockfd{ ::std::move(other.m_sockfd) },
-      m_addr{::std::move(m_addr)},
-      m_port{::std::move(m_port)},
-      m_stop_src{::std::move(m_stop_src)}
+      m_addr{::std::move(other.m_addr)},
+      m_port{::std::move(other.m_port)},
+      m_stop_src{::std::move(other.m_stop_src)}
 {
 }
 

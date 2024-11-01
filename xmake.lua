@@ -7,7 +7,6 @@ add_requires(
     "gflags", 
     "gtest", 
     "concurrentqueue master",
-    "benchmark", 
     "magic_enum",
     "fmt"
 )

@@ -158,22 +158,21 @@ public:
         struct yield_generator_getter_aw 
         { 
             yield_generator_getter_aw(generator_promise_type* parent) noexcept
-                : m_parent{ parent }, m_ss{ m_parent->m_shared_state.get() }
+                : m_parent{ parent }, m_ss{ m_parent->m_shared_state }
             {
             }
 
             constexpr bool await_ready() const noexcept { return false; }
             void await_suspend(task_on_the_fly h) noexcept
             {
-                auto& ss = *m_parent->m_shared_state;
-                ss.m_generator_coro = ::std::move(h);
-                wake_up(::std::move(ss.m_waitting_coro));
+                m_ss->m_generator_coro = ::std::move(h);
+                wake_up(::std::move(m_ss->m_waitting_coro));
             }
             
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
-            generator_detials::shared_state<T>* m_ss;
+            generator_detials::shared_state<T> m_ss;
         };
 
         return yield_generator_getter_aw{ this };

@@ -26,6 +26,7 @@ namespace
     void logging_init()
     {
         spdlog::set_level(spdlog::level::info);
+        spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
     }
 
     void signal_handler(int signum)

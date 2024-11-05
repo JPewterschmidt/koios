@@ -37,6 +37,8 @@ public:
      */
     acq_lk_aw<mutex> acquire() noexcept { return { *this }; }
 
+    try_acq_lk_aw<mutex> try_acquire() noexcept { return { *this }; }
+
 private:
     template<typename T>
     friend class lock_base;

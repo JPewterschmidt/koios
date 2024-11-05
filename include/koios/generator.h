@@ -172,7 +172,7 @@ public:
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
-            generator_detials::shared_state<T> m_ss;
+            generator_detials::shared_state_sptr<T> m_ss;
         };
 
         return yield_generator_getter_aw{ this };

@@ -45,11 +45,27 @@ public:
 
         auto lk = co_await this->m_mutex->acquire();
 
-        assert(!this->is_hold());
+        toolpex_assert(!this->is_hold());
         this->m_hold = ::std::exchange(lk.m_hold, false);
-        assert(this->is_hold());
+        toolpex_assert(this->is_hold());
 
         co_return;
+    }
+
+    task<bool>
+    try_lock()
+    {
+        if (!this->m_mutex) [[unlikely]]
+            throw koios::exception{ "there's no corresponding mutex instance!" };
+
+        toolpex_assert(!this->is_hold());
+        auto lk_opt = co_await this->m_mutex->try_acquire();
+        if (lk_opt) 
+        {
+            this->m_hold = ::std::exchange(lk_opt.value().m_hold, false);
+            co_return true;
+        }
+        co_return false;
     }
 };
 

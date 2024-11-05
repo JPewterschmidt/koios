@@ -43,8 +43,8 @@ private:
     template<typename T>
     friend class lock_base;
 
-    template<typename T>
-    friend class acq_lk_aw;
+    template<typename T> friend class acq_lk_aw;
+    template<typename T> friend class try_acq_lk_aw;
 
     /*! \brief Wake up the next waiting task handler
      *

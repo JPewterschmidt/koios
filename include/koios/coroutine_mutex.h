@@ -6,7 +6,7 @@
 #ifndef KOIOS_COROUTINE_MUTEX_H
 #define KOIOS_COROUTINE_MUTEX_H
 
-#include <mutex>
+#include <atomic>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
@@ -59,8 +59,15 @@ private:
      *  \retval true The ownership was got.
      *  \retval false The ownership was not got.
      */
-    bool hold_this_immediately() noexcept;
-    void add_waiting(task_on_the_fly t);
+    bool hold_this_immediately() noexcept
+    {
+        return !m_flag.test_and_set(::std::memory_order_acq_rel);
+    }
+
+    void add_waiting(task_on_the_fly t)
+    {
+        m_waitings.enqueue({ .task = ::std::move(t) });
+    }
 
     /*! \brief  Move the ownership to the next waiting task, and wake it.
      *
@@ -69,18 +76,15 @@ private:
      *  is just abstract concept. We only guarantee that
      *  there's always one (or no) member task is running of this mutex.
      */
-    void release();
+    void release()
+    {
+        m_flag.clear();
+        try_wake_up_next();
+    }
     
-    void try_wake_up_next_impl() noexcept;
-
-private:
-    bool being_held_impl() const noexcept { return m_holded; }
-
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
-
-    ::std::mutex m_lock;  
-    bool m_holded{false};
+    ::std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
 };
 
 KOIOS_NAMESPACE_END

@@ -37,18 +37,9 @@ bool mutex_monitor::empty() const
 void mutex_monitor::print_status() const
 {
     ::std::shared_lock lk{ m_lock };
-    size_t count{};
     for (auto [m, id] : m_mutexes)
     {
-        if (m->be_held())
-        {
-            ++count;
-            spdlog::info("mutex_monitor: No.{} being held", id);
-        }
-    }
-    if (count == m_mutexes.size())
-    {
-        spdlog::info("all mutexes being held");
+        m->print_status();
     }
 }
 

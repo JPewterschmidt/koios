@@ -66,6 +66,8 @@ void thread_pool::consumer(
     if (::std::this_thread::get_id() != mt_id)
         m_start_working.count_down();
 
+    m_last_health_check_tp.store(::std::chrono::system_clock::now());
+
     size_t no_task{};
     while (!this->done(token))
     {
@@ -75,7 +77,7 @@ void thread_pool::consumer(
             if (this->done(token)) break;
             ::std::unique_lock lk{ m_lock };
             const auto max_waiting_time = this->max_sleep_duration(cattr);
-            constexpr auto waiting_latch = is_profiling_mode() ? 1ms : 100ms;
+            constexpr auto waiting_latch = is_profiling_mode() ? 1ms : 500ms;
             const auto actual_waiting_time = 
                 waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
 
@@ -83,10 +85,10 @@ void thread_pool::consumer(
             {
                 const auto now = ::std::chrono::system_clock::now();
                 const auto dura = ::std::chrono::duration_cast<::std::chrono::seconds>(now - m_last_health_check_tp.load(::std::memory_order_relaxed));
-                if (++no_task % ((m_consumer_attrs.size() + 1) * 10) == 0 
+                if (++no_task % (m_consumer_attrs.size() + 1) == 0 
                         && !has_executed_something 
                         && !has_pending_event()
-                        && dura >= 20s)
+                        && dura >= 15s)
                 {
                     m_last_health_check_tp.store(now, ::std::memory_order_relaxed);
                     spdlog::error("thread_pool has been idle for a while!");

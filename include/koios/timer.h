@@ -183,7 +183,8 @@ public:
     }
 
     bool is_cleanning() const { return m_stop_src.stop_requested(); }
-    bool done();
+    bool done() const;
+    bool empty() const;
 
 private:
     ::std::pair<

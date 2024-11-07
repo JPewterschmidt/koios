@@ -79,4 +79,15 @@ void user_event_loops::add_loop(user_event_loop_interface::sptr loop)
     }
 }
 
+bool user_event_loops::empty() const
+{
+    ::std::shared_lock lk{ m_mutex };
+    for (const auto& loop : m_loops)
+    {
+        if (!loop->empty())
+            return false;
+    }
+    return true;
+}
+
 KOIOS_NAMESPACE_END

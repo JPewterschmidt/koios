@@ -79,6 +79,8 @@ public:
 	{
         success2 = true;
 	}
+
+    bool empty() const noexcept { return {true}; }
 };
 
 } // annoymous namespace

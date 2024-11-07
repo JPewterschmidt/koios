@@ -8,7 +8,7 @@
 
 #include "koios/macros.h"
 #include "koios/per_consumer_attr.h"
-#include "toolpex/is_specialization_of.h"
+#include "toolpex/concepts_and_traits.h"
 #include <concepts>
 #include <utility>
 #include <chrono>
@@ -22,10 +22,12 @@ concept event_loop_concept = requires(EL e)
     e.do_occured_nonblk();
     //{ &EL::add_event };
     e.stop();
+    e.stop();
     e.quick_stop();
     e.until_done();
     { e.max_sleep_duration(::std::declval<per_consumer_attr>()) } 
         -> toolpex::is_specialization_of<::std::chrono::duration>;
+    { e.empty() } -> toolpex::boolean_testable;
 } && ::std::default_initializable<EL>;
 
 KOIOS_NAMESPACE_END

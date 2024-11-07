@@ -23,6 +23,7 @@ public:
     virtual void until_done() = 0;
     virtual ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept = 0;
     virtual void do_occured_nonblk() noexcept = 0;
+    virtual bool empty() const = 0;
 };
 
 KOIOS_NAMESPACE_END

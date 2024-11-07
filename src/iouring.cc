@@ -78,6 +78,13 @@ namespace iel_detials
         }
     }
 
+    bool iouring_event_loop_perthr::
+    empty() const
+    {
+        auto lk = this->get_lk();
+        return m_opreps.empty();
+    }
+
     void 
     iouring_event_loop_perthr::
     add_event(task_on_the_fly h, uring::op_batch_rep& ops)
@@ -114,7 +121,7 @@ thread_specific_preparation(const per_consumer_attr& attr)
 }
 
 auto iouring_event_loop::
-shrlk_and_curthr_ptr()
+shrlk_and_curthr_ptr() const
 {
     const auto id = ::std::this_thread::get_id();
     auto lk = this->get_shrlk();
@@ -135,6 +142,18 @@ do_occured_nonblk()
         ::exit(1);
     }
     ptr->do_occured_nonblk();
+}
+
+bool iouring_event_loop::
+empty() const
+{
+    auto [lk, ptr] = this->shrlk_and_curthr_ptr();
+
+    if (!ptr)
+    {
+        return true;
+    }
+    return ptr->empty();
 }
 
 void 

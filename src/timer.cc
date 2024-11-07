@@ -85,7 +85,7 @@ quick_stop() noexcept
 }
 
 bool timer_event_loop::
-done()
+done() const
 {
     ::std::shared_lock lk{ m_ptrs_lock };
     for (auto& [k, ptr] : m_impl_ptrs)
@@ -94,6 +94,11 @@ done()
             return false;
     }
     return true;
+}
+
+bool timer_event_loop::empty() const
+{
+    return done();
 }
 
 ::std::strong_ordering 

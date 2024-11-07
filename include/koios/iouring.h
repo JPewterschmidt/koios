@@ -48,6 +48,7 @@ namespace iel_detials
         iouring_event_loop_perthr& operator=(iouring_event_loop_perthr&&) noexcept = default;
 
         void do_occured_nonblk() noexcept;
+        bool empty() const;
 
     public:
         ::std::shared_ptr<task_release_once> 
@@ -104,6 +105,7 @@ public:
     void stop() { stop(get_unilk()); }
     void quick_stop();
     void do_occured_nonblk();
+    bool empty() const;
 
     /*! \brief A blockable function after it's return 
      *         means the top level event_loop could exit safely.
@@ -130,7 +132,7 @@ public:
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);
-    auto shrlk_and_curthr_ptr();
+    auto shrlk_and_curthr_ptr() const;
 
 private:
     ::std::unordered_map<

@@ -29,6 +29,7 @@ public:
     ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept;
     void do_occured_nonblk() noexcept;
     void add_loop(user_event_loop_interface::sptr loop);
+    bool empty() const;
 
 private:
     ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;

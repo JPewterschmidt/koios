@@ -86,10 +86,10 @@ void thread_pool::consumer(
                 if (++no_task % ((m_consumer_attrs.size() + 1) * 10) == 0 
                         && !has_executed_something 
                         && !has_pending_event()
-                        && dura >= 10s)
+                        && dura >= 20s)
                 {
                     m_last_health_check_tp.store(now, ::std::memory_order_relaxed);
-                    spdlog::error("thread_pool has been idle for {}s!", dura.count());
+                    spdlog::error("thread_pool has been idle for a while!");
                     print_status();
                 }
             }

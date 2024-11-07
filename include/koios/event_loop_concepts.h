@@ -25,6 +25,7 @@ concept event_loop_concept = requires(EL e)
     e.stop();
     e.quick_stop();
     e.until_done();
+    e.print_status();
     { e.max_sleep_duration(::std::declval<per_consumer_attr>()) } 
         -> toolpex::is_specialization_of<::std::chrono::duration>;
     { e.empty() } -> toolpex::boolean_testable;

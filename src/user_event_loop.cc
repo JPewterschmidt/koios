@@ -92,4 +92,13 @@ bool user_event_loops::empty() const
     return true;
 }
 
+void user_event_loops::print_status() const
+{
+    ::std::shared_lock lk{ m_mutex };
+    for (const auto& loop : m_loops)
+    {
+        loop->print_status();
+    }
+}
+
 KOIOS_NAMESPACE_END

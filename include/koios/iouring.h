@@ -60,6 +60,8 @@ namespace iel_detials
 
         ::std::chrono::milliseconds max_sleep_duration() const;
 
+        void print_status() const;
+
     private:
         auto get_lk() const { return ::std::unique_lock{ m_lk }; }
         void dealwith_cqe(const ::io_uring_cqe* cqep);
@@ -129,6 +131,8 @@ public:
      *  \parma ops Represents those operations.
      */
     void add_event(task_on_the_fly h, uring::op_batch_rep& ops); 
+
+    void print_status() const;
 
 private:
     void stop(::std::unique_lock<::std::shared_mutex> lk);

@@ -243,6 +243,7 @@ protected:
 
     virtual bool before_each_task() noexcept { return {}; }
     virtual bool has_pending_event() noexcept { return {}; }
+    virtual void print_status() const {};
 
     virtual ::std::chrono::nanoseconds max_sleep_duration([[maybe_unused]] const per_consumer_attr&) noexcept 
     { 

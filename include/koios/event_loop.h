@@ -105,6 +105,11 @@ public:
         task_scheduler::quick_stop();
     }
 
+    virtual void print_status() const override
+    {
+        (Loops::print_status(), ...);
+    }
+
     virtual ~event_loop() noexcept 
     {
         // Prevent some event_loop destructed 

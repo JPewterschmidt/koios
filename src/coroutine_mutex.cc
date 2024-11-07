@@ -9,6 +9,16 @@
 
 KOIOS_NAMESPACE_BEG
 
+mutex::mutex()
+{
+    get_task_scheduler().add_event<mutex_monitor>(mutex_monitor::REGISTER, this);
+}
+
+mutex::~mutex() noexcept
+{
+    get_task_scheduler().add_event<mutex_monitor>(mutex_monitor::DEREGISTER, this);
+}
+
 void mutex::
 try_wake_up_next() noexcept
 {

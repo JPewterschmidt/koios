@@ -41,6 +41,9 @@ public:
 
     bool be_held() noexcept;
 
+    mutex();
+    ~mutex() noexcept;
+
 private:
     template<typename T>
     friend class lock_base;

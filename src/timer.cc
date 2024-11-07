@@ -87,6 +87,13 @@ print_status() const
 {
     ::std::shared_lock lk{ m_lk };
     spdlog::info("timer event loop status: {} event(s) pending.", m_timer_heap.size());
+    if (m_timer_heap.empty())
+        return;
+    spdlog::info("timer event loop: next occured in {} seconds", 
+        ::std::chrono::duration_cast<::std::chrono::seconds>(
+            m_timer_heap[0].timeout_tp - ::std::chrono::high_resolution_clock::now()
+        ).count()
+    );
 }
 
 void timer_event_loop::

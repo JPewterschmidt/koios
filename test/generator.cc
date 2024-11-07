@@ -75,9 +75,25 @@ namespace
         co_return co_await g.to<::std::vector<lifetimetoy>>();
     }
 
+    task<::std::vector<lifetimetoy>> test_body_3_1()
+    {
+        co_return co_await numbers(10).to<::std::vector<lifetimetoy>>();
+    }
+
+    task<::std::vector<lifetimetoy>> test_body_3_2()
+    {
+        co_return co_await numbers(10).to<::std::vector>();
+    }
+
     task<::std::vector<lifetimetoy>> test_body_4()
     {
         auto mg = merge(numbers(5), numbers(4));
+        co_return co_await mg.to<::std::vector>();
+    }
+
+    task<::std::vector<lifetimetoy>> test_body_4_1()
+    {
+        auto mg = merge(numbers(5), numbers(4)).unique();
         co_return co_await mg.to<::std::vector>();
     }
 
@@ -86,6 +102,13 @@ namespace
         ::std::vector<lifetimetoy> result;
         auto g = numbers(10);
         co_await g.to(::std::back_inserter(result));
+        co_return result;
+    }
+
+    task<::std::vector<lifetimetoy>> test_body_5_1()
+    {
+        ::std::vector<lifetimetoy> result;
+        co_await numbers(10).to(::std::back_inserter(result));
         co_return result;
     }
 
@@ -111,13 +134,27 @@ TEST(generator, to)
 {
     ASSERT_EQ(test_body_2().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
     ASSERT_EQ(test_body_3().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
+    ASSERT_EQ(test_body_3_1().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
+    ASSERT_EQ(test_body_3_2().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
     ASSERT_EQ(test_body_5().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
+    ASSERT_EQ(test_body_5_1().result(), rv::iota(0, 10) | rv::transform([](int i){ return lifetimetoy{i}; }) | r::to<::std::vector>());
 }
 
 TEST(generator, merge)
 {
     ASSERT_EQ(test_body_4().result(), (::std::vector<lifetimetoy>{ 
         lifetimetoy{0},lifetimetoy{0},lifetimetoy{1},lifetimetoy{1},lifetimetoy{2},lifetimetoy{2},lifetimetoy{3},lifetimetoy{3},lifetimetoy{4} 
+    }));
+}
+
+TEST(generator, unique)
+{
+    ASSERT_EQ(test_body_4_1().result(), (::std::vector<lifetimetoy>{ 
+        lifetimetoy{0},
+        lifetimetoy{1},
+        lifetimetoy{2},
+        lifetimetoy{3},
+        lifetimetoy{4} 
     }));
 }
 

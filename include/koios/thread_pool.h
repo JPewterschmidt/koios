@@ -241,7 +241,7 @@ protected:
         m_consumer_attrs.push_back(&attr);
     }
 
-    virtual void before_each_task() noexcept { }
+    virtual bool before_each_task() noexcept { return {}; }
     virtual ::std::chrono::nanoseconds max_sleep_duration([[maybe_unused]] const per_consumer_attr&) noexcept 
     { 
         return ::std::chrono::nanoseconds::max(); 
@@ -265,6 +265,7 @@ private:
     size_t                          m_num_thrs{};
     ::std::latch                    m_start_working;
     ::std::vector<const per_consumer_attr*> m_consumer_attrs{};
+    ::std::atomic_size_t            m_sleeping_thrs{};
 };
 
 KOIOS_NAMESPACE_END

@@ -75,9 +75,10 @@ public:
         return 1000ms;
     }
 
-    void do_occured_nonblk() noexcept override
+    bool do_occured_nonblk() noexcept override
 	{
         success2 = true;
+        return true;
 	}
 
     bool empty() const noexcept { return {true}; }

@@ -19,7 +19,7 @@ template<typename EL>
 concept event_loop_concept = requires(EL e)
 {
     { &EL::thread_specific_preparation };
-    e.do_occured_nonblk();
+    { e.do_occured_nonblk() } -> toolpex::boolean_testable;
     //{ &EL::add_event };
     e.stop();
     e.stop();

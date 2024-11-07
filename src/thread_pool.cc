@@ -65,6 +65,8 @@ void thread_pool::consumer(
     this->thread_specific_preparation(cattr);
     if (::std::this_thread::get_id() != mt_id)
         m_start_working.count_down();
+
+    size_t no_task{};
     while (!this->done(token))
     {
         this->before_each_task();
@@ -77,10 +79,19 @@ void thread_pool::consumer(
             const auto actual_waiting_time = 
                 waiting_latch < max_waiting_time ? waiting_latch : max_waiting_time;
 
+            if (m_sleeping_thrs.fetch_add(1, ::std::memory_order_relaxed) == m_consumer_attrs.size() - 1)
+            {
+                if (++no_task % (m_consumer_attrs.size() + 1) == 0)
+                {
+                    // TODO
+                }
+            }
             m_cond.wait_for(lk, actual_waiting_time);
+            m_sleeping_thrs.fetch_sub(1, ::std::memory_order_relaxed);
         }
         else try 
         { 
+            no_task = 0;
             task_opt.value()(); 
         } 
         catch (const koios::exception& e)

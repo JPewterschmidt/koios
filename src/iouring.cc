@@ -51,7 +51,7 @@ namespace iel_detials
         }
     }
     
-    void iouring_event_loop_perthr::
+    bool iouring_event_loop_perthr::
     do_occured_nonblk() noexcept
     {
         auto lk = this->get_lk();
@@ -60,7 +60,7 @@ namespace iel_detials
         if (left == 0) 
         {
             this->mis_shot_this_time();
-            return;
+            return false;
         }
         this->shot_this_time();
 
@@ -76,6 +76,7 @@ namespace iel_detials
             this->dealwith_cqe(cqep);
             ::io_uring_cqe_seen(&m_ring, cqep); // mark this cqe has been processed
         }
+        return true;
     }
 
     bool iouring_event_loop_perthr::
@@ -129,11 +130,11 @@ shrlk_and_curthr_ptr() const
     return ::std::make_pair(::std::move(lk), (it != m_impls.end() ? it->second.get() : nullptr));
 }
 
-void iouring_event_loop::
+bool iouring_event_loop::
 do_occured_nonblk()
 {
     auto [lk, ptr] = this->shrlk_and_curthr_ptr();
-    if (!ptr && m_cleaning) [[unlikely]] return;
+    if (!ptr && m_cleaning) [[unlikely]] return {};
     else if (!ptr && !m_cleaning)
     {
         ::std::cout << 
@@ -141,7 +142,7 @@ do_occured_nonblk()
             "in a lazy_task or any subsequent normal task.";
         ::exit(1);
     }
-    ptr->do_occured_nonblk();
+    return ptr->do_occured_nonblk();
 }
 
 bool iouring_event_loop::

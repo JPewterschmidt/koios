@@ -61,7 +61,7 @@ public:
      *  coroutine at each calling of this function.
      *  Basically this function would be called by `event_loop`
      */
-    void do_occured_nonblk() noexcept;
+    bool do_occured_nonblk() noexcept;
 
     /*! \brief Adding a timer event.
      *  \param dura The expire time duration.
@@ -134,10 +134,10 @@ class timer_event_loop
 public:
     timer_event_loop() = default;
 
-    void do_occured_nonblk() noexcept 
+    bool do_occured_nonblk() noexcept 
     { 
         auto [lk, ptr] = this->cur_thread_ptr();
-        ptr->do_occured_nonblk(); 
+        return ptr->do_occured_nonblk(); 
     }
 
     template<typename... Args>

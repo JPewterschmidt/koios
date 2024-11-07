@@ -110,6 +110,8 @@ public:
         return m_timer_heap.empty();
     }
 
+    void print_status() const;
+
 private:
     void wake_up_all() noexcept;
 
@@ -185,6 +187,7 @@ public:
     bool is_cleanning() const { return m_stop_src.stop_requested(); }
     bool done() const;
     bool empty() const;
+    void print_status() const;
 
 private:
     ::std::pair<

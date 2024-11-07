@@ -24,6 +24,7 @@ public:
     virtual ::std::chrono::milliseconds max_sleep_duration(const per_consumer_attr& attr) noexcept = 0;
     virtual bool do_occured_nonblk() noexcept = 0;
     virtual bool empty() const = 0;
+    virtual void print_status() const {};
 };
 
 KOIOS_NAMESPACE_END

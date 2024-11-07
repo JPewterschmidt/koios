@@ -13,6 +13,8 @@
 #include <condition_variable>
 #include <thread>
 
+#include "spdlog/spdlog.h"
+
 KOIOS_NAMESPACE_BEG
 
 bool timer_event_loop_impl::
@@ -80,6 +82,13 @@ add_event_impl(timer_event te) noexcept
     );
 }
 
+void timer_event_loop_impl::
+print_status() const
+{
+    ::std::shared_lock lk{ m_lk };
+    spdlog::info("timer event loop status: {} event(s) pending.", m_timer_heap.size());
+}
+
 void timer_event_loop::
 quick_stop() noexcept
 {
@@ -112,6 +121,15 @@ bool timer_event_loop::empty() const
 operator<=>(const timer_event& lhs, const timer_event& rhs) noexcept
 {
     return lhs.timeout_tp <=> rhs.timeout_tp;
+}
+
+void timer_event_loop::print_status() const
+{
+    ::std::shared_lock lk{ m_ptrs_lock };
+    for (const auto& [k, ptr] : m_impl_ptrs)
+    {
+        ptr->print_status();
+    }
 }
 
 KOIOS_NAMESPACE_END

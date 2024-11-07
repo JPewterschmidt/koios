@@ -14,6 +14,8 @@
 #include "koios/functional.h"
 #include "koios/iouring_awaitables.h"
 
+#include "spdlog/spdlog.h"
+
 KOIOS_NAMESPACE_BEG
 
 using namespace ::std::chrono_literals;
@@ -107,6 +109,13 @@ namespace iel_detials
         auto lk = this->get_lk();
         return m_opreps.empty() * this->mis_shot_indicator() * 25ms;
     }
+
+    void iouring_event_loop_perthr::
+    print_status() const
+    {
+        auto lk = this->get_lk();
+        spdlog::info("iouring per-thread status: has {} event(s) pending", m_opreps.size());
+    }
 }
 
 void iouring_event_loop::
@@ -197,6 +206,15 @@ max_sleep_duration(const per_consumer_attr& attr) const
     if (auto it = m_impls.find(attr.thread_id); it != m_impls.end())
         return ::std::min(200ms, it->second->max_sleep_duration());
     return {};
+}
+
+void iouring_event_loop::print_status() const
+{
+    auto lk = this->get_shrlk();
+    for (const auto& [k, impl] : m_impls)
+    {
+        impl->print_status();
+    }
 }
 
 KOIOS_NAMESPACE_END

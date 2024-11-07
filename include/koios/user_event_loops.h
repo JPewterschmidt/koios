@@ -30,6 +30,7 @@ public:
     bool do_occured_nonblk() noexcept;
     void add_loop(user_event_loop_interface::sptr loop);
     bool empty() const;
+    void print_status() const;
 
 private:
     ::std::unordered_map<::std::thread::id, const per_consumer_attr*> m_attrs;

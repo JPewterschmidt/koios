@@ -69,7 +69,7 @@ void thread_pool::consumer(
     size_t no_task{};
     while (!this->done(token))
     {
-        this->before_each_task();
+        const bool has_executed_something = this->before_each_task();
         if (auto task_opt = m_tasks.dequeue(cattr); !task_opt)
         {
             if (this->done(token)) break;
@@ -81,9 +81,14 @@ void thread_pool::consumer(
 
             if (m_sleeping_thrs.fetch_add(1, ::std::memory_order_relaxed) == m_consumer_attrs.size() - 1)
             {
-                if (++no_task % (m_consumer_attrs.size() + 1) == 0)
+                const auto now = ::std::chrono::system_clock::now();
+                if (++no_task % (m_consumer_attrs.size() + 1) == 0 
+                        && !has_executed_something 
+                        && !has_pending_event()
+                        && now - m_last_health_check_tp.load(::std::memory_order_relaxed) > 10s)
                 {
-                    // TODO
+                    m_last_health_check_tp.store(now, ::std::memory_order_relaxed);
+                    spdlog::error("thread_pool has been idle for more than 10s!");
                 }
             }
             m_cond.wait_for(lk, actual_waiting_time);

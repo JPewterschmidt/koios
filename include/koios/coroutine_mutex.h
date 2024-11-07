@@ -7,6 +7,7 @@
 #define KOIOS_COROUTINE_MUTEX_H
 
 #include <atomic>
+#include <mutex>
 
 #include "koios/macros.h"
 #include "koios/task_on_the_fly.h"
@@ -36,9 +37,9 @@ public:
      *  Due to the underlying mutex may throw an exception when lock it, 
      *  We didn't mark this function as noexcept.
      */
-    acq_lk_aw<mutex> acquire() noexcept { return { *this }; }
+    acq_lk_aw<mutex> acquire() noexcept;
 
-    try_acq_lk_aw<mutex> try_acquire() noexcept { return { *this }; }
+    try_acq_lk_aw<mutex> try_acquire() noexcept;
 
     bool be_held() noexcept;
 
@@ -91,6 +92,7 @@ private:
     }
     
 private:
+    ::std::once_flag m_once;
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
     mutable ::std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
     toolpex::uuid m_uuid{};

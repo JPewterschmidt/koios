@@ -10,9 +10,24 @@
 
 KOIOS_NAMESPACE_BEG
 
+acq_lk_aw<mutex> mutex::acquire() noexcept 
+{ 
+    ::std::call_once(m_once, [this]{ 
+        get_task_scheduler().add_event<mutex_monitor>(mutex_monitor::REGISTER, this);
+    });
+    return { *this }; 
+}
+
+try_acq_lk_aw<mutex> mutex::try_acquire() noexcept 
+{ 
+    ::std::call_once(m_once, [this]{ 
+        get_task_scheduler().add_event<mutex_monitor>(mutex_monitor::REGISTER, this);
+    });
+    return { *this }; 
+}
+
 mutex::mutex()
 {
-    get_task_scheduler().add_event<mutex_monitor>(mutex_monitor::REGISTER, this);
 }
 
 mutex::~mutex() noexcept

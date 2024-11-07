@@ -59,14 +59,16 @@ user_event_loops::max_sleep_duration(const per_consumer_attr& attr) noexcept
     return result;
 }
 
-void user_event_loops::do_occured_nonblk() noexcept
+bool user_event_loops::do_occured_nonblk() noexcept
 {
     ::std::shared_lock lk{ m_mutex };
-    if (m_cleanning == true) [[unlikely]] return;
+    if (m_cleanning == true) [[unlikely]] return {};
+    bool result{};
     for (auto& loop : m_loops)
     {
-        loop->do_occured_nonblk();
+        result = loop->do_occured_nonblk() || result;
     }
+    return result;
 }
 
 void user_event_loops::add_loop(user_event_loop_interface::sptr loop)
@@ -77,6 +79,17 @@ void user_event_loops::add_loop(user_event_loop_interface::sptr loop)
     {
         inplace_loop->thread_specific_preparation(*attrp);
     }
+}
+
+bool user_event_loops::empty() const
+{
+    ::std::shared_lock lk{ m_mutex };
+    for (const auto& loop : m_loops)
+    {
+        if (!loop->empty())
+            return false;
+    }
+    return true;
 }
 
 KOIOS_NAMESPACE_END

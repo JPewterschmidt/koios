@@ -15,25 +15,30 @@
 
 KOIOS_NAMESPACE_BEG
 
-void timer_event_loop_impl::
+bool timer_event_loop_impl::
 do_occured_nonblk() noexcept
 {
     const auto now = ::std::chrono::high_resolution_clock::now();
 
     if (m_stop_tk.stop_requested()) 
     {
-        return;
+        return {};
     }
 
     ::std::shared_lock lk{ m_lk };
     if (m_timer_heap.empty() 
         || now < m_timer_heap.front().timeout_tp)
     {
-        return;
+        return {};
     }
     lk.unlock();
 
     ::std::unique_lock ulk{ m_lk };
+    if (m_timer_heap.empty())
+    {
+        return {};
+    }
+
     auto heap_end = m_timer_heap.end();
     while (now >= m_timer_heap.front().timeout_tp)
     {
@@ -47,6 +52,8 @@ do_occured_nonblk() noexcept
         schr.enqueue(::std::move(i->task));
     }
     m_timer_heap.erase(heap_end, m_timer_heap.end());
+
+    return true;
 }
 
 void timer_event_loop_impl::
@@ -85,7 +92,7 @@ quick_stop() noexcept
 }
 
 bool timer_event_loop::
-done()
+done() const
 {
     ::std::shared_lock lk{ m_ptrs_lock };
     for (auto& [k, ptr] : m_impl_ptrs)
@@ -94,6 +101,11 @@ done()
             return false;
     }
     return true;
+}
+
+bool timer_event_loop::empty() const
+{
+    return done();
 }
 
 ::std::strong_ordering 

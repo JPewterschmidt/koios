@@ -50,9 +50,12 @@ public:
      *  \attention  We assume that this function will return immediately, 
      *              any blocking subcall are prohibited.
      */
-    void do_occured_nonblk() noexcept
+    bool do_occured_nonblk() noexcept
     {
-        (this->Loops::do_occured_nonblk(), ...);
+        bool result{};
+        auto result_setter = [&result](bool val) { result = result || val; };
+        (result_setter(this->Loops::do_occured_nonblk()), ...);
+        return result;
     }
 
     /*! \brief Add event to specific event loop. 
@@ -115,9 +118,9 @@ public:
     }
     
 protected:
-    virtual void before_each_task() noexcept override
+    virtual bool before_each_task() noexcept override
     {
-        do_occured_nonblk();
+        return do_occured_nonblk();
     }
 
     virtual ::std::chrono::nanoseconds

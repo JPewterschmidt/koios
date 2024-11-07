@@ -39,6 +39,8 @@ public:
 
     try_acq_lk_aw<mutex> try_acquire() noexcept { return { *this }; }
 
+    bool be_held() noexcept;
+
 private:
     template<typename T>
     friend class lock_base;

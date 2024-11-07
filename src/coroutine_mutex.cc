@@ -26,4 +26,15 @@ try_wake_up_next() noexcept
     }
 }
 
+bool mutex::
+be_held() noexcept
+{
+    if (hold_this_immediately())
+    {
+        release();
+        return false;
+    }
+    return true;
+}
+
 KOIOS_NAMESPACE_END

@@ -6,12 +6,12 @@
 #include <vector>
 
 static size_t g_val{};
-static koios::mutex g_mutex;
 constinit size_t g_test_count{ 9999 };
 
 static koios::task<void> func()
 {
-    auto lk = co_await g_mutex.acquire();
+    static koios::mutex s_mutex;
+    auto lk = co_await s_mutex.acquire();
     ++g_val;
     lk.unlock();
     

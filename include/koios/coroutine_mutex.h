@@ -17,6 +17,7 @@
 #include "koios/acq_lk_aw.h"
 #include "koios/waiting_handle.h"
 #include "toolpex/move_only.h"
+#include "toolpex/uuid.h"
 
 #undef BLOCK_SIZE
 #include "concurrentqueue/concurrentqueue.h"
@@ -38,6 +39,13 @@ public:
     acq_lk_aw<mutex> acquire() noexcept { return { *this }; }
 
     try_acq_lk_aw<mutex> try_acquire() noexcept { return { *this }; }
+
+    bool be_held() noexcept;
+
+    void print_status();
+
+    mutex();
+    ~mutex() noexcept;
 
 private:
     template<typename T>
@@ -84,7 +92,8 @@ private:
     
 private:
     moodycamel::ConcurrentQueue<waiting_handle> m_waitings;
-    ::std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
+    mutable ::std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
+    toolpex::uuid m_uuid{};
 };
 
 KOIOS_NAMESPACE_END

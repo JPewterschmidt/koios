@@ -14,6 +14,7 @@
 #include "koios/timer.h"
 #include "koios/iouring.h"
 #include "koios/user_event_loops.h"
+#include "koios/mutex_monitor.h"
 
 #include <memory>
 #include <source_location>
@@ -23,7 +24,8 @@ KOIOS_NAMESPACE_BEG
 using event_loop_t = event_loop<
     timer_event_loop, 
     iouring_event_loop, 
-    user_event_loops
+    user_event_loops, 
+    mutex_monitor
 >;
 
 ::std::unique_ptr<event_loop_t>& 

@@ -22,7 +22,6 @@ concept event_loop_concept = requires(EL e)
     { e.do_occured_nonblk() } -> toolpex::boolean_testable;
     //{ &EL::add_event };
     e.stop();
-    e.stop();
     e.quick_stop();
     e.until_done();
     e.print_status();

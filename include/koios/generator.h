@@ -268,6 +268,65 @@ public:
         return { m_shared_state };
     }
 
+private:
+    template<generator_concept Gen>
+    static Gen unique_impl(Gen gen, auto equal = ::std::equal_to<result_type>{})
+    {
+        auto compared_opt = co_await gen.next_value_async();
+        if (!compared_opt.has_value())
+            co_return;
+
+        do
+        {
+            auto cur = co_await gen.next_value_async();
+            if (!cur.has_value())
+            {
+                co_yield ::std::move(compared_opt.value());
+                compared_opt = {};
+            }
+            else 
+            {
+                if (equal(compared_opt.value(), cur.value()))
+                    continue;
+                co_yield ::std::move(::std::exchange(compared_opt, cur).value());
+            }
+        }
+        while (compared_opt.has_value());
+    }
+
+    template<typename PushBackAble>
+    static task<PushBackAble> rvalue_to_impl(_type gen)
+    {
+        PushBackAble result;
+        ::std::optional<result_type> cur;
+        for (;;) 
+        {
+            cur = co_await gen.next_value_async();
+            if (cur) result.push_back(::std::move(*cur));       
+            else break;
+        }
+
+        co_return result;
+    }
+
+    static task<> rvalue_to_iter_impl(_type gen, auto iter)
+    {
+        ::std::optional<result_type> cur;
+        for (;;) 
+        {
+            cur = co_await gen.next_value_async();
+            if (cur) (*iter++) = ::std::move(*cur);
+            else break;
+        }
+    }
+
+public:
+    template<typename Equal = ::std::equal_to<result_type>>
+    _type unique(Equal eq = {}) &&
+    {
+        return unique_impl(::std::move(*this), ::std::move(eq));
+    }
+
     template<typename PushBackAble>
     task<PushBackAble> to() &
     {
@@ -283,10 +342,22 @@ public:
         co_return result;
     }
 
+    template<typename PushBackAble>
+    task<PushBackAble> to() &&
+    {
+        return rvalue_to_impl<PushBackAble>(::std::move(*this));
+    }
+
     template<template<typename...> class PushBackAble>
     task<PushBackAble<result_type>> to() &
     {
         return to<PushBackAble<result_type>>();
+    }
+
+    template<template<typename...> class PushBackAble>
+    task<PushBackAble<result_type>> to() &&
+    {
+        return rvalue_to_impl<PushBackAble<result_type>>(::std::move(*this));
     }
 
     task<> to(auto iter) &
@@ -298,6 +369,11 @@ public:
             if (cur) (*iter++) = ::std::move(*cur);
             else break;
         }
+    }
+
+    task<> to(auto iter) &&
+    {
+        return rvalue_to_iter_impl(::std::move(*this), ::std::move(iter));
     }
 };
 

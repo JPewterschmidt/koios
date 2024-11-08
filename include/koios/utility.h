@@ -7,9 +7,11 @@
 #define KOIOS_UTILITY_H
 
 #include <variant>
+#include <chrono>
 
 #include "koios/macros.h"
 #include "koios/functional.h"
+#include "koios/task.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -40,6 +42,8 @@ to_bool_variant(bool val)
     if (val) return { ::std::true_type{} };
     else     return { ::std::false_type{} };
 }
+
+lazy_task<::std::chrono::milliseconds> system_response_cost();
 
 KOIOS_NAMESPACE_END
 

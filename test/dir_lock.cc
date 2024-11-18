@@ -97,6 +97,7 @@ TEST_F(dir_mutex_test, multi_lock)
     {
         (void)item.get();
     }
+    m_futs.clear();
 
     ASSERT_FALSE(execlusive_availability_test_fail());
 }

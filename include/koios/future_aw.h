@@ -23,28 +23,28 @@ public:
 
 public:
     future_aw(FutureBase& fb) noexcept 
-        : m_fb{ fb }
+        : m_future{ fb }
     {
-        toolpex_assert(m_fb.valid());
+        toolpex_assert(m_future.valid());
     }
     
     bool await_ready() noexcept
     {
-        return m_fb.ready();
+        return m_future.ready();
     }
 
     void await_suspend(task_on_the_fly t) noexcept
     {
-        m_fb->set_waiting(::std::move(t));
+        m_future.set_waiting(::std::move(t));
     }
 
     value_type await_resume()
     {
-        return m_fb.get_nonblk();
+        return m_future.get_nonblk();
     }
 
 private:
-    FutureBase& m_fb;
+    FutureBase& m_future;
 };
 
 } // namespace koios

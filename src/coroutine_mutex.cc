@@ -65,7 +65,7 @@ be_held() noexcept
 
 void mutex::print_status()
 {
-    spdlog::info("mutex: {}, {} task(s) waitting, {} held.", 
+    spdlog::info("mutex: {}, {} task(s) waiting, {} held.", 
         m_uuid.to_string(), 
         m_waitings.size_approx(),
         (be_held() ? "is" : "is not")

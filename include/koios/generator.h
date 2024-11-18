@@ -33,7 +33,7 @@ template<typename T>
 struct shared_state
 {
     task_on_the_fly m_generator_coro;
-    task_on_the_fly m_waitting_coro;
+    task_on_the_fly m_waiting_coro;
     toolpex::object_storage<T> m_yielded_val;
     bool m_finalized{};
 
@@ -92,7 +92,7 @@ public:
    
     ~generator_promise_type() noexcept
     {
-        toolpex_assert(!m_shared_state->m_waitting_coro);
+        toolpex_assert(!m_shared_state->m_waiting_coro);
     }
 
 private:
@@ -114,7 +114,7 @@ public:
 
         void await_suspend(task_on_the_fly t) noexcept
         {
-            m_ss->m_waitting_coro = ::std::move(t);
+            m_ss->m_waiting_coro = ::std::move(t);
             toolpex_assert(!!m_ss->m_generator_coro);
             wake_up(::std::move(m_ss->m_generator_coro));
         }
@@ -141,7 +141,7 @@ public:
     void return_void() noexcept 
     { 
         m_shared_state->m_finalized = true;
-        wake_up(::std::move(m_shared_state->m_waitting_coro));
+        wake_up(::std::move(m_shared_state->m_waiting_coro));
     }
 
     void unhandled_exception() const { throw; }
@@ -166,7 +166,7 @@ public:
             void await_suspend(task_on_the_fly h) noexcept
             {
                 m_ss->m_generator_coro = ::std::move(h);
-                wake_up(::std::move(m_ss->m_waitting_coro));
+                wake_up(::std::move(m_ss->m_waiting_coro));
             }
             
             constexpr void await_resume() const noexcept {}

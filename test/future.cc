@@ -32,12 +32,13 @@ TEST(future, nothing_to_get)
     } 
     catch (const ::std::exception& ex)
     {
-        ASSERT_STREQ(ex.what(), "nothing to get.");
+        ASSERT_STREQ(ex.what(), "future::get_nonblk(): not ready!");
     }
 }
 
 TEST(future, regular_exception)
 {
+    bool flag{};
     try
     {
         promise<int> p;
@@ -45,11 +46,14 @@ TEST(future, regular_exception)
         p.set_exception(
             ::std::make_exception_ptr(::std::logic_error{"xxx888xxx"})
         );
+        (int)f.get_nonblk();
     } 
     catch (const ::std::exception& ex)
     {
         ASSERT_STREQ(ex.what(), "xxx888xxx");
+        flag = true;
     }
+    ASSERT_TRUE(flag);
 }
 
 TEST(future, future_ready1)
@@ -57,7 +61,7 @@ TEST(future, future_ready1)
     promise<int> p;
     auto f = p.get_future();
     p.set_value(1);
-    ASSERT_TRUE(p.future_ready());
+    ASSERT_TRUE(f.ready());
 }
 
 TEST(future, future_ready2)
@@ -65,7 +69,7 @@ TEST(future, future_ready2)
     promise<int&> p;
     auto f = p.get_future();
     p.set_value(dummy);
-    ASSERT_TRUE(p.future_ready());
+    ASSERT_TRUE(f.ready());
 }
 
 TEST(future, future_ready3)
@@ -73,7 +77,7 @@ TEST(future, future_ready3)
     promise<void> p;
     auto f = p.get_future();
     p.set_value();
-    ASSERT_TRUE(p.future_ready());
+    ASSERT_TRUE(f.ready());
 }
 
 TEST(future, future_concept)

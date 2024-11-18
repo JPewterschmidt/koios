@@ -4,6 +4,7 @@
 // Copyleft 2023 - 2024, ShiXin Wang. All wrongs reserved.
 
 #include "koios/future.h"
+#include "koios/runtime.h"
 
 #include <string>
 #include <string_view>

@@ -12,22 +12,8 @@
 
 #include "koios/task_on_the_fly.h"
 
-namespace koios::fp_detials
+namespace koios
 {
-
-class future_aw_detial
-{
-public:
-    void set_waiting(task_on_the_fly t)
-    {
-        m_waiting = ::std::move(t);
-    }
-
-    void awake();
-
-private:
-    task_on_the_fly m_waiting;
-};
 
 template<typename FutureBase>
 class future_aw
@@ -37,40 +23,30 @@ public:
 
 public:
     future_aw(FutureBase& fb) noexcept 
-        : m_fb{ fb }, 
-          m_fut_aw_detial{ ::std::make_unique<future_aw_detial>() }
+        : m_future{ fb }
     {
-        toolpex_assert(m_fb.valid());
+        toolpex_assert(m_future.valid());
     }
     
-    bool await_ready() const noexcept
+    bool await_ready() noexcept
     {
-        return m_fb.ready();
+        return m_future.ready();
     }
 
     void await_suspend(task_on_the_fly t) noexcept
     {
-        m_fut_aw_detial->set_waiting(::std::move(t));
+        m_future.set_waiting(::std::move(t));
     }
 
     value_type await_resume()
     {
-        return m_fb.get_nonblk();
+        return m_future.get_nonblk();
     }
 
 private:
-    template<typename> friend class future_base;
-
-    auto* get_aw_detial_ptr()
-    {
-        return m_fut_aw_detial.get();
-    }
-
-private:
-    FutureBase& m_fb;
-    ::std::unique_ptr<future_aw_detial> m_fut_aw_detial;
+    FutureBase& m_future;
 };
 
-} // namespace koios::fp_detials
+} // namespace koios
 
 #endif

@@ -18,17 +18,46 @@
 KOIOS_NAMESPACE_BEG
 
 template<typename Aw>
-concept awaitible_concept = requires(Aw a)
+concept pure_awaitible_concept = requires(Aw a)
 {
     { a.await_ready() } -> toolpex::boolean_testable;
     { a.await_suspend(::std::declval<::std::coroutine_handle<>>()) };
     a.await_resume();
 };
 
+template<typename Aw>
+concept convertible_awaitible_concept = requires(Aw a)
+{
+    { a.operator co_await() } -> pure_awaitible_concept;
+};
+
+template<typename Aw>
+concept awaitible_concept = pure_awaitible_concept<Aw> or convertible_awaitible_concept<Aw>;
+
+template<typename Aw>
+struct pure_awaitable_result_type
+{
+    using type = decltype(::std::declval<Aw>().await_resume());
+};
+
+template<typename Aw>
+struct convertible_awaitable_result_type
+{
+    using type = decltype(::std::declval<Aw>().operator co_await().await_resume());
+};
+
 template<awaitible_concept Aw>
 struct awaitable_result_type
 {
-    using type = decltype(::std::declval<Aw>().await_resume());
+private:
+    using cond_type = ::std::conditional_t<
+        pure_awaitible_concept<Aw>, 
+        pure_awaitable_result_type<Aw>, 
+        convertible_awaitable_result_type<Aw>
+    >;
+
+public:
+    using type = typename cond_type::type;
 };
 
 template<typename Aw>

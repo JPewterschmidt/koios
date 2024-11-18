@@ -22,7 +22,6 @@
 #include "koios/promise_wrapper.h"
 #include "koios/return_value_or_void.h"
 #include "koios/task_scheduler_wrapper.h"
-#include "koios/get_result_aw.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
 #include "koios/per_consumer_attr.h"
@@ -61,11 +60,7 @@ template<
     typename Discardable, 
     typename InitialSuspendAw>
 class _task<T, Discardable, InitialSuspendAw>::_type 
-    : public get_result_aw<T, _type>
 {
-private:
-    using get_result_aw_type = get_result_aw<T, _type>;
-
 public:
     using value_type = T;
     using future_type = koios::future<value_type>;
@@ -87,14 +82,10 @@ public:
 
     friend class task_scheduler;
 
-    template<typename, typename>
-    friend class get_result_aw_base;
-
 protected:
     _type(promise_type& p)
-        : get_result_aw_type(p),
-          m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
-          m_std_promise_p{ p.get_std_promise_pointer() }
+        : m_coro_handle{ ::std::coroutine_handle<promise_type>::from_promise(p) }, 
+          m_future{ p.get_future() }
     {
         if constexpr (this->is_eager()) m_coro_handle.give_up_ownership();
     }
@@ -102,8 +93,8 @@ protected:
 public:
     /*! Of course move constructor will move the ownership of the handler. */
     _type(_type&& other) noexcept
-        : get_result_aw_type(::std::move(other)),
-          m_coro_handle{ ::std::move(other.m_coro_handle) }
+        : m_coro_handle{ ::std::move(other.m_coro_handle) }, 
+          m_future{ ::std::move(other.m_future) }
     {
     }
 
@@ -148,7 +139,7 @@ public:
                       "you should call `run_and_get_future()` nor `run()`.");
         if constexpr (!this->is_eager())
         {
-            if (!this->future().ready())
+            if (!m_future.ready())
             {   
                 auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
@@ -165,7 +156,7 @@ public:
                       "you should call `run_and_get_future()` nor `run()`.");
         if constexpr (!this->is_eager())
         {
-            if (!this->future().ready())
+            if (!m_future.ready())
             {   
                 auto h = this->get_handler_to_schedule();
                 [[assume(bool(h))]];
@@ -223,6 +214,16 @@ public:
         return result;
     }
 
+    auto operator co_await()
+    {
+        if (!m_future.valid())
+        {
+            throw ::std::logic_error{ "task::operator co_await(): you have already called task::get_future()." };
+        }
+        get_task_scheduler().enqueue(this->get_handler_to_schedule());
+        return m_future.get_async();
+    }
+
     [[nodiscard]] auto result()
     {
         return this->result_on(get_task_scheduler());
@@ -256,7 +257,6 @@ public:
     [[nodiscard]] static consteval bool is_eager() { return ::std::same_as<initial_suspend_type, eager_aw>; }
 
 private:
-    [[nodiscard]] bool has_got_future() const noexcept { return bool(m_std_promise_p); }
     [[nodiscard]] static consteval bool is_return_void() { return ::std::same_as<void, value_type>; }
     [[nodiscard]] bool has_scheduled() const noexcept { return !m_coro_handle; }
 
@@ -274,14 +274,14 @@ private:
             if (this->has_scheduled()) throw ::std::logic_error{ "You should call `get_future()` before `run()`" };
         }
 
-        return this->get_result_aw<T, _type>::get_future();
+        return ::std::move(m_future);
     }
 
     auto get_handler_to_schedule() noexcept { return ::std::exchange(m_coro_handle, {}); }
 
 private:
     task_on_the_fly m_coro_handle;
-    ::std::shared_ptr<koios::promise<value_type>> m_std_promise_p{};
+    future_type m_future;
 };
 
 template<typename T = void, typename InitialSuspendAw = eager_aw>

@@ -16,7 +16,7 @@ namespace
     {
         for (size_t i{}; i < 5; ++i)
         {
-            auto handle = wg.add();
+            wait_group_guard g{ wg };
             co_await this_task::sleep_for(2ms);
         }
     }

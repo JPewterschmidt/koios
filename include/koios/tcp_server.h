@@ -16,6 +16,7 @@
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
 #include "koios/error_category.h"
+#include "koios/wait_group.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
@@ -55,7 +56,6 @@ public:
     {
         m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
         this->listen();
-        m_waiting_latch = co_await m_waiting_queue.acquire();
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
         for (const auto& attr : attrs)
         {
@@ -73,6 +73,7 @@ private:
     {
         using namespace ::std::string_literals;
 
+        wait_group_guard wg_handler{ m_wait_stop };
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
@@ -94,9 +95,6 @@ private:
             }
         }
 
-        if (m_count.fetch_sub() <= 1)
-            m_waiting_latch.unlock();
-
         co_return;
     }
 
@@ -108,10 +106,7 @@ private:
     ::in_port_t                 m_port;
     ::std::stop_source          m_stop_src;
     toolpex::ref_count          m_count{};
-
-    mutable ::std::shared_mutex m_stop_related_lock;
-    mutable koios::mutex        m_waiting_queue;
-    koios::unique_lock<koios::mutex> m_waiting_latch;
+    wait_group                  m_wait_stop;
 };
 
 namespace tcp_server_literals

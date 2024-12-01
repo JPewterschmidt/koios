@@ -81,7 +81,7 @@ void tcp_server::stop()
 task<> tcp_server::until_done_async()
 {
     if (this->is_stop()) co_return;
-    [[maybe_unused]] auto lk = co_await m_waiting_queue.acquire();
+    co_await m_wait_stop.wait();
     co_return;
 }
 

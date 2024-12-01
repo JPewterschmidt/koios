@@ -54,6 +54,7 @@ public:
      */
     task<> start(task_callable_concept auto callback)
     {
+        // This call will set port and address reuse.
         m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
         this->listen();
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
@@ -66,7 +67,6 @@ public:
     }
 
 private:
-    friend class tcp_server_until_done_aw;
     lazy_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept

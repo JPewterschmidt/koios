@@ -16,7 +16,7 @@ namespace
     lazy_task<void> tcp_server_app(toolpex::unique_posix_fd client) noexcept
     try
     {
-        ::std::string msg = "fuck you!!!!";
+        ::std::string msg = "nice to meet you!!!!";
         ::std::array<char, 128> buffer{};
 
         const auto recv_ret = co_await uring::recv(client, buffer);
@@ -39,13 +39,13 @@ namespace
     try
     {
         auto sock = co_await uring::connect_get_sock("::1"_ip, 8890);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
-        co_await uring::send(sock, "fuck you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
+        co_await uring::send(sock, "nice to meet you, and stop."sv);
 
         co_return;
     }
@@ -84,7 +84,7 @@ namespace
         size_t recved = co_await uring::recv_fill_buffer(client, buffer, 0, 10ms);
         if (recved == 0) 
         {
-            co_await uring::send(client, "fuck you");
+            co_await uring::send(client, "nice to meet you");
             co_return true;
         }
         co_return false;

@@ -12,6 +12,7 @@
 #include "koios/functional.h"
 #include "toolpex/ipaddress.h"
 #include "toolpex/ref_count.h"
+#include "toolpex/errret_thrower.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
@@ -56,12 +57,10 @@ public:
     {
         // This call will set port and address reuse.
         m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
-        this->listen();
+        toolpex::errret_thrower{} << ::listen(m_sockfd, 4096);
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
         for (const auto& attr : attrs)
         {
-            if (m_stop_src.stop_requested()) break;
-            m_count.fetch_add();
             this->tcp_loop(m_stop_src.get_token(), callback).run(*attr);
         }
     }
@@ -98,14 +97,11 @@ private:
         co_return;
     }
 
-    void listen();
-
 private:
     toolpex::unique_posix_fd    m_sockfd;
     toolpex::ip_address::ptr    m_addr;
     ::in_port_t                 m_port;
     ::std::stop_source          m_stop_src;
-    toolpex::ref_count          m_count{};
     wait_group                  m_wait_stop;
 };
 

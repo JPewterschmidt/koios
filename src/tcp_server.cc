@@ -5,7 +5,6 @@
 
 #include "koios/tcp_server.h"
 #include "koios/iouring_awaitables.h"
-#include "toolpex/errret_thrower.h"
 #include "toolpex/exceptions.h"
 #include "koios/runtime.h"
 #include <netinet/in.h>
@@ -62,15 +61,9 @@ bool tcp_server::is_stop() const noexcept
 { 
     if (m_stop_src.stop_requested())
     {
-        return m_count.load() == 0;
+        return m_wait_stop.ready();
     }
     return false;
-}
-
-void tcp_server::listen()
-{
-    toolpex::errret_thrower et{};
-    et << ::listen(m_sockfd, 4096);
 }
 
 void tcp_server::stop()

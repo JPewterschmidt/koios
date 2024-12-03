@@ -9,6 +9,8 @@
 #include "koios/runtime.h"
 #include <thread>
 #include <chrono>
+#include <print>
+#include <cstdio>
 #include "toolpex/tic_toc.h"
 #include "koios/task.h"
 #include "koios/functional.h"
@@ -146,9 +148,10 @@ do_occured_nonblk()
     if (!ptr && m_cleaning) [[unlikely]] return {};
     else if (!ptr && !m_cleaning)
     {
-        ::std::cout << 
+        ::std::println(stderr,
             "you should call async uring operation "
-            "in a lazy_task or any subsequent normal task.";
+            "in a lazy_task or any subsequent normal task."
+        );
         ::exit(1);
     }
     return ptr->do_occured_nonblk();
@@ -174,9 +177,10 @@ add_event(task_on_the_fly h, uring::op_batch_rep& ops)
     if (!impl && m_cleaning) [[unlikely]] return;
     else if (!impl) 
     {
-        ::std::cout << 
+        ::std::println(stderr,  
             "you should call async uring operation "
-            "in a lazy_task or any subsequent normal task.";
+            "in a lazy_task or any subsequent normal task."
+        );
         ::exit(1);
     }
     return impl->add_event(::std::move(h), ops);

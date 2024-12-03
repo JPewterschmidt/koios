@@ -4,26 +4,26 @@ A c++ async runtime library
 ## Quick Start
 
 ```c++
-#include <iostream>
+#include <print>
 #include "koios/task.h"
 #include "koios/runtime.h"
 
 koios::task<void> coro_task3()
 {
-    ::std::cout << "world!" << ::std::endl;
+    ::std::println("world!");
     co_return;
 }
 
 koios::task<int> coro_task2()
 {
-    ::std::cout << "koios' ";
+    ::std::print("koios' ");
     co_await coro_task3();
     co_return 1;
 }
 
 koios::task<int> coro_task()
 {
-    ::std::cout << "hello ";
+    ::std::print("hello ");
     co_return co_await coro_task2();
 }
 

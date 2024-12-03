@@ -12,10 +12,12 @@
 #include "koios/functional.h"
 #include "toolpex/ipaddress.h"
 #include "toolpex/ref_count.h"
+#include "toolpex/errret_thrower.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/exceptions.h"
 #include "koios/coroutine_mutex.h"
 #include "koios/error_category.h"
+#include "koios/wait_group.h"
 #include <functional>
 #include <memory>
 #include <stop_token>
@@ -53,26 +55,24 @@ public:
      */
     task<> start(task_callable_concept auto callback)
     {
+        // This call will set port and address reuse.
         m_sockfd = co_await uring::bind_get_sock_tcp(m_addr, m_port);
-        this->listen();
-        m_waiting_latch = co_await m_waiting_queue.acquire();
+        toolpex::errret_thrower{} << ::listen(m_sockfd, 4096);
         const auto& attrs = koios::get_task_scheduler().consumer_attrs();
         for (const auto& attr : attrs)
         {
-            if (m_stop_src.stop_requested()) break;
-            m_count.fetch_add();
             this->tcp_loop(m_stop_src.get_token(), callback).run(*attr);
         }
     }
 
 private:
-    friend class tcp_server_until_done_aw;
     lazy_task<void> tcp_loop(
         ::std::stop_token flag, 
         task_callable_concept auto userdefined) noexcept
     {
         using namespace ::std::string_literals;
 
+        wait_group_guard wg_handler{ m_wait_stop };
         while (!flag.stop_requested())
         {
             using namespace ::std::chrono_literals;
@@ -94,24 +94,15 @@ private:
             }
         }
 
-        if (m_count.fetch_sub() <= 1)
-            m_waiting_latch.unlock();
-
         co_return;
     }
-
-    void listen();
 
 private:
     toolpex::unique_posix_fd    m_sockfd;
     toolpex::ip_address::ptr    m_addr;
     ::in_port_t                 m_port;
     ::std::stop_source          m_stop_src;
-    toolpex::ref_count          m_count{};
-
-    mutable ::std::shared_mutex m_stop_related_lock;
-    mutable koios::mutex        m_waiting_queue;
-    koios::unique_lock<koios::mutex> m_waiting_latch;
+    wait_group                  m_wait_stop;
 };
 
 namespace tcp_server_literals

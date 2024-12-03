@@ -4,11 +4,11 @@
 #include "koios/task_scheduler_concept.h"
 #include "koios/task.h"
 #include <chrono>
-#include <iostream>
 #include <fcntl.h>
 #include <atomic>
 #include <vector>
 #include <fstream>
+#include <print>
 
 #include "koios/work_stealing_queue.h"
 #include "koios/moodycamel_queue_wrapper.h"
@@ -68,11 +68,10 @@ try
     koios::runtime_init(1);
     main_body().result();
     koios::runtime_exit();
-    ::std::cout << ::std::endl;
     return 0;
 }
 catch (const ::std::exception& e)
 {
-    ::std::cout << e.what() << ::std::endl;
+    ::std::println("{}", e.what());
     koios::runtime_exit();
 }

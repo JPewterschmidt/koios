@@ -8,6 +8,8 @@
 static size_t g_val{};
 constinit size_t g_test_count{ 9999 };
 
+// Unique
+
 static koios::task<void> func()
 {
     static koios::mutex s_mutex;
@@ -59,6 +61,21 @@ TEST(coro_lock, move_func)
     ASSERT_EQ(g_val2, 2 * g_test_count);
 }
 
+static koios::task<bool> try_acquire_test()
+{
+    koios::mutex lk;
+    auto guard1 = co_await lk.acquire();
+    auto guard2_opt = co_await lk.try_acquire();
+    co_return !guard2_opt.has_value();
+}
+
+TEST(coro_lock, try_acquire)
+{
+    ASSERT_TRUE(try_acquire_test().result());
+}
+
+// Shared
+
 namespace
 {
 
@@ -99,6 +116,13 @@ namespace
 
 koios::shared_mutex mut2;
 
+koios::task<bool> try_get_unique_during_writing()
+{
+    auto shr = co_await mut2.acquire_shared();
+    auto uni_opt = co_await mut2.try_acquire();
+    co_return !uni_opt.has_value();
+}
+
 koios::task<bool> get_shared_during_writing()
 {
     auto uni = co_await mut2.acquire();
@@ -111,4 +135,5 @@ koios::task<bool> get_shared_during_writing()
 TEST(coro_lock, shared_during_writing)
 {
     ASSERT_TRUE(get_shared_during_writing().result());
+    ASSERT_TRUE(try_get_unique_during_writing().result());
 }

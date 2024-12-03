@@ -27,15 +27,17 @@ public:
     acq_shr_lk_aw<shared_mutex> acquire_shared() noexcept { return { *this }; }
     acq_lk_aw<shared_mutex> acquire() noexcept { return { *this }; }
 
+    try_acq_shr_lk_aw<shared_mutex> try_acquire_shared() noexcept { return { *this }; }
+    try_acq_lk_aw<shared_mutex> try_acquire() noexcept { return { *this }; }
+
 private:
     template<typename T>
     friend class lock_base;
 
-    template<typename T>
-    friend class acq_lk_aw;
-    
-    template<typename T>
-    friend class acq_shr_lk_aw;
+    template<typename T> friend class acq_lk_aw;
+    template<typename T> friend class acq_shr_lk_aw;
+    template<typename T> friend class try_acq_lk_aw;
+    template<typename T> friend class try_acq_shr_lk_aw;
 
     void try_wake_up_next() noexcept;
 

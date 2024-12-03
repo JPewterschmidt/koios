@@ -53,11 +53,7 @@ public:
     {
     }
     
-    void await_suspend(task_on_the_fly h) noexcept 
-    { 
-        // Not possible be called.
-        toolpex_assert(false);
-    }
+    constexpr void await_suspend(task_on_the_fly h) noexcept { }
 
     constexpr bool await_ready() const noexcept { return true; }
 
@@ -105,6 +101,34 @@ public:
 private:
     Mutex& m_mutex;
 };
+
+template<typename Mutex>
+class try_acq_shr_lk_aw : public toolpex::move_only
+{
+public:
+    try_acq_shr_lk_aw(Mutex& mutex) noexcept
+        : m_mutex{ mutex }
+    {
+    }
+    
+    constexpr void await_suspend(task_on_the_fly h) noexcept { }
+
+    constexpr bool await_ready() const noexcept { return true; }
+
+    ::std::optional<shared_lock<Mutex>> await_resume() noexcept
+    {
+        ::std::optional<unique_lock<Mutex>> result;
+        if (m_mutex.hold_this_shr_immediately())
+        {
+            result.emplace(m_mutex);
+        }
+        return result;
+    }
+
+private:
+    Mutex& m_mutex;
+};
+
 
 } // namespace koios
 

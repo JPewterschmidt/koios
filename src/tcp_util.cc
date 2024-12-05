@@ -22,7 +22,7 @@ deplete_send_buffer(const toolpex::unique_posix_fd& fd,
     int outstanding = -1, ret{};
     for (;;)
     {
-        // Assume that the has been enabled O_NONBLOCK
+        // Assume that the fd has been enabled O_NONBLOCK
         if ((ret = ::ioctl(fd, SIOCOUTQ, &outstanding)) == -1)
         {
             ec = { errno, ::std::system_category() };

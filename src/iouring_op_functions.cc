@@ -202,7 +202,7 @@ socket_aw
 socket(int domain, int type, int protocal, unsigned int flags)
 {
     socket_aw result{};
-    result.batch().prep_socket(domain, type, protocal, flags);
+    result.batch().prep_socket(domain, type | SOCK_NONBLOCK, protocal, flags);
     return result;
 }
 

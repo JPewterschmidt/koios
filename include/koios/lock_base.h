@@ -24,7 +24,7 @@ public:
 
     lock_base(lock_base&& other) noexcept 
         : m_mutex{ ::std::exchange(other.m_mutex, nullptr) }, 
-          m_hold{ ::std::exchange(other.m_hold, false) }
+          m_owns{ ::std::exchange(other.m_owns, false) }
     {
     }
 
@@ -33,7 +33,7 @@ public:
         this->unlock();
 
         m_mutex = ::std::exchange(other.m_mutex, nullptr);
-        m_hold = ::std::exchange(other.m_hold, false);
+        m_owns = ::std::exchange(other.m_owns, false);
 
         return *this;
     }
@@ -45,20 +45,20 @@ public:
      */
     void unlock() noexcept
     {
-        if (m_mutex && this->is_hold())
+        if (m_mutex && this->owns_lock())
         {
             m_mutex->release();
-            m_hold = false;
+            m_owns = false;
         }
     }
 
     ~lock_base() noexcept { this->unlock(); }
 
-    bool is_hold() const noexcept { return m_hold; }
+    bool owns_lock() const noexcept { return m_owns; }
 
 protected:
     Mutex* m_mutex{};
-    bool m_hold{ true };
+    bool m_owns{ true };
 };
 
 } // namespace koios

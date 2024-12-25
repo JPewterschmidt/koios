@@ -52,23 +52,11 @@ try_wake_up_next() noexcept
     }
 }
 
-bool mutex::
-be_held() noexcept
-{
-    if (hold_this_immediately())
-    {
-        release();
-        return false;
-    }
-    return true;
-}
-
 void mutex::print_status()
 {
-    spdlog::info("mutex: {}, {} task(s) waiting, {} held.", 
+    spdlog::info("mutex: {}, {} task(s) waiting.", 
         m_uuid.to_string(), 
-        m_waitings.size_approx(),
-        (be_held() ? "is" : "is not")
+        m_waitings.size_approx()
     );
 }
 

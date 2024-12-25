@@ -41,8 +41,6 @@ public:
 
     try_acq_lk_aw<mutex> try_acquire() noexcept;
 
-    bool be_held() noexcept;
-
     void print_status();
 
     mutex();

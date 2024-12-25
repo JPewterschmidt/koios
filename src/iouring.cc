@@ -22,8 +22,17 @@ KOIOS_NAMESPACE_BEG
 
 using namespace ::std::chrono_literals;
 
+thread_local ::std::unique_ptr<iel_detials::iouring_event_loop_perthr> iouring_event_loop::m_impl{};
+
 namespace iel_detials
 {
+    void iouring_event_loop_perthr::
+    stop()
+    {
+        auto lk = get_lk();
+        m_stoped = true;
+    }
+
     void iouring_event_loop_perthr::
     mis_shot_this_time() noexcept 
     { 
@@ -59,6 +68,8 @@ namespace iel_detials
     do_occured_nonblk() noexcept
     {
         auto lk = this->get_lk();
+        if (m_stoped)
+            return false;
 
         const size_t left = ::io_uring_cq_ready(&m_ring);
         if (left == 0) 
@@ -96,6 +107,7 @@ namespace iel_detials
     {
         const uintptr_t addrkey = reinterpret_cast<uint64_t>(h.address());
         auto lk = this->get_lk();
+        if (m_stoped) return;
         toolpex_assert(!m_opreps.contains(addrkey));
         m_opreps.insert({addrkey, ::std::make_pair(&ops, ::std::move(h))});
         this->shot_this_time();
@@ -116,109 +128,59 @@ namespace iel_detials
     print_status() const
     {
         auto lk = this->get_lk();
-        spdlog::info("iouring per-thread status: has {} event(s) pending", m_opreps.size());
+        spdlog::info("iouring per-thread status: has {} event(s) pending{}.", m_opreps.size(), (m_stoped ? ", and stopped." : ""));
     }
 }
 
 void iouring_event_loop::
 thread_specific_preparation(const per_consumer_attr& attr)
 {
-    auto unilk = this->get_unilk();
-    m_impls.insert({
-        attr.thread_id, 
-        ::std::make_unique<
-            iel_detials::iouring_event_loop_perthr
-        >()
-    });
-}
-
-auto iouring_event_loop::
-shrlk_and_curthr_ptr() const
-{
-    const auto id = ::std::this_thread::get_id();
-    auto lk = this->get_shrlk();
-    auto it = m_impls.find(id);
-    return ::std::make_pair(::std::move(lk), (it != m_impls.end() ? it->second.get() : nullptr));
+    m_impl = ::std::make_unique<iel_detials::iouring_event_loop_perthr>();
 }
 
 bool iouring_event_loop::
 do_occured_nonblk()
 {
-    auto [lk, ptr] = this->shrlk_and_curthr_ptr();
-    if (!ptr && m_cleaning) [[unlikely]] return {};
-    else if (!ptr && !m_cleaning)
-    {
-        ::std::println(stderr,
-            "you should call async uring operation "
-            "in a lazy_task or any subsequent normal task."
-        );
-        ::exit(1);
-    }
-    return ptr->do_occured_nonblk();
+    toolpex_assert(m_impl);
+    return m_impl->do_occured_nonblk();
 }
 
 bool iouring_event_loop::
 empty() const
 {
-    auto [lk, ptr] = this->shrlk_and_curthr_ptr();
-
-    if (!ptr)
-    {
+    if (!m_impl) [[unlikely]]
         return true;
-    }
-    return ptr->empty();
+    return m_impl->empty();
 }
 
 void 
 iouring_event_loop::
 add_event(task_on_the_fly h, uring::op_batch_rep& ops)
 {
-    auto [lk, impl] = this->shrlk_and_curthr_ptr();
-    if (!impl && m_cleaning) [[unlikely]] return;
-    else if (!impl) 
-    {
-        ::std::println(stderr,  
-            "you should call async uring operation "
-            "in a lazy_task or any subsequent normal task."
-        );
-        ::exit(1);
-    }
-    return impl->add_event(::std::move(h), ops);
-}
-
-void iouring_event_loop::
-stop(::std::unique_lock<::std::shared_mutex> lk)
-{
-    m_cleaning = true;
+    toolpex_assert(m_impl);
+    return m_impl->add_event(::std::move(h), ops);
 }
 
 void iouring_event_loop::
 quick_stop()
 {
-    auto lk = this->get_unilk();
-    decltype(m_impls) going_to_die;
-    m_impls.swap(going_to_die);
-    this->stop(::std::move(lk));
+    if (m_impl)
+        m_impl->stop();
 }
 
 ::std::chrono::milliseconds 
 iouring_event_loop::
 max_sleep_duration(const per_consumer_attr& attr) const 
 {
-    auto lk = this->get_shrlk();
-    if (m_cleaning == true) [[unlikely]] return 10000ms;
-    if (auto it = m_impls.find(attr.thread_id); it != m_impls.end())
-        return ::std::min(200ms, it->second->max_sleep_duration());
-    return {};
+    if (m_cleaning.load(::std::memory_order_acquire)) [[unlikely]] return 10000ms;
+    toolpex_assert(m_impl);
+    return ::std::min(200ms, m_impl->max_sleep_duration());
 }
 
 void iouring_event_loop::print_status() const
 {
-    auto lk = this->get_shrlk();
-    for (const auto& [k, impl] : m_impls)
-    {
-        impl->print_status();
-    }
+    toolpex_assert(m_impl);
+    m_impl->print_status();
 }
 
 KOIOS_NAMESPACE_END

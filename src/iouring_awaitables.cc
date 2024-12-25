@@ -15,6 +15,7 @@ namespace koios::uring
                      ::in_port_t port, 
                      unsigned int flags)
     {
+        // Has to enable NONBLOCK since ther might be some async function relys on syscall outside iouring.
         auto sock_ret = co_await uring::socket(addr->family(), SOCK_STREAM, 0, flags);
         if (auto ec = sock_ret.error_code(); ec)
             throw koios::uring_exception{ ec };

@@ -49,6 +49,7 @@ namespace iel_detials
 
         bool do_occured_nonblk() noexcept;
         bool empty() const;
+        void stop();
 
     public:
         ::std::shared_ptr<task_release_once> 
@@ -70,6 +71,7 @@ namespace iel_detials
         void shot_this_time() noexcept;
 
     private:
+        bool m_stoped{};
         ::io_uring m_ring;
         ::std::unordered_map<
             uintptr_t, 
@@ -88,10 +90,6 @@ namespace iel_detials
  */
 class iouring_event_loop : public toolpex::move_only
 {
-private:
-    auto get_unilk() const { return ::std::unique_lock{ m_impls_lock }; }
-    auto get_shrlk() const { return ::std::shared_lock{ m_impls_lock }; }
-
 public:
     iouring_event_loop() = default;
 
@@ -104,7 +102,7 @@ public:
      *  \param  attr thread specific infomation.
      */
     void thread_specific_preparation(const per_consumer_attr& attr);
-    void stop() { stop(get_unilk()); }
+    void stop() { m_cleaning.store(true, ::std::memory_order_release); quick_stop(); }
     void quick_stop();
     bool do_occured_nonblk();
     bool empty() const;
@@ -135,16 +133,8 @@ public:
     void print_status() const;
 
 private:
-    void stop(::std::unique_lock<::std::shared_mutex> lk);
-    auto shrlk_and_curthr_ptr() const;
-
-private:
-    ::std::unordered_map<
-        ::std::thread::id, 
-        ::std::unique_ptr<iel_detials::iouring_event_loop_perthr>
-    > m_impls;
-    bool m_cleaning{ false };
-    mutable ::std::shared_mutex m_impls_lock;
+    static thread_local ::std::unique_ptr<iel_detials::iouring_event_loop_perthr> m_impl;
+    ::std::atomic_bool m_cleaning{ false };
 };
 
 KOIOS_NAMESPACE_END

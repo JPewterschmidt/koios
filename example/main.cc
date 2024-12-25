@@ -40,23 +40,17 @@ using namespace toolpex::ip_address_literals;
 
 namespace
 {
-    lazy_task<int> func()
+    lazy_task<int> func1(int i)
     {
-        co_return 1;
-    }
-    
-    generator<int> gen()
-    {
-        for (int i{}; i < 10; ++i)
-        {
-            co_yield co_await func() + i; 
-        }
-        co_return;
+        co_return 1 + i;
     }
 
     lazy_task<> main_body()
     {
-        co_await uring::unlink("./no-exists");
+        for (int i = 0; i < 10; ++i) 
+        {
+            (void) co_await func1(i);           
+        }
 
         co_return;
     }
@@ -65,7 +59,7 @@ namespace
 int main()
 try
 {
-    koios::runtime_init(1);
+    koios::runtime_init(2);
     main_body().result();
     koios::runtime_exit();
     return 0;

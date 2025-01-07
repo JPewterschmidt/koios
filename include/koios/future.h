@@ -94,6 +94,11 @@ public:
         return { *this }; 
     }
 
+    future_aw<future> operator co_await ()
+    {
+        return get_async();
+    }
+
     value_type get_nonblk() 
     {
         toolpex_assert(valid());

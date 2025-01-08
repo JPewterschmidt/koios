@@ -82,6 +82,10 @@ public:
 public:
     constexpr future() noexcept = default;
 
+    future(const future&) = delete;
+    future(future&& other) noexcept = default;
+    future& operator=(future&& other) noexcept = default;
+
     future(future_detials::shared_state<T>::sptr shared_state) noexcept
         : m_ss{ ::std::move(shared_state) }
     {

@@ -206,25 +206,25 @@ TEST(task, should_not_copy_ret)
 
 namespace
 {
-    task<int> wait_all1()
+    task<int> co_await_all1()
     {
         co_return 1;
     }
 
-    task<double> wait_all2()
+    task<double> co_await_all2()
     {
         co_return 1.0;
     }
 
-    task<lifetime> wait_all3()
+    task<lifetime> co_await_all3()
     {
         lifetime ret;
         co_return ret;
     }
 
-    lazy_task<bool> emit_wait_all_tests()
+    lazy_task<bool> emit_co_await_all_tests()
     {
-        auto [i, d, f] = co_await wait_all(wait_all1(), wait_all2(), wait_all3());
+        auto [i, d, f] = co_await co_await_all(co_await_all1(), co_await_all2(), co_await_all3());
         (void)i;
         (void)d;
         (void)f;
@@ -232,9 +232,9 @@ namespace
     }
 }
 
-TEST(task, wait_all)
+TEST(task, co_await_all)
 {
-    ASSERT_FALSE(emit_wait_all_tests().result());
+    ASSERT_FALSE(emit_co_await_all_tests().result());
 }
 
 namespace

@@ -39,7 +39,7 @@ auto make_lazy(Func f, Args... args)
 }
 
 template<awaitible_concept... Aws>
-auto wait_all(Aws... aws)
+auto co_await_all(Aws... aws)
     -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
 {
     co_return ::std::make_tuple((co_await ::std::move(aws))...);

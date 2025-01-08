@@ -64,9 +64,9 @@ auto co_await_all(Aws aws)
     -> task<::std::vector<awaitable_result_type_t<::std::ranges::range_value_t<Aws>>>>
 {
     ::std::vector<awaitable_result_type_t<::std::ranges::range_value_t<Aws>>> result;
-    for (auto& aw : aws)
+    for (auto&& aw : aws)
     {
-        result.push_back(co_await aw);
+        result.push_back(co_await ::std::forward<decltype(aw)>(aw));
     }
     co_return result;
 }
@@ -77,9 +77,9 @@ requires (::std::ranges::range<Aws>
       and ::std::same_as<void, awaitable_result_type_t<::std::ranges::range_value_t<Aws>>>)
 auto co_await_all(Aws aws) -> task<>
 {
-    for (auto& aw : aws)
+    for (auto&& aw : aws)
     {
-        co_await aw;
+        co_await ::std::forward<decltype(aw)>(aw);
     }
 }
 

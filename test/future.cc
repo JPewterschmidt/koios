@@ -96,7 +96,7 @@ task<int> test_future_aw_func()
 task<bool> test_future_aw()
 {
     koios::future<int> fut = test_future_aw_func().run_and_get_future();
-    co_return co_await fut.get_async() == 2333;
+    co_return co_await fut == 2333;
 }
     
 } // annoymous namespace

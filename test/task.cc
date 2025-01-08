@@ -7,8 +7,13 @@
 #include "koios/this_task.h"
 #include "koios/task_release_once.h"
 #include "koios/from_result.h"
+#include "koios/future.h"
+
+#include <ranges>
 
 using namespace koios;
+namespace r = ::std::ranges;
+namespace rv = ::std::ranges::views;
 
 namespace 
 {
@@ -206,35 +211,72 @@ TEST(task, should_not_copy_ret)
 
 namespace
 {
-    task<int> wait_all1()
+    task<int> co_await_all1()
     {
         co_return 1;
     }
 
-    task<double> wait_all2()
+    task<double> co_await_all2()
     {
         co_return 1.0;
     }
 
-    task<lifetime> wait_all3()
+    task<lifetime> co_await_all3()
     {
         lifetime ret;
         co_return ret;
     }
 
-    lazy_task<bool> emit_wait_all_tests()
+    lazy_task<bool> emit_co_await_all_tests()
     {
-        auto [i, d, f] = co_await wait_all(wait_all1(), wait_all2(), wait_all3());
+        auto [i, d, f] = co_await co_await_all(co_await_all1(), co_await_all2(), co_await_all3());
         (void)i;
         (void)d;
         (void)f;
         co_return hascopyed;
     }
+    
+    lazy_task<> emit_nothing()
+    {
+        co_return;
+    }
+
+    lazy_task<bool> emit_co_await_all_range()
+    {
+        ::std::vector<koios::future<int>> ifuts {};
+        ifuts.push_back(co_await_all1().run_and_get_future());
+        ifuts.push_back(co_await_all1().run_and_get_future());
+        ifuts.push_back(co_await_all1().run_and_get_future());
+        ifuts.push_back(co_await_all1().run_and_get_future());
+        ifuts.push_back(co_await_all1().run_and_get_future());
+        ifuts.push_back(co_await_all1().run_and_get_future());
+
+        const size_t ifuts_size = ifuts.size();
+        auto ret = co_await co_await_all(::std::move(ifuts));
+        co_return ret.size() == ifuts_size && ret[0] == ret[1];
+    }
+
+    lazy_task<bool> emit_co_await_all_range_nothing()
+    {
+        ::std::vector<koios::future<void>> ifuts {};
+        ifuts.push_back(emit_nothing().run_and_get_future());
+        ifuts.push_back(emit_nothing().run_and_get_future());
+        ifuts.push_back(emit_nothing().run_and_get_future());
+        ifuts.push_back(emit_nothing().run_and_get_future());
+        ifuts.push_back(emit_nothing().run_and_get_future());
+        ifuts.push_back(emit_nothing().run_and_get_future());
+
+        co_await co_await_all(::std::move(ifuts));
+
+        co_return true;
+    }
 }
 
-TEST(task, wait_all)
+TEST(task, co_await_all)
 {
-    ASSERT_FALSE(emit_wait_all_tests().result());
+    ASSERT_FALSE(emit_co_await_all_tests().result());
+    ASSERT_TRUE(emit_co_await_all_range().result());
+    ASSERT_TRUE(emit_co_await_all_range_nothing().result());
 }
 
 namespace

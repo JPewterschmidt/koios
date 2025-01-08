@@ -11,6 +11,8 @@
 #include "koios/task_concepts.h"
 #include <concepts>
 #include <tuple>
+#include <ranges>
+#include <vector>
 
 KOIOS_NAMESPACE_BEG
 
@@ -39,10 +41,46 @@ auto make_lazy(Func f, Args... args)
 }
 
 template<awaitible_concept... Aws>
-auto wait_all(Aws... aws)
+requires ((!::std::same_as<awaitable_result_type_t<Aws>, void>) and ...)
+auto co_await_all(Aws... aws)
     -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
 {
     co_return ::std::make_tuple((co_await ::std::move(aws))...);
+}
+
+template<awaitible_concept... Aws>
+requires (::std::same_as<awaitable_result_type_t<Aws>, void> and ...)
+auto co_await_all(Aws... aws)
+    -> task<::std::tuple<awaitable_result_type_t<Aws>...>>
+{
+    ((co_await ::std::move(aws)), ...);
+}
+
+template<typename Aws>
+requires (::std::ranges::range<Aws> 
+      and awaitible_concept<::std::ranges::range_value_t<Aws>>
+      and !::std::same_as<void, awaitable_result_type_t<::std::ranges::range_value_t<Aws>>>)
+auto co_await_all(Aws aws)
+    -> task<::std::vector<awaitable_result_type_t<::std::ranges::range_value_t<Aws>>>>
+{
+    ::std::vector<awaitable_result_type_t<::std::ranges::range_value_t<Aws>>> result;
+    for (auto& aw : aws)
+    {
+        result.push_back(co_await aw);
+    }
+    co_return result;
+}
+
+template<typename Aws>
+requires (::std::ranges::range<Aws> 
+      and awaitible_concept<::std::ranges::range_value_t<Aws>>
+      and ::std::same_as<void, awaitable_result_type_t<::std::ranges::range_value_t<Aws>>>)
+auto co_await_all(Aws aws) -> task<>
+{
+    for (auto& aw : aws)
+    {
+        co_await aw;
+    }
 }
 
 KOIOS_NAMESPACE_END

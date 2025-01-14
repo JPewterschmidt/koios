@@ -41,7 +41,7 @@ namespace iqw_detials
 class invocable_queue_wrapper
 {
 public:
-    using invocable_type = ::std::move_only_function<void()>;
+    using invocable_type = ::std::function<void()>;
 
 public:
 #define CAST(p) (reinterpret_cast<Queue*>(p))

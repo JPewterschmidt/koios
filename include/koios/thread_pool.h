@@ -184,7 +184,7 @@ protected:
         // which will cause problem like *use-after-free* or *double-free*.
 
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
-        m_tasks.enqueue([task = ::std::move(task)] mutable { task(); });
+        m_tasks.enqueue([task = ::std::move(task)] () mutable { task(); });
         this->wake_up();
     }
 
@@ -192,7 +192,7 @@ protected:
     void enqueue_no_future_without_checking(const per_consumer_attr& ca, F&& func, Args&&... args) noexcept
     {
         auto task = ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...);
-        m_tasks.enqueue(ca, [task = ::std::move(task)] mutable { task(); });
+        m_tasks.enqueue(ca, [task = ::std::move(task)] () mutable { task(); });
         this->wake_up();
     }
 
@@ -209,7 +209,7 @@ protected:
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
         auto result = task->get_future();
-        m_tasks.enqueue([task] mutable { (*task)(); });
+        m_tasks.enqueue([task] () mutable { (*task)(); });
         this->wake_up();
 
         return result;
@@ -228,7 +228,7 @@ protected:
             ::std::bind(::std::forward<F>(func), ::std::forward<Args>(args)...)
         );
         auto result = task->get_future();
-        m_tasks.enqueue(ca, [task] mutable { (*task)(); });
+        m_tasks.enqueue(ca, [task] () mutable { (*task)(); });
         this->wake_up();
 
         return result;

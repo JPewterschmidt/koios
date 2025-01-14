@@ -2,7 +2,6 @@
 #include "koios/invocable_queue_wrapper.h"
 #include "koios/std_queue_wrapper.h"
 #include "koios/per_consumer_attr.h"
-#include "toolpex/unique_resource.h"
 
 namespace
 {
@@ -19,7 +18,7 @@ TEST(invocable_queue_wrapper, special_member_func)
         koios::invocable_queue_wrapper iqw{ std_queue_wrapper{} };
 
         for (size_t i{}; i < 10; ++i)
-            iqw.enqueue([h = toolpex::unique_resource(1, [](int*){ ++dtor_count; })]{ ++basic_count; });
+            iqw.enqueue([]{ ++basic_count; });
 
         koios::invocable_queue_wrapper iqw2{ ::std::move(iqw) };
 

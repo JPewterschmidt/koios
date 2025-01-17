@@ -18,7 +18,6 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
-#include "koios/promise_wrapper.h"
 #include "koios/return_value_or_void.h"
 #include "koios/task_scheduler.h"
 #include "koios/task_on_the_fly.h"

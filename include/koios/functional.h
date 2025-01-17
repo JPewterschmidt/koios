@@ -35,10 +35,10 @@ auto make_lazy(Func f, Args... args)
 
 template<typename Func, typename... Args>
 requires (lazy_task_callable_concept<Func>)
-auto make_lazy(Func f, Args... args)
+auto make_lazy(Func f, Args&&... args)
     -> lazy_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
-    return f(::std::move(args)...);
+    return f(::std::forward<Args>(args)...);
 }
 
 template<awaitible_concept... Aws>

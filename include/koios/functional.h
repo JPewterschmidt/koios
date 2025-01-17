@@ -83,6 +83,21 @@ auto co_await_all(Aws aws) -> task<>
     }
 }
 
+template<typename... Args>
+task<> for_each(::std::ranges::range auto&& r, task_concept auto t, Args&&... args)
+{
+    ::std::vector<koios::future<void>> futs;
+    for (auto&& item : ::std::forward<decltype(r)>(r))
+    {
+        futs.push_back(make_lazy(
+            t, 
+            ::std::forward<decltype(item)>(item), 
+            ::std::forward<Args>(args)...
+        ).run_and_get_future());
+    }
+    co_await co_await_all(::std::move(futs));
+}
+
 KOIOS_NAMESPACE_END
 
 #endif

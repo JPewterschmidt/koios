@@ -81,6 +81,17 @@ namespace
 
         co_return result == ::std::vector{ 0,2,4,6,8, };
     }
+
+    lazy_task<bool> emit_for_each_test2()
+    {
+        auto ivec1 = rv::iota(0, 5) | r::to<::std::vector>();
+        auto ivec2 = rv::iota(0, 5) | r::to<::std::vector>();
+        ::std::vector<int> result(ivec1.size(), 0);
+
+        co_await for_each_dispatch_evenly(rv::iota(0, 5), for_each_dummy, ivec1, ivec2, result);
+
+        co_return result == ::std::vector{ 0,2,4,6,8, };
+    }
 }
 
 TEST(functional, co_await_all)
@@ -93,4 +104,5 @@ TEST(functional, co_await_all)
 TEST(functional, for_each)
 {
     ASSERT_TRUE(emit_for_each_test().result());
+    ASSERT_TRUE(emit_for_each_test2().result());
 }

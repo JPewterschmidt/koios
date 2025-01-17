@@ -14,6 +14,7 @@
 #include <tuple>
 #include <ranges>
 #include <vector>
+#include <atomic>
 
 KOIOS_NAMESPACE_BEG
 
@@ -103,7 +104,7 @@ template<typename... Args>
 task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_concept auto t, Args&&... args)
 {
     ::std::vector<koios::future<void>> futs;
-    static size_t dispatcher{};
+    static ::std::atomic_size_t dispatcher{};
     const auto& thr_attrs = get_task_scheduler().consumer_attrs();
     for (auto&& item : ::std::forward<decltype(r)>(r))
     {
@@ -111,7 +112,7 @@ task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_con
             t, 
             ::std::forward<decltype(item)>(item), 
             ::std::forward<Args>(args)...
-        ).run_and_get_future_on(thr_attrs[dispatcher++ % thr_attrs.size()]));
+        ).run_and_get_future(*thr_attrs[dispatcher.fetch_add(1, ::std::memory_order_relaxed) % thr_attrs.size()]));
     }
     co_await co_await_all(::std::move(futs));
 }

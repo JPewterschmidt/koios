@@ -9,6 +9,7 @@
 #include "koios/macros.h"
 #include "koios/task.h"
 #include "koios/task_concepts.h"
+#include "koios/runtime.h"
 #include <concepts>
 #include <tuple>
 #include <ranges>
@@ -84,7 +85,7 @@ auto co_await_all(Aws aws) -> task<>
 }
 
 template<typename... Args>
-task<> for_each(::std::ranges::range auto&& r, task_concept auto t, Args&&... args)
+task<> for_each(::std::ranges::range auto&& r, task_callable_concept auto t, Args&&... args)
 {
     ::std::vector<koios::future<void>> futs;
     for (auto&& item : ::std::forward<decltype(r)>(r))
@@ -94,6 +95,23 @@ task<> for_each(::std::ranges::range auto&& r, task_concept auto t, Args&&... ar
             ::std::forward<decltype(item)>(item), 
             ::std::forward<Args>(args)...
         ).run_and_get_future());
+    }
+    co_await co_await_all(::std::move(futs));
+}
+
+template<typename... Args>
+task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_concept auto t, Args&&... args)
+{
+    ::std::vector<koios::future<void>> futs;
+    static size_t dispatcher{};
+    const auto& thr_attrs = get_task_scheduler().consumer_attrs();
+    for (auto&& item : ::std::forward<decltype(r)>(r))
+    {
+        futs.push_back(make_lazy(
+            t, 
+            ::std::forward<decltype(item)>(item), 
+            ::std::forward<Args>(args)...
+        ).run_and_get_future_on(thr_attrs[dispatcher++ % thr_attrs.size()]));
     }
     co_await co_await_all(::std::move(futs));
 }

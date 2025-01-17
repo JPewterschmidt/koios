@@ -22,12 +22,6 @@ concept task_scheduler_concept = requires(TS ts)
     { ts.enqueue(::std::declval<koios::task_on_the_fly>()) };
 };
 
-template<typename TS>
-concept task_scheduler_wrapper_concept = task_scheduler_concept<TS> && requires(TS ts)
-{
-    { typename TS::is_wrapper_t{} } -> ::std::same_as<::std::true_type>;
-};
-
 KOIOS_NAMESPACE_END
 
 #endif

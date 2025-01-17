@@ -9,7 +9,6 @@
 #include "koios/macros.h"
 #include "koios/local_thread_scheduler.h"
 #include "koios/runtime.h"
-#include "koios/task_scheduler_wrapper.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/exceptions.h" // logging
 #include <sstream>            // logging

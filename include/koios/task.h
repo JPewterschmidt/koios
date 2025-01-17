@@ -18,9 +18,8 @@
 
 #include "koios/macros.h"
 #include "koios/promise_base.h"
-#include "koios/promise_wrapper.h"
 #include "koios/return_value_or_void.h"
-#include "koios/task_scheduler_wrapper.h"
+#include "koios/task_scheduler.h"
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
 #include "koios/per_consumer_attr.h"
@@ -131,7 +130,7 @@ public:
     }
 
     void 
-    run_on(const task_scheduler_wrapper& schr)
+    run_on(task_scheduler& schr)
     {
         static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
@@ -148,7 +147,7 @@ public:
     }
 
     void 
-    run_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+    run_on(const per_consumer_attr& attr, task_scheduler& schr)
     {
         static_assert(this->is_return_void() || this->is_discardable(), 
                       "This is an non-discardable task, "
@@ -182,7 +181,7 @@ public:
         return this->run_and_get_future_on(attr, get_task_scheduler());
     }
 
-    [[nodiscard]] future_type run_and_get_future_on(const task_scheduler_wrapper& schr)
+    [[nodiscard]] future_type run_and_get_future_on(task_scheduler& schr)
     {
         auto result = this->get_future();
         if constexpr (!this->is_eager())
@@ -198,7 +197,7 @@ public:
     }
 
     [[nodiscard]] future_type run_and_get_future_on(
-        const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+        const per_consumer_attr& attr, task_scheduler& schr)
     {
         auto result = this->get_future();
         if constexpr (!this->is_eager())
@@ -233,14 +232,14 @@ public:
         return this->result_on(attr, get_task_scheduler());
     }
 
-    [[nodiscard]] auto result_on(const task_scheduler_wrapper& schr)
+    [[nodiscard]] auto result_on(task_scheduler& schr)
     {
         if constexpr (this->is_return_void())
             this->run_and_get_future_on(schr).get();
         else return this->run_and_get_future_on(schr).get();
     }
 
-    [[nodiscard]] auto result_on(const per_consumer_attr& attr, const task_scheduler_wrapper& schr)
+    [[nodiscard]] auto result_on(const per_consumer_attr& attr, task_scheduler& schr)
     {
         if constexpr (this->is_return_void())
             this->run_and_get_future_on(attr, schr).get();

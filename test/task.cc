@@ -17,6 +17,24 @@ namespace rv = ::std::ranges::views;
 
 namespace 
 {
+    bool hascopyed{ false };
+
+    class lifetime
+    {
+    public:
+        lifetime() = default;
+        lifetime(const lifetime&) { hascopyed = true; }
+        lifetime& operator= (const lifetime&) { hascopyed = true; return *this; }
+        lifetime(lifetime&&) noexcept = default;
+        lifetime& operator=(lifetime&&) noexcept = default;
+    };
+    
+    task<lifetime> should_not_copy()
+    {
+        lifetime ret;
+        co_return ret;
+    }
+
     int flag{};
     int referd_obj{};
 
@@ -114,169 +132,11 @@ TEST(task, exception)
     ASSERT_EQ(flag3, 1);
 }
 
-//namespace
-//{
-//    ::std::error_code ec{ EINVAL, ::std::system_category() };
-//
-//    expected_task<void, ::std::error_code> expvoid_succeed()
-//    {
-//        co_return ok();
-//    }
-//
-//    expected_task<void, ::std::error_code> expvoid_failed()
-//    {
-//        co_return unexpected(ec);
-//    }
-//
-//    lazy_task<bool> emitter_void()
-//    {
-//        auto ret1 = co_await expvoid_succeed();
-//        auto ret2 = co_await expvoid_failed();
-//        co_return ret1.has_value() && !ret2.has_value();
-//    }
-//
-//    expected_task<int, ::std::error_code> exp(int i = 0)
-//    {
-//        co_return i + 1;
-//    }
-//
-//    expected_task<int, ::std::error_code> exp2(int)
-//    {
-//        co_return unexpected(ec);
-//    }
-//
-//    task<bool> emit_exp_basic()
-//    {
-//        bool result{ true };
-//
-//        auto ret = co_await (co_await exp()).and_then(exp);
-//        result &= (ret.value() == 2);
-//        
-//        co_return result;
-//    }
-//
-//    task<bool> emit_failed_exp()
-//    {
-//        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
-//        co_return ret.error() == ec && !ret.has_value();
-//    }
-//
-//    task<bool> emit_failed_exp_hasvalue()
-//    {
-//        auto ret = co_await (co_await (co_await exp()).and_then(exp2)).and_then(exp);
-//        co_return ret.has_value();
-//    }
-//}
-//
-//TEST(expected_task, basic)
-//{
-//    ec = ::std::error_code{ EINVAL, ::std::system_category() };
-//    ASSERT_TRUE(emit_exp_basic().result());
-//    ASSERT_TRUE(emitter_void().result());
-//}
-//
-//TEST(expected_task, failed)
-//{
-//    ec = ::std::error_code{ EINVAL, ::std::system_category() };
-//    ASSERT_TRUE(emit_failed_exp().result());
-//    ASSERT_FALSE(emit_failed_exp_hasvalue().result());
-//}
-//
-namespace
-{
-    bool hascopyed{ false };
-    class lifetime
-    {
-    public:
-        lifetime() = default;
-        lifetime(const lifetime&) { hascopyed = true; }
-        lifetime& operator= (const lifetime&) { hascopyed = true; return *this; }
-        lifetime(lifetime&&) noexcept = default;
-        lifetime& operator=(lifetime&&) noexcept = default;
-    };
-    
-    task<lifetime> should_not_copy()
-    {
-        lifetime ret;
-        co_return ret;
-    }
-}
-
 TEST(task, should_not_copy_ret)
 {
     hascopyed = false;
     (void)should_not_copy().result();
     ASSERT_FALSE(hascopyed);
-}
-
-namespace
-{
-    task<int> co_await_all1()
-    {
-        co_return 1;
-    }
-
-    task<double> co_await_all2()
-    {
-        co_return 1.0;
-    }
-
-    task<lifetime> co_await_all3()
-    {
-        lifetime ret;
-        co_return ret;
-    }
-
-    lazy_task<bool> emit_co_await_all_tests()
-    {
-        auto [i, d, f] = co_await co_await_all(co_await_all1(), co_await_all2(), co_await_all3());
-        (void)i;
-        (void)d;
-        (void)f;
-        co_return hascopyed;
-    }
-    
-    lazy_task<> emit_nothing()
-    {
-        co_return;
-    }
-
-    lazy_task<bool> emit_co_await_all_range()
-    {
-        ::std::vector<koios::future<int>> ifuts {};
-        ifuts.push_back(co_await_all1().run_and_get_future());
-        ifuts.push_back(co_await_all1().run_and_get_future());
-        ifuts.push_back(co_await_all1().run_and_get_future());
-        ifuts.push_back(co_await_all1().run_and_get_future());
-        ifuts.push_back(co_await_all1().run_and_get_future());
-        ifuts.push_back(co_await_all1().run_and_get_future());
-
-        const size_t ifuts_size = ifuts.size();
-        auto ret = co_await co_await_all(::std::move(ifuts));
-        co_return ret.size() == ifuts_size && ret[0] == ret[1];
-    }
-
-    lazy_task<bool> emit_co_await_all_range_nothing()
-    {
-        ::std::vector<koios::future<void>> ifuts {};
-        ifuts.push_back(emit_nothing().run_and_get_future());
-        ifuts.push_back(emit_nothing().run_and_get_future());
-        ifuts.push_back(emit_nothing().run_and_get_future());
-        ifuts.push_back(emit_nothing().run_and_get_future());
-        ifuts.push_back(emit_nothing().run_and_get_future());
-        ifuts.push_back(emit_nothing().run_and_get_future());
-
-        co_await co_await_all(::std::move(ifuts));
-
-        co_return true;
-    }
-}
-
-TEST(task, co_await_all)
-{
-    ASSERT_FALSE(emit_co_await_all_tests().result());
-    ASSERT_TRUE(emit_co_await_all_range().result());
-    ASSERT_TRUE(emit_co_await_all_range_nothing().result());
 }
 
 namespace

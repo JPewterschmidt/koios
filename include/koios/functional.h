@@ -9,6 +9,7 @@
 #include "koios/macros.h"
 #include "koios/task.h"
 #include "koios/task_concepts.h"
+#include "koios/runtime.h"
 #include <concepts>
 #include <tuple>
 #include <ranges>
@@ -34,10 +35,10 @@ auto make_lazy(Func f, Args... args)
 
 template<typename Func, typename... Args>
 requires (lazy_task_callable_concept<Func>)
-auto make_lazy(Func f, Args... args)
+auto make_lazy(Func f, Args&&... args)
     -> lazy_task<typename toolpex::get_return_type_t<Func>::value_type>
 {
-    return f(::std::move(args)...);
+    return f(::std::forward<Args>(args)...);
 }
 
 template<awaitible_concept... Aws>
@@ -81,6 +82,38 @@ auto co_await_all(Aws aws) -> task<>
     {
         co_await ::std::forward<decltype(aw)>(aw);
     }
+}
+
+template<typename... Args>
+task<> for_each(::std::ranges::range auto&& r, task_callable_concept auto t, Args&&... args)
+{
+    ::std::vector<koios::future<void>> futs;
+    for (auto&& item : ::std::forward<decltype(r)>(r))
+    {
+        futs.push_back(make_lazy(
+            t, 
+            ::std::forward<decltype(item)>(item), 
+            ::std::forward<Args>(args)...
+        ).run_and_get_future());
+    }
+    co_await co_await_all(::std::move(futs));
+}
+
+template<typename... Args>
+task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_concept auto t, Args&&... args)
+{
+    ::std::vector<koios::future<void>> futs;
+    static size_t dispatcher{};
+    const auto& thr_attrs = get_task_scheduler().consumer_attrs();
+    for (auto&& item : ::std::forward<decltype(r)>(r))
+    {
+        futs.push_back(make_lazy(
+            t, 
+            ::std::forward<decltype(item)>(item), 
+            ::std::forward<Args>(args)...
+        ).run_and_get_future_on(thr_attrs[dispatcher++ % thr_attrs.size()]));
+    }
+    co_await co_await_all(::std::move(futs));
 }
 
 KOIOS_NAMESPACE_END

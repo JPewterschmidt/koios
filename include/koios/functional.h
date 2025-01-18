@@ -100,7 +100,7 @@ task<> for_each(::std::ranges::range auto&& r, task_callable_concept auto t, Arg
 
     auto args_here = ::std::forward_as_tuple(::std::forward<Args>(args)...);
 
-    auto aws = r | rv::transform([&](auto&& item) mutable { 
+    auto aws = ::std::forward<decltype(r)>(r) | rv::transform([&](auto&& item) mutable { 
         auto packed = ::std::tuple_cat(::std::forward_as_tuple(::std::forward<decltype(item)>(item)), args_here);
         return ::std::apply([&](auto&& item, auto&&... args) mutable { 
             return make_lazy(t, ::std::forward<decltype(item)>(item), ::std::forward<decltype(args)>(args)...).run_and_get_future();
@@ -130,7 +130,7 @@ task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_con
 
     auto args_here = ::std::forward_as_tuple(::std::forward<Args>(args)...);
 
-    auto aws = r | rv::transform([&](auto&& item) mutable { 
+    auto aws = ::std::forward<decltype(r)>(r) | rv::transform([&](auto&& item) mutable { 
         auto packed = ::std::tuple_cat(::std::forward_as_tuple(::std::forward<decltype(item)>(item)), args_here);
         return ::std::apply([&](auto&& item, auto&&... args) mutable { 
             return make_lazy(t, ::std::forward<decltype(item)>(item), ::std::forward<Args>(args)...)

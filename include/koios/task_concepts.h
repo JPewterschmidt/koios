@@ -83,6 +83,9 @@ concept lazy_task_concept =
 template<typename Func>
 concept task_callable_concept = task_concept<toolpex::get_return_type_t<Func>>;
 
+template<typename Func>
+concept regular_callable_concept = not task_callable_concept<Func> and ::std::invocable<Func>;
+
 template<typename Func, typename Ret>
 concept task_callable_with_result_concept = 
     task_callable_concept<Func> && 

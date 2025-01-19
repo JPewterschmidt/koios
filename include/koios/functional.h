@@ -142,6 +142,18 @@ task<> for_each_dispatch_evenly(::std::ranges::range auto&& r, task_callable_con
     co_await co_await_all(aws);
 }
 
+task<> for_each_int(int beg, int end, task_callable_concept auto t, auto&&... args)
+{
+    namespace rv = ::std::ranges::views;
+    return for_each(rv::iota(beg, end), ::std::move(t), ::std::forward<decltype(args)>(args)...);
+}
+
+task<> for_each_int_dispatch_evenly(int beg, int end, task_callable_concept auto t, auto&&... args)
+{
+    namespace rv = ::std::ranges::views;
+    return for_each_dispatch_evenly(rv::iota(beg, end), ::std::move(t), ::std::forward<decltype(args)>(args)...);
+}
+
 KOIOS_NAMESPACE_END
 
 #endif

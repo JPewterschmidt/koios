@@ -4,7 +4,7 @@
 // Copyleft 2023 - 2024, ShiXin Wang. All wrongs reserved.
 
 #include "koios/error_category.h"
-#include "toolpex/functional.h"
+#include "toolpex/string_ext.h"
 #include <unordered_map>
 #include "magic_enum.hpp"
 

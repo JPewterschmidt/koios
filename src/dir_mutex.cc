@@ -12,7 +12,7 @@
 
 #include "toolpex/exceptions.h"
 #include "toolpex/errret_thrower.h"
-#include "toolpex/functional.h"
+#include "toolpex/string_ext.h"
 
 #include "koios/dir_mutex.h"
 #include "koios/iouring_awaitables.h"

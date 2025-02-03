@@ -52,6 +52,17 @@ struct shared_state
     {
         m_yielded_val.set_value(::std::forward<TT>(val));
     }
+
+    /*! \brief The function that destroy the generator frame.
+     *
+     *  \attention How ever use this function has to make sure that the generator is in suspended mode.
+     *             This function will be called by generator's destructor when for those calls not exhausts a generator.
+     */
+    void destroy() noexcept
+    {
+        m_finalized = true;
+        m_generator_coro = {};
+    }
 };
 
 template<typename T>
@@ -252,6 +263,12 @@ public:
     _type(const _type&) = delete;
     _type(_type&& other) noexcept = default;
     _type& operator = (_type&& other) noexcept = default;
+    ~_type() noexcept 
+    {
+        if (!m_shared_state)
+            return;
+        m_shared_state->destroy();
+    }
 
 private:
     _type(task_on_the_fly h, generator_detials::shared_state_sptr<T> storage) noexcept

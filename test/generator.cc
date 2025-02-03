@@ -194,3 +194,31 @@ TEST(generator, g_t)
 {
     ASSERT_EQ(g_t_test_body().result(), (::std::vector<int>{ 0,1,2,3,4,5,6,7,8,9,0 }));
 }
+
+namespace
+{
+    bool generator_lifetime_success{};
+    generator<int> lifetime_generator_test()
+    {
+        struct true_setter
+        {
+            ~true_setter() noexcept { generator_lifetime_success = true; }
+        } _;
+
+        for (int i{}; i < 10; ++i)
+            co_yield i;
+    }
+    
+    lazy_task<> half_way_consumer()
+    {
+        auto gen = lifetime_generator_test();
+        (void) co_await gen.next_value_async();
+    }
+}
+
+TEST(generator, lifetime)
+{
+    half_way_consumer().result();
+    ASSERT_TRUE(generator_lifetime_success);
+}
+

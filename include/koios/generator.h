@@ -39,7 +39,6 @@ template<typename T, typename Alloc>
 class generator_promise_type 
     : public promise_base<lazy_aw, destroy_aw>
 {
-    size_t m_debug_canary{888};
 public:
     /*! The deleter for `::std::unique_ptr`, which firstly destruct the object on it,
      *  the deallocate it by the allocator.

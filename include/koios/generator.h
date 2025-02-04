@@ -120,26 +120,32 @@ public:
 
         struct yield_generator_getter_aw 
         { 
-            yield_generator_getter_aw(generator_promise_type* parent, bool finalized) noexcept
-                : m_parent{ parent }, m_ss{ m_parent->m_shared_state }, m_finalized{ finalized }
+            yield_generator_getter_aw(generator_promise_type* parent) noexcept
+                : m_parent{ parent }, m_ss{ m_parent->m_shared_state }
             {
             }
 
             constexpr bool await_ready() const noexcept { return false; }
             void await_suspend(task_on_the_fly h) noexcept
             {
-                m_ss->set_generator_coro(m_finalized ? task_on_the_fly{} : ::std::move(h));
-                wake_up(m_ss->get_waiting_coro());
+                if (m_ss->finalized())
+                {
+                    m_ss->try_finalize();
+                }
+                else 
+                {
+                    m_ss->set_generator_coro(::std::move(h));
+                    wake_up(m_ss->get_waiting_coro());
+                }
             }
             
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
             generator_details::shared_state_sptr<T> m_ss;
-            bool m_finalized{};
         };
 
-        return yield_generator_getter_aw{ this, finalized() };
+        return yield_generator_getter_aw{ this };
     }
 
     /*! \retval true Current yield value was not been moved.
@@ -220,7 +226,7 @@ public:
     {
         if (!m_shared_state)
             return;
-        m_shared_state->cancel();
+        m_shared_state->try_finalize();
     }
 
 private:

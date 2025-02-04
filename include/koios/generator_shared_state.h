@@ -44,13 +44,6 @@ public:
         m_yielded_val.set_value(::std::forward<TT>(val));
     }
 
-    /*! \brief The function that mark then consumer side was die.
-     *
-     *  \attention How ever use this function has to make sure that the generator is in suspended mode.
-     *             This function will be called by generator's destructor when for those calls not exhausts a generator.
-     */
-    void cancel() noexcept { set_finalized(); }
-
     void set_generator_coro(task_on_the_fly f) noexcept
     {
         ::std::lock_guard _{ m_lock };
@@ -90,6 +83,15 @@ public:
     { 
         ::std::lock_guard _{ m_lock };
         return !!m_generator_coro; 
+    }
+
+    void try_finalize() noexcept
+    {
+        ::std::lock_guard _{ m_lock };
+        toolpex_assert(!m_waiting_coro);
+        m_finalized = true;
+        if (!!m_generator_coro)
+            m_generator_coro = {};
     }
 
     // This two functions bwlow are not necessaryly to be protected by lock, 

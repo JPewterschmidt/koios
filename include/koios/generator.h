@@ -15,114 +15,14 @@
 #include <functional>
 #include <atomic>
 
-#include "toolpex/object_storage.h"
-#include "toolpex/spin_lock.h"
-
-#include "koios/macros.h"
 #include "koios/promise_base.h"
 
+#include "koios/generator_shared_state.h"
 #include "koios/generator_concepts.h"
-#include "koios/task_on_the_fly.h"
-#include "koios/waiting_handle.h"
 #include "koios/task.h"
 
-KOIOS_NAMESPACE_BEG
-
-namespace generator_detials
+namespace koios
 {
-
-template<typename T>
-class shared_state
-{
-private:
-    task_on_the_fly m_generator_coro;
-    task_on_the_fly m_waiting_coro;
-    toolpex::object_storage<T> m_yielded_val;
-    ::std::atomic_bool m_finalized{};
-    mutable toolpex::spin_lock m_lock;
-
-public:
-    bool has_value() const noexcept
-    {
-        ::std::lock_guard _{ m_lock };
-        return !m_finalized.load(::std::memory_order_acquire) && m_yielded_val.has_value();
-    }
-
-    void set_finalized() noexcept 
-    { 
-        m_finalized.store(true, ::std::memory_order_release);
-    }
-
-    bool finalized() const noexcept 
-    { 
-        return m_finalized.load(::std::memory_order_acquire);
-    }
-
-    template<typename TT>
-    void set_value(TT&& val)
-    {
-        ::std::lock_guard _{ m_lock };
-        m_yielded_val.set_value(::std::forward<TT>(val));
-    }
-
-    /*! \brief The function that mark then consumer side was die.
-     *
-     *  \attention How ever use this function has to make sure that the generator is in suspended mode.
-     *             This function will be called by generator's destructor when for those calls not exhausts a generator.
-     */
-    void cancel() noexcept { set_finalized(); }
-
-    void set_generator_coro(task_on_the_fly f) noexcept
-    {
-        ::std::lock_guard _{ m_lock };
-        toolpex_assert(!m_generator_coro);
-        m_generator_coro = ::std::move(f);
-    }
-
-    auto get_generator_coro() noexcept
-    {
-        ::std::lock_guard _{ m_lock };
-        toolpex_assert(!!m_generator_coro);
-        return ::std::move(m_generator_coro);
-    }
-
-    void set_waiting_coro(task_on_the_fly f) noexcept
-    {
-        ::std::lock_guard _{ m_lock };
-        toolpex_assert(!m_waiting_coro);
-        m_waiting_coro = ::std::move(f);
-    }
-
-    auto get_waiting_coro() noexcept
-    {
-        ::std::lock_guard _{ m_lock };
-        // If there're no one still waiting for the generator, then nothing to return. 
-        // Thus no need to check whether there's waiting coro handler.
-        return ::std::move(m_waiting_coro);
-    }
-
-    bool has_waiting_coro() const noexcept 
-    { 
-        ::std::lock_guard _{ m_lock };
-        return !!m_waiting_coro; 
-    }
-
-    bool has_generator_coro() const noexcept 
-    { 
-        ::std::lock_guard _{ m_lock };
-        return !!m_generator_coro; 
-    }
-
-    // This two functions bwlow are not necessaryly to be protected by lock, 
-    // since there's only one thread could yield value once a time.
-    auto& yielded_value_slot() noexcept { return m_yielded_val; }
-    const auto& yielded_value_slot() const noexcept { return m_yielded_val; }
-};
-
-template<typename T>
-using shared_state_sptr = ::std::shared_ptr<shared_state<T>>;
-
-} // namespace generator_detials
 
 template<typename T, typename Alloc>
 struct _generator
@@ -158,13 +58,13 @@ public:
     ~generator_promise_type() noexcept = default;
 
 private:
-    generator_detials::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_detials::shared_state<T>>() };
+    generator_details::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_details::shared_state<T>>() };
 
 public:
     class get_yielded_aw
     {
     public:
-        get_yielded_aw(generator_detials::shared_state_sptr<T> ss) noexcept
+        get_yielded_aw(generator_details::shared_state_sptr<T> ss) noexcept
             : m_ss{ ss }
         {
         }
@@ -190,7 +90,7 @@ public:
         }
 
     private:
-        generator_detials::shared_state_sptr<T> m_ss;
+        generator_details::shared_state_sptr<T> m_ss;
     };
 
 public:
@@ -235,7 +135,7 @@ public:
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
-            generator_detials::shared_state_sptr<T> m_ss;
+            generator_details::shared_state_sptr<T> m_ss;
             bool m_finalized{};
         };
 
@@ -255,7 +155,7 @@ public:
      */
     T value()
     {
-        generator_detials::shared_state<T> c = m_shared_state->get_value();
+        generator_details::shared_state<T> c = m_shared_state->get_value();
         T result = ::std::move(c.m_yielded_val);
         return result;
     }
@@ -324,13 +224,13 @@ public:
     }
 
 private:
-    _type(task_on_the_fly h, generator_detials::shared_state_sptr<T> storage) noexcept
+    _type(task_on_the_fly h, generator_details::shared_state_sptr<T> storage) noexcept
         : m_shared_state{ ::std::move(storage) }
     {
         m_shared_state->set_generator_coro(::std::move(h));
     }
 
-    generator_detials::shared_state_sptr<T> m_shared_state;
+    generator_details::shared_state_sptr<T> m_shared_state;
 
 public:
     [[nodiscard]] typename promise_type::get_yielded_aw next_value_async() & noexcept
@@ -486,6 +386,6 @@ merge(Generator lhs, Generator rhs, Comp comp = {})
     }
 }
 
-KOIOS_NAMESPACE_END
+} // namespace koios
 
 #endif

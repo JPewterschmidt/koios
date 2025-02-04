@@ -13,62 +13,16 @@
 #include <memory>
 #include <mutex>
 #include <functional>
+#include <atomic>
 
-#include "toolpex/object_storage.h"
-
-#include "koios/macros.h"
 #include "koios/promise_base.h"
 
+#include "koios/generator_shared_state.h"
 #include "koios/generator_concepts.h"
-#include "koios/task_on_the_fly.h"
-#include "koios/waiting_handle.h"
 #include "koios/task.h"
 
-KOIOS_NAMESPACE_BEG
-
-namespace generator_detials
+namespace koios
 {
-
-template<typename T>
-struct shared_state
-{
-    task_on_the_fly m_generator_coro;
-    task_on_the_fly m_waiting_coro;
-    toolpex::object_storage<T> m_yielded_val;
-    bool m_finalized{};
-
-    bool has_value() const noexcept
-    {
-        return !m_finalized && m_yielded_val.has_value();
-    }
-
-    bool finalized() const noexcept
-    {
-        return m_finalized;
-    }
-
-    template<typename TT>
-    void set_value(TT&& val)
-    {
-        m_yielded_val.set_value(::std::forward<TT>(val));
-    }
-
-    /*! \brief The function that destroy the generator frame.
-     *
-     *  \attention How ever use this function has to make sure that the generator is in suspended mode.
-     *             This function will be called by generator's destructor when for those calls not exhausts a generator.
-     */
-    void destroy() noexcept
-    {
-        m_finalized = true;
-        m_generator_coro = {};
-    }
-};
-
-template<typename T>
-using shared_state_sptr = ::std::shared_ptr<shared_state<T>>;
-
-} // namespace generator_detials
 
 template<typename T, typename Alloc>
 struct _generator
@@ -101,19 +55,16 @@ public:
 
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
    
-    ~generator_promise_type() noexcept
-    {
-        toolpex_assert(!m_shared_state->m_waiting_coro);
-    }
+    ~generator_promise_type() noexcept = default;
 
 private:
-    generator_detials::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_detials::shared_state<T>>() };
+    generator_details::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_details::shared_state<T>>() };
 
 public:
     class get_yielded_aw
     {
     public:
-        get_yielded_aw(generator_detials::shared_state_sptr<T> ss) noexcept
+        get_yielded_aw(generator_details::shared_state_sptr<T> ss) noexcept
             : m_ss{ ss }
         {
         }
@@ -125,22 +76,21 @@ public:
 
         void await_suspend(task_on_the_fly t) noexcept
         {
-            m_ss->m_waiting_coro = ::std::move(t);
-            toolpex_assert(!!m_ss->m_generator_coro);
-            wake_up(::std::move(m_ss->m_generator_coro));
+            m_ss->set_waiting_coro(::std::move(t));
+            wake_up(m_ss->get_generator_coro());
         }
 
         ::std::optional<T> await_resume() 
         {
             ::std::optional<T> result;
-            if (!m_ss->m_finalized)
-                result.emplace(m_ss->m_yielded_val.get_value());
+            if (!m_ss->finalized())
+                result.emplace(m_ss->yielded_value_slot().get_value());
 
             return result;
         }
 
     private:
-        generator_detials::shared_state_sptr<T> m_ss;
+        generator_details::shared_state_sptr<T> m_ss;
     };
 
 public:
@@ -151,8 +101,8 @@ public:
 
     void return_void() noexcept 
     { 
-        m_shared_state->m_finalized = true;
-        wake_up(::std::move(m_shared_state->m_waiting_coro));
+        m_shared_state->set_finalized();
+        wake_up(m_shared_state->get_waiting_coro());
     }
 
     void unhandled_exception() const { throw; }
@@ -164,7 +114,9 @@ public:
     auto yield_value(TT&& val)
     {
         toolpex_assert(!!m_shared_state);
-        m_shared_state->m_yielded_val.set_value(::std::forward<TT>(val));
+
+        if (!finalized())
+            m_shared_state->yielded_value_slot().set_value(::std::forward<TT>(val));
 
         struct yield_generator_getter_aw 
         { 
@@ -176,14 +128,21 @@ public:
             constexpr bool await_ready() const noexcept { return false; }
             void await_suspend(task_on_the_fly h) noexcept
             {
-                m_ss->m_generator_coro = ::std::move(h);
-                wake_up(::std::move(m_ss->m_waiting_coro));
+                if (m_ss->finalized())
+                {
+                    m_ss->try_finalize();
+                }
+                else 
+                {
+                    m_ss->set_generator_coro(::std::move(h));
+                    wake_up(m_ss->get_waiting_coro());
+                }
             }
             
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
-            generator_detials::shared_state_sptr<T> m_ss;
+            generator_details::shared_state_sptr<T> m_ss;
         };
 
         return yield_generator_getter_aw{ this };
@@ -202,7 +161,7 @@ public:
      */
     T value()
     {
-        generator_detials::shared_state<T> c = m_shared_state->get_value();
+        generator_details::shared_state<T> c = m_shared_state->get_value();
         T result = ::std::move(c.m_yielded_val);
         return result;
     }
@@ -217,7 +176,7 @@ public:
         return result;
     }
 
-    bool finalized() const noexcept { return m_shared_state->m_finalized; }
+    bool finalized() const noexcept { return m_shared_state->finalized(); }
 };
 
 /*! \brief The generator type
@@ -257,7 +216,7 @@ public:
                 "Or, you may perform co_await call, it's not supported yet."
             };
         }
-        return m_shared_state->m_yielded_val.value_ref();
+        return m_shared_state->yielded_value_slot().value_ref();
     }
 
     _type(const _type&) = delete;
@@ -267,17 +226,17 @@ public:
     {
         if (!m_shared_state)
             return;
-        m_shared_state->destroy();
+        m_shared_state->try_finalize();
     }
 
 private:
-    _type(task_on_the_fly h, generator_detials::shared_state_sptr<T> storage) noexcept
+    _type(task_on_the_fly h, generator_details::shared_state_sptr<T> storage) noexcept
         : m_shared_state{ ::std::move(storage) }
     {
-        m_shared_state->m_generator_coro = ::std::move(h);
+        m_shared_state->set_generator_coro(::std::move(h));
     }
 
-    generator_detials::shared_state_sptr<T> m_shared_state;
+    generator_details::shared_state_sptr<T> m_shared_state;
 
 public:
     [[nodiscard]] typename promise_type::get_yielded_aw next_value_async() & noexcept
@@ -433,6 +392,6 @@ merge(Generator lhs, Generator rhs, Comp comp = {})
     }
 }
 
-KOIOS_NAMESPACE_END
+} // namespace koios
 
 #endif

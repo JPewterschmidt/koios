@@ -30,22 +30,22 @@ namespace generator_detials
 {
 
 template<typename T>
-struct shared_state
+class shared_state
 {
+private:
     task_on_the_fly m_generator_coro;
     task_on_the_fly m_waiting_coro;
     toolpex::object_storage<T> m_yielded_val;
     bool m_finalized{};
 
+public:
     bool has_value() const noexcept
     {
         return !m_finalized && m_yielded_val.has_value();
     }
 
-    bool finalized() const noexcept
-    {
-        return m_finalized;
-    }
+    void set_finalized() noexcept { m_finalized = true; }
+    bool finalized() const noexcept { return m_finalized; }
 
     template<typename TT>
     void set_value(TT&& val)
@@ -53,16 +53,43 @@ struct shared_state
         m_yielded_val.set_value(::std::forward<TT>(val));
     }
 
-    /*! \brief The function that destroy the generator frame.
+    /*! \brief The function that mark then consumer side was die.
      *
      *  \attention How ever use this function has to make sure that the generator is in suspended mode.
      *             This function will be called by generator's destructor when for those calls not exhausts a generator.
      */
-    void destroy() noexcept
+    void cancel() noexcept { set_finalized(); }
+
+    void set_generator_coro(task_on_the_fly f) noexcept
     {
-        m_finalized = true;
-        m_generator_coro = {};
+        toolpex_assert(!has_generator_coro());
+        m_generator_coro = ::std::move(f);
     }
+
+    auto get_generator_coro() noexcept
+    {
+        toolpex_assert(has_generator_coro());
+        return ::std::move(m_generator_coro);
+    }
+
+    void set_waiting_coro(task_on_the_fly f) noexcept
+    {
+        toolpex_assert(!m_waiting_coro);
+        m_waiting_coro = ::std::move(f);
+    }
+
+    auto get_waiting_coro() noexcept
+    {
+        // If there're no one still waiting for the generator, then nothing to return. 
+        // Thus no need to check whether there's waiting coro handler.
+        return ::std::move(m_waiting_coro);
+    }
+
+    bool has_waiting_coro() const noexcept { return !!m_waiting_coro; }
+    bool has_generator_coro() const noexcept { return !!m_generator_coro; }
+
+    auto& yielded_value_slot() noexcept { return m_yielded_val; }
+    const auto& yielded_value_slot() const noexcept { return m_yielded_val; }
 };
 
 template<typename T>
@@ -101,10 +128,7 @@ public:
 
     using handle_type = ::std::coroutine_handle<generator_promise_type<T, Alloc>>;
    
-    ~generator_promise_type() noexcept
-    {
-        toolpex_assert(!m_shared_state->m_waiting_coro);
-    }
+    ~generator_promise_type() noexcept = default;
 
 private:
     generator_detials::shared_state_sptr<T> m_shared_state{ ::std::make_shared<generator_detials::shared_state<T>>() };
@@ -125,16 +149,15 @@ public:
 
         void await_suspend(task_on_the_fly t) noexcept
         {
-            m_ss->m_waiting_coro = ::std::move(t);
-            toolpex_assert(!!m_ss->m_generator_coro);
-            wake_up(::std::move(m_ss->m_generator_coro));
+            m_ss->set_waiting_coro(::std::move(t));
+            wake_up(m_ss->get_generator_coro());
         }
 
         ::std::optional<T> await_resume() 
         {
             ::std::optional<T> result;
-            if (!m_ss->m_finalized)
-                result.emplace(m_ss->m_yielded_val.get_value());
+            if (!m_ss->finalized())
+                result.emplace(m_ss->yielded_value_slot().get_value());
 
             return result;
         }
@@ -151,8 +174,8 @@ public:
 
     void return_void() noexcept 
     { 
-        m_shared_state->m_finalized = true;
-        wake_up(::std::move(m_shared_state->m_waiting_coro));
+        m_shared_state->set_finalized();
+        wake_up(m_shared_state->get_waiting_coro());
     }
 
     void unhandled_exception() const { throw; }
@@ -164,29 +187,32 @@ public:
     auto yield_value(TT&& val)
     {
         toolpex_assert(!!m_shared_state);
-        m_shared_state->m_yielded_val.set_value(::std::forward<TT>(val));
+
+        if (!finalized())
+            m_shared_state->yielded_value_slot().set_value(::std::forward<TT>(val));
 
         struct yield_generator_getter_aw 
         { 
-            yield_generator_getter_aw(generator_promise_type* parent) noexcept
-                : m_parent{ parent }, m_ss{ m_parent->m_shared_state }
+            yield_generator_getter_aw(generator_promise_type* parent, bool finalized) noexcept
+                : m_parent{ parent }, m_ss{ m_parent->m_shared_state }, m_finalized{ finalized }
             {
             }
 
             constexpr bool await_ready() const noexcept { return false; }
             void await_suspend(task_on_the_fly h) noexcept
             {
-                m_ss->m_generator_coro = ::std::move(h);
-                wake_up(::std::move(m_ss->m_waiting_coro));
+                m_ss->set_generator_coro(m_finalized ? task_on_the_fly{} : ::std::move(h));
+                wake_up(m_ss->get_waiting_coro());
             }
             
             constexpr void await_resume() const noexcept {}
             
             generator_promise_type* m_parent;
             generator_detials::shared_state_sptr<T> m_ss;
+            bool m_finalized{};
         };
 
-        return yield_generator_getter_aw{ this };
+        return yield_generator_getter_aw{ this, finalized() };
     }
 
     /*! \retval true Current yield value was not been moved.
@@ -217,7 +243,7 @@ public:
         return result;
     }
 
-    bool finalized() const noexcept { return m_shared_state->m_finalized; }
+    bool finalized() const noexcept { return m_shared_state->finalized(); }
 };
 
 /*! \brief The generator type
@@ -257,7 +283,7 @@ public:
                 "Or, you may perform co_await call, it's not supported yet."
             };
         }
-        return m_shared_state->m_yielded_val.value_ref();
+        return m_shared_state->yielded_value_slot().value_ref();
     }
 
     _type(const _type&) = delete;
@@ -267,14 +293,14 @@ public:
     {
         if (!m_shared_state)
             return;
-        m_shared_state->destroy();
+        m_shared_state->cancel();
     }
 
 private:
     _type(task_on_the_fly h, generator_detials::shared_state_sptr<T> storage) noexcept
         : m_shared_state{ ::std::move(storage) }
     {
-        m_shared_state->m_generator_coro = ::std::move(h);
+        m_shared_state->set_generator_coro(::std::move(h));
     }
 
     generator_detials::shared_state_sptr<T> m_shared_state;

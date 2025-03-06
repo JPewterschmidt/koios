@@ -29,6 +29,8 @@ KOIOS_NAMESPACE_BEG
 class tcp_server : public toolpex::move_only
 {
 public:
+    tcp_server() = default;
+
     tcp_server(toolpex::ip_address::ptr addr, 
                ::in_port_t port);
 

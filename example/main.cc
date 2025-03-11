@@ -21,6 +21,8 @@
 #include "toolpex/tic_toc.h"
 #include "toolpex/errret_thrower.h"
 #include "toolpex/unique_posix_fd.h"
+
+#include "koios/wait_group.h"
 #include "koios/tcp_server.h"
 #include "koios/iouring_awaitables.h"
 #include "koios/coroutine_mutex.h"
@@ -38,20 +40,30 @@ using namespace ::std::chrono_literals;
 using namespace ::std::string_view_literals;
 using namespace toolpex::ip_address_literals;
 
+namespace r = ::std::ranges;
+namespace rv = ::std::views;
+
 namespace
 {
-    lazy_task<int> func1(int i)
+    lazy_task<> func1(auto tk)
     {
-        co_return 1 + i;
+        co_return;
     }
 
     lazy_task<> main_body()
     {
-        for (int i = 0; i < 10; ++i) 
-        {
-            (void) co_await func1(i);           
-        }
+        koios::wait_group wg;
+        auto futs = rv::iota(0, 1000000)
+            | rv::transform([&](auto&& i) {
+                  return func1(wait_group_guard{wg}).run_and_get_future();
+              })
+            | r::to<::std::vector>()
+            ;
 
+        co_await wg.wait();
+        ::std::println("done1");
+        co_await co_await_all(::std::move(futs));
+        ::std::println("done2");
         co_return;
     }
 }
@@ -59,7 +71,7 @@ namespace
 int main()
 try
 {
-    koios::runtime_init(2);
+    koios::runtime_init(12);
     main_body().result();
     koios::runtime_exit();
     return 0;

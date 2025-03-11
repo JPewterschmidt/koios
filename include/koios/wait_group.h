@@ -38,12 +38,14 @@ public:
 
             bool await_ready() const noexcept
             {
-                return m_parent->ready();
+                m_parent->add(1);
+                return false;
             }
 
             void await_suspend(task_on_the_fly t)
             {
                 m_parent->m_waitings.enqueue({ .task = ::std::move(t) });
+                m_parent->done(1);
             }
 
             constexpr void await_resume() const noexcept {}

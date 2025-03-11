@@ -53,17 +53,22 @@ namespace
     lazy_task<> main_body()
     {
         koios::wait_group wg;
-        auto futs = rv::iota(0, 1000000)
-            | rv::transform([&](auto&& i) {
-                  return func1(wait_group_guard{wg}).run_and_get_future();
-              })
-            | r::to<::std::vector>()
-            ;
+        //auto futs = rv::iota(0, 10000000)
+        //    | rv::transform([&](auto&& i) {
+        //          return func1(wait_group_guard{wg}).run_and_get_future();
+        //      })
+        //    | r::to<::std::vector>()
+        //    ;
+
+        for (size_t i{}; i < 1000000; ++i)
+        {
+            func1(wait_group_guard{wg}).run();
+        }
 
         co_await wg.wait();
         ::std::println("done1");
-        co_await co_await_all(::std::move(futs));
-        ::std::println("done2");
+        //co_await co_await_all(::std::move(futs));
+        //::std::println("done2");
         co_return;
     }
 }

@@ -23,6 +23,7 @@
 #include "koios/task_on_the_fly.h"
 #include "koios/future.h"
 #include "koios/per_consumer_attr.h"
+#include "koios/discardable_mark.h"
 
 KOIOS_NAMESPACE_BEG
 
@@ -38,8 +39,6 @@ struct _task
     struct [[nodiscard]] _type;
 };
 
-struct discardable{};
-struct non_discardable{};
 
 /*! \brief The most basic unit of the runtime.
  *

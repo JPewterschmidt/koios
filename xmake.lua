@@ -8,7 +8,8 @@ add_requires(
     "gtest", 
     "concurrentqueue master",
     "magic_enum",
-    "fmt"
+    "fmt",
+    "spdlog"
 )
 
 includes("toolpex")

@@ -3,6 +3,8 @@
 
 #include "toolpex/callback_promise.h"
 
+#include "koios/task_on_the_fly.h"
+
 namespace koios
 {
 
@@ -18,11 +20,15 @@ struct frame_agg
 
     status_t m_status;
     toolpex::future_frame<T> m_t_frame{};
+    task_on_the_fly m_waitting{};
 };
 
 template<typename T>
 class lite_promise
 {
+public:
+    using value_type = T;
+
 public:
     lite_promise(frame_agg<T>* f)
         : m_frame_ptr{ f }
@@ -33,17 +39,15 @@ public:
     void set_value(Args&&... args)
     {
         toolpex_assert(!!m_frame_ptr);
-        auto& [status, frame_p] = *m_frame_ptr;
-        frame_p.set_value(::std::forward<Args>(args)...);
-        status = frame_agg<T>::READY;
+        m_frame_ptr->m_t_frame.set_value(::std::forward<Args>(args)...);
+        m_frame_ptr->m_status = frame_agg<T>::READY;
     }
 
     void set_exception(::std::exception_ptr ex) noexcept
     {
         toolpex_assert(!!m_frame_ptr);
-        auto& [status, frame_p] = *m_frame_ptr;
-        frame_p.set_exception(::std::move(ex));
-        status = frame_agg<T>::EXCEPT;
+        m_frame_ptr->m_t_frame.set_exception(::std::move(ex));
+        m_frame_ptr->m_status = frame_agg<T>::EXCEPT;
     }
 
 private:
@@ -53,6 +57,9 @@ private:
 template<typename T>
 class lite_future
 {
+public:
+    using value_type = T;
+
 public:
     lite_promise<T> get_promise()
     {
@@ -64,22 +71,34 @@ public:
         return m_frame.m_status != frame_agg<T>::NONE;
     }
 
+    constexpr bool valid() const noexcept { return true; }
+
     decltype(auto) get()
     {
-        auto& [status, mtframe] = m_frame;
-        if (status == frame_agg<T>::EXCEPT)
+        auto& mtframe = m_frame.m_t_frame;
+        if (m_frame.m_status == frame_agg<T>::EXCEPT)
         {
             ::std::rethrow_exception(mtframe.get_exception());
         }
 
-        if constexpr (::std::is_reference_v<T>)
+        if constexpr (!::std::same_as<T, void>)
         {
-            return mtframe.value();
+            if constexpr (::std::is_reference_v<T>)
+            {
+                return mtframe.value();
+            }
+            else
+            {
+                return ::std::move(mtframe.value());
+            }
         }
-        else
-        {
-            return ::std::move(mtframe.value());
-        }
+    }
+
+    decltype(auto) get_nonblk() { return get(); }
+
+    void set_waiting(task_on_the_fly f)
+    {
+        m_frame.m_waitting = ::std::move(f);
     }
     
 private:

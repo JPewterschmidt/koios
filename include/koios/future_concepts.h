@@ -16,7 +16,9 @@ concept future_concept = requires (Future f)
 {
     { f.get() } -> ::std::same_as<typename Future::value_type>;
     { f.get_nonblk() } -> ::std::same_as<typename Future::value_type>;
+    { f.valid() } -> toolpex::boolean_testable;
     { f.ready() } -> toolpex::boolean_testable;
+    { f.set_waiting(::std::declval<task_on_the_fly>()) };
 };
 
 KOIOS_NAMESPACE_END

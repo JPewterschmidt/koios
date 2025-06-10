@@ -143,7 +143,15 @@ public:
         m_ss->wait_util_has_value();
         if (!m_ff) 
             m_ff = m_ss->get_future_frame_ptr();
-        return get_nonblk();
+
+        if constexpr (::std::same_as<value_type, void>)
+        {
+            get_nonblk();
+        }
+        else
+        {
+            return get_nonblk();
+        }
     }
 
     bool ready()

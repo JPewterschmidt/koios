@@ -11,6 +11,7 @@
 #include "toolpex/assert.h"
 
 #include "koios/task_on_the_fly.h"
+#include "koios/future_concepts.h"
 
 namespace koios
 {

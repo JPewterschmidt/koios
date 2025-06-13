@@ -31,6 +31,7 @@
 #include "koios/unique_file_state.h"
 #include "koios/task_release_once.h"
 #include "koios/iouring_op_batch.h"
+#include "koios/lite_task.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -50,25 +51,16 @@ namespace
         co_return;
     }
 
+    lite_task<int> lite_func()
+    {
+        co_return 1;
+    }
+
     lazy_task<> main_body()
     {
-        koios::wait_group wg;
-        //auto futs = rv::iota(0, 10000000)
-        //    | rv::transform([&](auto&& i) {
-        //          return func1(wait_group_guard{wg}).run_and_get_future();
-        //      })
-        //    | r::to<::std::vector>()
-        //    ;
+        auto t = lite_func();
+        int i = co_await t;
 
-        for (size_t i{}; i < 1000000; ++i)
-        {
-            func1(wait_group_guard{wg}).run();
-        }
-
-        co_await wg.wait();
-        ::std::println("done1");
-        //co_await co_await_all(::std::move(futs));
-        //::std::println("done2");
         co_return;
     }
 }

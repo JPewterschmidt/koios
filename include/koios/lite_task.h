@@ -51,7 +51,7 @@ public:
     // by Raymond Chen
     class promise_type 
         : public promise_base<InitialSuspendAw, destroy_aw>, 
-          public return_value_or_void<T, promise_type>
+          public return_value_or_void<T, koios::lite_promise<T>>
     {
     public:
         _lite_task<T, Discardable, initial_suspend_type>::_type 
@@ -131,6 +131,45 @@ private:
     future_type m_future;
 };
 
+template<typename T = void, typename Discardable = discardable, typename InitialSuspendAw = eager_aw>
+using async_lite_task = _lite_task<T, Discardable, InitialSuspendAw>::_type;
+
+template<typename T = void, typename Discardable = non_discardable, typename InitialSuspendAw = eager_aw>
+using nodiscard_lite_task = _lite_task<T, Discardable, InitialSuspendAw>::_type;
+
+template<typename T = void, typename InitialSuspendAw = eager_aw>
+using lite_task = async_lite_task<T, InitialSuspendAw>;
+
+template<typename T = void, typename InitialSuspendAw = lazy_aw>
+using lazy_lite_task = async_lite_task<T, InitialSuspendAw>;
+
+using litetaskec = lite_task<::std::error_code>;
+using lzlitetaskec = lazy_lite_task<::std::error_code>;
+
 } // namespace koios
+
+extern template class koios::_lite_task<void, koios::discardable, ::std::suspend_always>::_type;
+extern template class koios::_lite_task<void, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<void, koios::non_discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<bool, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<int, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<size_t, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::string, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::string_view, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::error_code, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<uint8_t, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<uint32_t, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::byte*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<const ::std::byte*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<char*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<const char*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<void*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<const void*, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<::std::byte>, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<const ::std::byte>, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<char>, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<const char>, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<uint8_t>, koios::discardable, koios::eager_aw>::_type;
+extern template class koios::_lite_task<::std::span<const uint8_t>, koios::discardable, koios::eager_aw>::_type;
 
 #endif

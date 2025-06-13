@@ -33,7 +33,7 @@ public:
     auto get_future() { return m_promise.get_future(); }
 
 protected:
-    koios::promise<T> m_promise;
+    Promise m_promise;
 
     // Called by `unhandled_exception`
     void deal_exception(::std::exception_ptr ep)

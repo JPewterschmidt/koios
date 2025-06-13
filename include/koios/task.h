@@ -69,7 +69,7 @@ public:
     // by Raymond Chen
     class promise_type 
         : public promise_base<InitialSuspendAw, destroy_aw>, 
-          public return_value_or_void<T, promise_type>
+          public return_value_or_void<T, koios::promise<T>>
     {
     public:
         _task<T, Discardable, initial_suspend_type>::_type 

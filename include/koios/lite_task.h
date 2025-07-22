@@ -95,6 +95,17 @@ public:
         return m_future.get_async();
     }
 
+    template<typename Dummy = void>
+    void run()
+    {
+        static_assert(this->is_discardable(), "you can not run a non-discardable task without retrieving it's return value.");
+        if (!m_future.valid())
+        {
+            throw ::std::logic_error{ "task::operator co_await(): you have already called task::get_future()." };
+        }
+        get_task_scheduler().enqueue(this->get_handler_to_schedule());
+    }
+
     /*! \retval true This task is a discardable task. You could ignore the return value.
      *  \retval false This task is NOT a Discardable task. You have to take the ownership of the related future object.
      *

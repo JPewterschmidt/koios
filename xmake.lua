@@ -54,7 +54,7 @@ target("koios")
         { public = true }
     )
 
-target("test")
+target("koios-test")
     set_kind("binary")
     add_packages("concurrentqueue")
     add_cxflags("-Wconversion", { force = true })
@@ -72,7 +72,7 @@ target("test")
         --nothing
     end)
     
-target("example")
+target("koios-example")
     set_kind("binary")
     add_cxflags("-Wconversion", { force = true })
     add_deps("koios", "toolpex")
